@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: af92e1b9ea2a8c04ea4eb5335c9a42e6
+timeCreated: 1521764011
+licenseType: Free
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - perlinMap: {instanceID: 0}
+  - parentMap: {fileID: 2800000, guid: adba54bb55d9b441cb47d7245e3ecab0, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
