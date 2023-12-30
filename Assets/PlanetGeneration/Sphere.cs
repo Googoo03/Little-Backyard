@@ -56,7 +56,7 @@ public class Sphere : MonoBehaviour
     public float persistance;
     public float lacunarity;
 
-    
+    public Texture2D regionReference;
 
     public Color[] regions; //turn this into a 2D array and access directly?
     float[] heights = {0.5f, 0.7f, 0.8f, 0.9f };
@@ -140,52 +140,13 @@ public class Sphere : MonoBehaviour
         //
         //ONCE THAT'S DONE CHANGE THE ASSIGNMENT OF COLOR TO BOTH STEEPNESS
         //AND ELEVATION, RATHER THAN JUST ELEVATION
-        if (planetType == 0) {
-            regions[0] = Color.red;
-            regions[1] = Color.gray;
-            regions[2] = Color.black;
-            regions[3] = Color.gray;
-            transform.Find("Atmosphere").GetComponent<Renderer>().material.color = Color.gray;
+
+        regions = new Color[4]; // this 4 is just a placeholder. ideally in the future there will be more colors
+        for (int i = 0; i < regions.Length; ++i) {
+            regions[i] = regionReference.GetPixel(i, planetType);
         }
-        if (planetType == 1)
-        {
-            regions[0] = new Color(.5f, .9f, .9f);
-            regions[1] = new Color(.8f,.99f,1);
-            regions[2] = new Color(.9f,.9f,.9f);
-            regions[3] = Color.white;
-            transform.Find("Atmosphere").GetComponent<Renderer>().material.color = Color.white;
-        }
-        if (planetType == 2)
-        {
-            regions[0] = new Color(.1f,.5f,.8f);
-            regions[1] = Color.green;
-            regions[2] = new Color(.5f,.45f,.4f);
-            regions[3] = Color.gray;
-        }
-        if (planetType == 5)
-        {
-            regions[0] = new Color(.3f, .3f, .3f);
-            regions[1] = new Color(.6f,.6f,.6f);
-            regions[2] = new Color(.5f, .45f, .4f);
-            regions[3] = Color.gray;
-            transform.Find("Atmosphere").GetComponent<Renderer>().material.color = new Color(0,0,0,0);
-        }
-        if (planetType == 4)
-        {
-            regions[0] = new Color(1f, .8f, .4f);
-            regions[1] = new Color(.9f, .6f, .1f);
-            regions[2] = new Color(.6f, .55f, .5f);
-            regions[3] = Color.gray;
-            transform.Find("Atmosphere").GetComponent<Renderer>().material.color = new Color(1,.7f,0);
-        }
-        if (planetType == 3)
-        {
-            regions[0] = Color.gray;
-            regions[1] = new Color(.6f, .6f, .6f);
-            regions[2] = new Color(.7f, .7f, .7f);
-            regions[3] = Color.gray;
-            transform.Find("Atmosphere").GetComponent<Renderer>().material.color = new Color(0,0,0,0);
-        }
+
+        
         Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
         patches = new PatchConfig[]
         {

@@ -351,7 +351,7 @@ PrefabInstance:
     - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
       propertyPath: rollSensitivity
-      value: 3
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
