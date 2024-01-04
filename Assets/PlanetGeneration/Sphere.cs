@@ -56,18 +56,24 @@ public class Sphere : MonoBehaviour
     public float persistance;
     public float lacunarity;
 
+    public float oceanFloor;
+    public float oceanMultiplier;
+
+    public float landMultiplier;
+
     public Texture2D regionReference;
 
     public Color[] regions; //turn this into a 2D array and access directly?
     float[] heights = {0.5f, 0.7f, 0.8f, 0.9f };
     public AnimationCurve[] heightCurve;
 
+    /*
     public GameObject ore;
     public GameObject iron;
     public GameObject meteorite;
     public float oreSeed;
     public float oreScale;
-
+    */
     public int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
     public float pscale;
 
@@ -122,7 +128,14 @@ public class Sphere : MonoBehaviour
     {
         LOD = new List<PatchLOD>() { };
 
-        seed = Mathf.FloorToInt(Time.time);
+        var hash = new Hash128();
+        hash.Append(transform.position.x);
+        hash.Append(transform.position.y);
+        hash.Append(transform.position.z);
+
+        seed = hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
+
+
         float px = (transform.position.x / pscale);
         float py = transform.position.y / pscale;
         float pz = transform.position.z / pscale;
@@ -165,13 +178,6 @@ public class Sphere : MonoBehaviour
         return heightCurve[index].Evaluate(value);
     }
 
-
-
-
-
-
-
-
     //THIS SHOULD ALL BE IN THE PATCH ITSELF, NOT THE PARENT. IT WILL MAKE IT MUCH EASIER WHEN IMPLEMENTING AN LOD SYSTEM
     void GeneratePatch(PatchConfig aConf, int u, int v)
     {
@@ -195,6 +201,18 @@ public class Sphere : MonoBehaviour
         return planetType;
     }
 
+    public float getOceanFloor() {
+        return oceanFloor;
+    }
+
+    public float getOceanMultiplier() {
+        return oceanMultiplier;
+    }
+
+    public float getLandMultiplier()
+    {
+        return landMultiplier;
+    }
     public float getHeightArrayValue(int index)
     {
         //for safety you should throw an exception here if out of range;

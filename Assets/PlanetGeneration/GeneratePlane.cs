@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
-
+using Simplex;
 
 public class GeneratePlane : MonoBehaviour
 {
@@ -21,7 +21,13 @@ public class GeneratePlane : MonoBehaviour
     Color[] regions; //will i run into trouble if this is pointing to a reference?
     float[] heights;
     public PatchConfig patch;
+
+    public Noise noise;
     public void Generate(PatchConfig planePatch,float LODstep) {
+
+
+        
+        //ideally, shouldn't this be in the parent object, then every child references it?
 
         MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
         MeshRenderer rend = this.gameObject.AddComponent<MeshRenderer>();
@@ -33,8 +39,6 @@ public class GeneratePlane : MonoBehaviour
         xVertCount = planePatch.vertices.x;
         yVertCount = planePatch.vertices.y;
         radius = 1;
-        //regions = regionArray;
-        //heights = heightArray;
 
         Vector2 offset = new Vector2(-0.5f, -0.5f) + planePatch.LODOffset; //to center all side meshes. Multiply by LODoffset to give correct quadrant
         Vector2 step = new Vector2(1f / (xVertCount - 1), 1f / (yVertCount - 1)); //determines the distance or "step" amount between vertices
@@ -45,11 +49,28 @@ public class GeneratePlane : MonoBehaviour
         Vector3[] normals = new Vector3[vertices.Length];
         Vector2[] uvs = new Vector2[vertices.Length];
 
-
+        /*
         float minNoiseHeight = float.MaxValue + .1f;
         float maxNoiseHeight = float.MinValue;
-
+        */
         Texture2D tex = new Texture2D(xVertCount, yVertCount);
+
+
+        //GET NECESSARY VALUES FOR NOISE FROM PARENT PLANET
+        int octaves = planePatch.planetObject.GetComponent<Sphere>().getOctaves();
+        float lacunarity = planePatch.planetObject.GetComponent<Sphere>().getLacunarity();
+        float persistance = planePatch.planetObject.GetComponent<Sphere>().getPersistance();
+        int seed = planePatch.planetObject.GetComponent<Sphere>().getSeed();
+        float scale = planePatch.planetObject.GetComponent<Sphere>().getScale();
+
+        float oceanFloor = planePatch.planetObject.GetComponent<Sphere>().getOceanFloor();
+        float oceanMulitplier = planePatch.planetObject.GetComponent<Sphere>().getOceanMultiplier();
+        float landMultiplier = planePatch.planetObject.GetComponent<Sphere>().getLandMultiplier();
+
+        noise = new Noise(); //creates new simplex noise object for later use
+        noise.Seed = seed;
+
+        //generates Simplex Noise and stores in 3d array
 
         for (int y = 0; y < yVertCount; y++)
         {
@@ -61,34 +82,29 @@ public class GeneratePlane : MonoBehaviour
 
                 uvs[i] = p + Vector2.one * 0.5f;
                 Vector3 vec = ((planePatch.uAxis * p.x) + (planePatch.vAxis * p.y) + (planePatch.height * 0.5f)); //determine plane vertex based on direction. p determines
-                                                                                                   //vertex location in grid
+                                                                                                                  //vertex location in grid
+
+                float noiseHeight = 0f; // should return a value between 0 and 1
                 vec = vec.normalized; //makes it a sphere
 
                 float range = 1f;
-                float noiseHeight = 0f;
 
-                //GET NECESSARY VALUES FOR NOISE FROM PARENT PLANET
-                int octaves = planePatch.planetObject.GetComponent<Sphere>().getOctaves();
-                float lacunarity = planePatch.planetObject.GetComponent<Sphere>().getLacunarity();
-                float persistance = planePatch.planetObject.GetComponent<Sphere>().getPersistance();
-                int seed = planePatch.planetObject.GetComponent<Sphere>().getSeed();
-                float scale = planePatch.planetObject.GetComponent<Sphere>().getScale();
-
-                OctaveNoise(vec,ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
-
-                Mathf.Clamp(noiseHeight, minNoiseHeight, maxNoiseHeight);
+                OctaveNoise(vec, ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
+                //Mathf.Clamp(noiseHeight, minNoiseHeight, maxNoiseHeight);
 
 
                 int planetType = planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
-                float addHeight = planePatch.planetObject.GetComponent<Sphere>().evaluateHeightCurve(planetType,(noiseHeight/range));
-                    //heightCurve[planetType].Evaluate(noiseHeight / range);
-                vec = vec * (1.0f + addHeight); //change vertex according to height map curve
+                float addHeight = (noiseHeight > oceanFloor) ? (noiseHeight * landMultiplier) : (noiseHeight * oceanMulitplier);
+                
+                //change vertex according to height map curve
+                vec *= (1.0f + addHeight);
                 float currentHeight = noiseHeight / range;
 
                 normals[i] = vec;
                 vertices[i] = vec * radius;
 
                 //SET TEXTURE PIXELS ACCORDINGLY
+
                 createPatchTexture(ref tex, x, y, currentHeight);
 
             }
@@ -170,11 +186,10 @@ public class GeneratePlane : MonoBehaviour
             float yy = ((ny - yVertCount) / scale) * frequency;
             float zz = ((nz - xVertCount) / scale) * frequency;
 
-            /*float ox = ((nx - xVertCount) / oreScale) * frequency;
-            float oy = ((ny - yVertCount) / oreScale) * frequency;
-            float oz = ((nz - xVertCount) / oreScale) * frequency;*/
+            //THIS LINE HERE WILL CHANGE TO ACCOMODATE ADDITIONAL ALGORITHMS
+            float perlinValue = noise.CalcPixel3D(xx, yy, zz, 1f / scale); // should return a value between 0 and 1
 
-            float perlinValue = Perlin3d(xx + seed, yy + seed, zz + seed);
+            //WHY IS IT SUPER SMALL????
             noiseHeight += perlinValue * amplitude;
 
             amplitude *= persistance;

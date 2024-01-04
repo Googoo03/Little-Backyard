@@ -160,10 +160,13 @@ MonoBehaviour:
   yVertCount: 12
   radius: 1
   seed: 42
-  scale: 0.92
-  octaves: 4
+  scale: 0.64
+  octaves: 1
   persistance: 0.5
   lacunarity: 2
+  oceanFloor: 0
+  oceanMultiplier: 0.01
+  landMultiplier: 0.1
   regionReference: {fileID: 2800000, guid: abeea500f365f944ea3ff3832837474d, type: 3}
   regions:
   - {r: 1, g: 0.82038534, b: 0.43382353, a: 0}
@@ -435,11 +438,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 0
-  ore: {fileID: 1185636959864614, guid: a184fe1c55b1585489b308bf7f49e9a5, type: 3}
-  iron: {fileID: 1198955484144072, guid: 156737b8209bafc44aab3731b4ed81d8, type: 3}
-  meteorite: {fileID: 1620424315170890, guid: e629dfb31cb78bf4293ec4d720953683, type: 3}
-  oreSeed: 0.05
-  oreScale: 0.05
   planetType: 4
   pscale: 0.01
   nextLOD: 0
