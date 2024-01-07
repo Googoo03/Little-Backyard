@@ -160,7 +160,7 @@ MonoBehaviour:
   yVertCount: 12
   radius: 1
   seed: 42
-  scale: 0.64
+  scale: 2
   octaves: 1
   persistance: 0.5
   lacunarity: 2

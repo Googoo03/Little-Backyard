@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Simplex;
+using Worley;
 
 public class GeneratePlane : MonoBehaviour
 {
@@ -23,6 +24,7 @@ public class GeneratePlane : MonoBehaviour
     public PatchConfig patch;
 
     public Noise noise;
+    public WorleyNoise worleyNoise;
     public void Generate(PatchConfig planePatch,float LODstep) {
 
 
@@ -67,9 +69,12 @@ public class GeneratePlane : MonoBehaviour
         float oceanMulitplier = planePatch.planetObject.GetComponent<Sphere>().getOceanMultiplier();
         float landMultiplier = planePatch.planetObject.GetComponent<Sphere>().getLandMultiplier();
 
+        /*
         noise = new Noise(); //creates new simplex noise object for later use
-        noise.Seed = seed;
+        noise.Seed = seed;*/
 
+        worleyNoise = new WorleyNoise();
+        worleyNoise.Seed = seed;
         //generates Simplex Noise and stores in 3d array
 
         for (int y = 0; y < yVertCount; y++)
@@ -94,7 +99,9 @@ public class GeneratePlane : MonoBehaviour
 
 
                 int planetType = planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
-                float addHeight = (noiseHeight > oceanFloor) ? (noiseHeight * landMultiplier) : (noiseHeight * oceanMulitplier);
+
+                
+                float addHeight = (noiseHeight > oceanFloor) ? (noiseHeight*landMultiplier) : (noiseHeight * oceanMulitplier);
                 
                 //change vertex according to height map curve
                 vec *= (1.0f + addHeight);
@@ -143,12 +150,17 @@ public class GeneratePlane : MonoBehaviour
 
     }
 
+    float ExponentialDistribution(float lambda, float x) {
+        return (x > 0) ? lambda * Mathf.Exp(-(x * lambda)) : 0;
+    }
+
     void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight)
     {
         //the getcomponent lines look ugly, is there a way to clean it up?
         int regionLength = patch.planetObject.GetComponent<Sphere>().getRegionLength();
 
-        for (int r = 0; r < regionLength - 1; r++)
+        //ADD THIS BACK IN, THIS IS JUST FOR TESTING PURPOSES
+        /*for (int r = 0; r < regionLength - 1; r++)
         {
             float currentIndexHeight = patch.planetObject.GetComponent<Sphere>().getHeightArrayValue(r);
             float nextIndexHeight = patch.planetObject.GetComponent<Sphere>().getHeightArrayValue(r+1);
@@ -165,7 +177,8 @@ public class GeneratePlane : MonoBehaviour
                 Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r-1);
                 tex.SetPixel(x, y, color);
             }
-        }
+        }*/
+        tex.SetPixel(x, y, new Color(currentHeight,currentHeight,currentHeight));
     }
 
     float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)
@@ -187,9 +200,10 @@ public class GeneratePlane : MonoBehaviour
             float zz = ((nz - xVertCount) / scale) * frequency;
 
             //THIS LINE HERE WILL CHANGE TO ACCOMODATE ADDITIONAL ALGORITHMS
-            float perlinValue = noise.CalcPixel3D(xx, yy, zz, 1f / scale); // should return a value between 0 and 1
+            float perlinValue = worleyNoise.Calculate(nx, ny, nz, scale);
+            //float perlinValue = noise.CalcPixel3D(xx, yy, zz, 1f / scale); // should return a value between 0 and 1
 
-            //WHY IS IT SUPER SMALL????
+            
             noiseHeight += perlinValue * amplitude;
 
             amplitude *= persistance;
