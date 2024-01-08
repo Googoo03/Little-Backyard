@@ -73,7 +73,9 @@ public class GeneratePlane : MonoBehaviour
         noise = new Noise(); //creates new simplex noise object for later use
         noise.Seed = seed;*/
 
-        worleyNoise = new WorleyNoise();
+        Vector3 worleyPosition = planePatch.planetObject.transform.position;
+        //definitely not optimized, optimize later
+        worleyNoise = new WorleyNoise(false);
         worleyNoise.Seed = seed;
         //generates Simplex Noise and stores in 3d array
 
@@ -200,7 +202,7 @@ public class GeneratePlane : MonoBehaviour
             float zz = ((nz - xVertCount) / scale) * frequency;
 
             //THIS LINE HERE WILL CHANGE TO ACCOMODATE ADDITIONAL ALGORITHMS
-            float perlinValue = worleyNoise.Calculate(nx, ny, nz, scale);
+            float perlinValue = worleyNoise.Calculate(nx, ny, nz,scale);
             //float perlinValue = noise.CalcPixel3D(xx, yy, zz, 1f / scale); // should return a value between 0 and 1
 
             

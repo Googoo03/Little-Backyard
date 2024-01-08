@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Security.Cryptography;
+using System.Xml.Schema;
 
 
 namespace Worley {
@@ -9,6 +11,7 @@ namespace Worley {
 
         public int _seed;
         public byte[] _permutation;
+        private bool inverse;
 
         private readonly byte[] PermOriginal = {
             151,160,137,91,90,15,
@@ -56,7 +59,8 @@ namespace Worley {
             }
 
         }
-        public WorleyNoise() {
+        public WorleyNoise(bool inverse) {
+            this.inverse = inverse;
             _permutation = new byte[PermOriginal.Length];
             PermOriginal.CopyTo(_permutation, 0);
         }
@@ -65,8 +69,8 @@ namespace Worley {
             //the scale should make the 1x1x1 cube be smaller accordingly
             float maxDistance = 1.41f / scale;
             Vector3[] points = new Vector3[27];
-
             var random = new Random(Seed);
+
 
             //first figure out the 1x1x1 cube the point is situated in
             var xs = (float)(Math.Round(x * scale) / scale);
@@ -84,12 +88,33 @@ namespace Worley {
                     }
                 }
             }
-            
+
             //NEED TO PROPERLY SHIFT THE POINTS BY AN APPROPRIATE VECTOR SUCH THAT 
             //IT IS REPLICABLE AND ENERGY EFFICIENT
+            
+
 
             //HERE
+            for (int i = 0; i < points.Length; ++i) {
+                //for each point we want to offset it 
+                //such that each input will always give the same output
 
+
+                //NEED A DIFFERENT METHOD. THIS NO WORK
+
+
+                int xx = (int)(points[i].X * 1000000) % _permutation.Length;
+                int yy = (int)(points[i].Y * 1000000) % _permutation.Length;
+                int zz = (int)(points[i].Z * 1000000) % _permutation.Length;
+
+                Vector3 offset = new Vector3(
+                    _permutation[xx] / 255f,
+                    _permutation[(yy + _permutation[xx]) % _permutation.Length] / 255f,
+                    _permutation[(zz + _permutation[(yy + _permutation[xx]) % _permutation.Length]) % _permutation.Length ] / 255f
+                    );
+                points[i] += (offset / scale);
+
+            }
             ///////////////
 
             
@@ -105,19 +130,17 @@ namespace Worley {
                 }
 
             }
-            closestDistance = sigmoidFunction(closestDistance);
+            closestDistance = (closestDistance == 1 ? 1 : 1 - MathF.Pow(2, -10 * closestDistance));
 
-            //float val = closestDistance > maxDistance ? 0 : (maxDistance - closestDistance) / maxDistance;
-            //float multiplier = 5;
-            //float val = sigmoidFunction(closestDistance);
+
             float val = closestDistance;
             //val *= multiplier;
-            return 1-val;
+            return inverse == true ? 1-val : val;
         }
 
         float sigmoidFunction(float x) {
-            float steepness = 10;
-            return 1 / (1 + MathF.Exp(-x * steepness));
+            float steepness = 2;
+            return 1 / (1 + MathF.Exp( (-x * steepness)+(steepness/2) ));
         }
 
         int getLeastSigDigits(float num)

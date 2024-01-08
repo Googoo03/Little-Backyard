@@ -79,7 +79,7 @@ public class PatchLOD {
 
             //make new patch config
             float newDistanceThreshold;
-            if (patchConfig.LODlevel >= 8)
+            if (patchConfig.LODlevel >= 5)
             {
                 newDistanceThreshold = 0;
             }
