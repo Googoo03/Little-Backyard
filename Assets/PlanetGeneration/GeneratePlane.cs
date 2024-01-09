@@ -7,15 +7,6 @@ using Worley;
 
 public class GeneratePlane : MonoBehaviour
 {
-
-
-
-    
-    //THEN WORK ON A FUNCTIONING LOD SYSTEM USING A QUADTREE MECHANIC
-
-
-
-    // Start is called before the first frame update
     public int xVertCount, yVertCount;
     private int radius;
     public Material patchMaterial;
@@ -25,6 +16,8 @@ public class GeneratePlane : MonoBehaviour
 
     public Noise noise;
     public WorleyNoise worleyNoise;
+
+    //public abstract float NoiseValue(float x, float y, float z, float scale);
     public void Generate(PatchConfig planePatch,float LODstep) {
 
 
@@ -51,10 +44,6 @@ public class GeneratePlane : MonoBehaviour
         Vector3[] normals = new Vector3[vertices.Length];
         Vector2[] uvs = new Vector2[vertices.Length];
 
-        /*
-        float minNoiseHeight = float.MaxValue + .1f;
-        float maxNoiseHeight = float.MinValue;
-        */
         Texture2D tex = new Texture2D(xVertCount, yVertCount);
 
 
@@ -97,8 +86,6 @@ public class GeneratePlane : MonoBehaviour
                 float range = 1f;
 
                 OctaveNoise(vec, ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
-                //Mathf.Clamp(noiseHeight, minNoiseHeight, maxNoiseHeight);
-
 
                 int planetType = planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
 
@@ -125,9 +112,8 @@ public class GeneratePlane : MonoBehaviour
         
         transform.GetComponent<Renderer>().material.mainTexture = tex;
         transform.GetComponent<Renderer>().material.mainTextureScale = new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel);
-        //transform.GetComponent<SectionTexture>().tex = tex;
 
-
+        //SET INDICES FOR THE MESH
         int[] indices = new int[(xVertCount - 1) * (yVertCount - 1) * 4];
         for (int y = 0; y < yVertCount - 1; y++)
         {

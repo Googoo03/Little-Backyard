@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,28 +11,22 @@ public class ShipControls : MonoBehaviour
     public float rollSensitivity;
 
     public GameObject nearbyPlanet;
-	
-	
-	Vector3 moveAmount;
-	Vector3 smoothMoveVelocity;
-
-	Transform cameraTransform;
 
     public SolarSystemQuadTree planetQuadTree;
 
     public Quaternion targetRotation;
     public Quaternion lastOrientation;
 
-
-    //for testing purposes, should be private when its all said and done
-    public float yawInput;
-    public float pitchInput;
-    public float rollInput;
-    public Quaternion yaw;
-    public Quaternion pitch;
-    public Quaternion roll;
+    private float yawInput;
+    private float pitchInput;
+    private float rollInput;
+    private Quaternion yaw;
+    private Quaternion pitch;
+    private Quaternion roll;
 
     private bool tiltShipPlanet = false;
+    public float distanceToNearestPlanet;
+    private float pullUpDistance = 1.1f; //should be grabbed from the planet when it's said and done
 
     public float angle;
     private Vector3 horizonDirection = new Vector3(1,1,1);
@@ -53,8 +48,14 @@ public class ShipControls : MonoBehaviour
         MovementProtocol();
 
         traverseQuadTree(planetQuadTree);
+
+        //sets the distance each frame
+        distanceToNearestPlanet = (nearbyPlanet != null) ? Vector3.Distance(this.transform.position, nearbyPlanet.transform.position) : float.MaxValue;
+
         LODCheckDistance();
 
+        
+        
         //ISSUE IS THAT THE SPEED KNOCKS IT OUT OF RANGE. SOMEHOW THERE SHOULD BE A BUFFER ZONE
         //if within emergency pullup range, turn on tilt.
         //if out of atmosphere range, turn off tilt 
@@ -74,12 +75,21 @@ public class ShipControls : MonoBehaviour
 
     }
 
+    private float EaseInOutCubic(float x) {
+        return x < 0.5 ? 4 * x * x  : 1 - Mathf.Pow(-2 * x + 2, 2) / 2;
+    }
+
+    public void SpeedCalibration() {
+        float d = (distanceToNearestPlanet - pullUpDistance) / pullUpDistance;
+        speed *= Mathf.Max(EaseInOutCubic(d), .1f); //the 1.1 will be changed to "pullup distance" and the .1 is the minimum speed;
+    }
     private void MovementProtocol() {
         
         targetRotation = transform.rotation;
         
+        //change ship speed when in atmosphere. Slows down closer it gets
         speed = (Input.GetKey(KeyCode.LeftShift)) ? 1f : 0.25f;
-
+        if (isInAtmosphere()) SpeedCalibration();
 
         yawInput = Input.GetAxis("Mouse X") * mouseSensitivityX;
         pitchInput = Input.GetAxis("Mouse Y") * mouseSensitivityY;
@@ -118,15 +128,10 @@ public class ShipControls : MonoBehaviour
     }
 
     private void LODCheckDistance() { //measures the distance between the player and nearbyPlanet. If close enough
-                                      //make new LOD
-        if (nearbyPlanet != null)
-        {
-            if (Vector3.Distance(this.transform.position, nearbyPlanet.transform.position) < 4) {
+                                      //make new LOD      
+            if (distanceToNearestPlanet < 4) {
                 nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(this.gameObject);
             }
-            
-        }
-        
     }
 
     private int InputAxis(KeyCode buttonA, KeyCode buttonB) {
@@ -143,33 +148,33 @@ public class ShipControls : MonoBehaviour
     }
 
     private bool emergencyPullUp() { //used to tilt the ship towards the planet if within range.
-        if (nearbyPlanet != null)
-        {
-            //the "2" is a placeholder value. in the future it should be the atmosphere level of the planet
-            if (Vector3.Distance(this.transform.position, nearbyPlanet.transform.position) < 1.1f) return true;
-        }
-        return false;
+        return distanceToNearestPlanet < pullUpDistance ? true : false;
+        //the "2" is a placeholder value. in the future it should be the atmosphere level of the planet
     }
 
     private bool isInAtmosphere()
     { //used to tilt the ship towards the planet if within range.
-        if (nearbyPlanet != null)
-        {
-            //the "2" is a placeholder value. in the future it should be the atmosphere level of the planet
-            if (Vector3.Distance(this.transform.position, nearbyPlanet.transform.position) < 1.5f) return true;
-        }
-        return false;
+        return distanceToNearestPlanet < 1.5f ? true : false;
     }
 
     private void tiltTowardsPlanet() {
+
         
 
-        //EITHER IS TOO HARSH WHEN FIRST ENTERING, OR IS TOO LENIENT WHEN CIRCLING NORMALLY.
-        //WE WANT LENIENT WHEN FIRST ENTERING, HARSH WHEN CIRCLING.
-        float rotationSpeed = 1.0f;
+        
         Vector3 toPlanetCenter = nearbyPlanet.transform.position - transform.position; //compute vector to the planet center
-        float dotProduct = Vector3.Dot(horizonDirection, toPlanetCenter); //find the dot product between horizonDirection and the vector to the planet
+        float dotProduct; //find the dot product between horizonDirection and the vector to the planet
 
+        // applies the rotation if and only if the player is looking towards the horizon or below
+        dotProduct = Vector3.Dot(transform.forward, toPlanetCenter);
+        if (dotProduct < -0.2f) return;
+
+        //adjust player position such that it always stays at pullUpdistance when circling
+        //HERE
+        ///
+
+        float rotationSpeed = 1.0f;
+        dotProduct = Vector3.Dot(horizonDirection, toPlanetCenter);
         if (Mathf.Abs(dotProduct) >.00001f) //if the calculation is off, which happens only when its moving
         {
             Vector3 newHorizonDirection = Vector3.Cross(transform.right, toPlanetCenter).normalized; //create new vector pointing towards the horizon
@@ -184,10 +189,9 @@ public class ShipControls : MonoBehaviour
         }
         
         Quaternion combinedRotation = Quaternion.Slerp(transform.rotation, lastOrientation, Time.deltaTime * rotationSpeed); //makes it smooth
+        transform.rotation = combinedRotation;
 
-        // applies the rotation if and only if the player is looking towards the horizon or below
-        dotProduct = Vector3.Dot(transform.forward, toPlanetCenter);
-        if (dotProduct > -0.2f) transform.rotation = combinedRotation;
+
     }
 
     private void traverseQuadTree(SolarSystemQuadTree node) {
