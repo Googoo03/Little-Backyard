@@ -160,13 +160,13 @@ MonoBehaviour:
   yVertCount: 12
   radius: 1
   seed: 42
-  scale: 5
-  octaves: 1
+  scale: 0.55
+  octaves: 4
   persistance: 0.5
   lacunarity: 2
   oceanFloor: 0
   oceanMultiplier: 0.01
-  landMultiplier: 0.26
+  landMultiplier: 0.07
   regionReference: {fileID: 2800000, guid: abeea500f365f944ea3ff3832837474d, type: 3}
   regions:
   - {r: 1, g: 0.82038534, b: 0.43382353, a: 0}

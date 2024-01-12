@@ -5,6 +5,7 @@ using System.Collections.Generic;
 public struct PatchConfig
 {
     public string name;
+    public int maxLOD;
     public int LODlevel;
     public Vector2 LODOffset;
     public Vector3 uAxis;
@@ -25,6 +26,8 @@ public struct PatchConfig
         vertices = xyVert;
         planetObject = planet;
         distanceThreshold = distanceT;
+        maxLOD = 5;
+        
     }
 }
 
@@ -183,7 +186,8 @@ public class Sphere : MonoBehaviour
     {
         GameObject patch = new GameObject(aConf.name + "_" + u + v);
 
-        patch.AddComponent<GeneratePlane>();
+        //patch.AddComponent<GeneratePlane>();
+        addMeshGenerationScript(patch);
 
         patch.transform.parent = transform;
         patch.transform.localEulerAngles = Vector3.zero; //zero out local position and rotation
@@ -195,6 +199,34 @@ public class Sphere : MonoBehaviour
         //add patch to the LOD system
         PatchLOD newLOD = new PatchLOD(patch.gameObject, null);
         LOD.Add(newLOD);
+    }
+
+    public void addMeshGenerationScript(GameObject patchChild)
+    {
+        switch (planetType)
+        {
+            case 0:
+                patchChild.AddComponent<HotPlanetNoise>();
+                break;
+            case 1:
+                patchChild.AddComponent<IcePlanetNoise>();
+                break;
+            case 2:
+                patchChild.AddComponent<LifePlanetNoise>();
+                break;
+            case 3:
+                patchChild.AddComponent<BarrenPlanetNoise>();
+                break;
+            case 4:
+                patchChild.AddComponent<DesertPlanetNoise>();
+                break;
+            case 5:
+                patchChild.AddComponent<GasPlanetNoise>();
+                break;
+            default:
+                patchChild.AddComponent<BarrenPlanetNoise>();
+                break;
+        }
     }
 
     public int getPlanetType() {

@@ -65,7 +65,8 @@ public class PatchLOD {
         {
             GameObject patchChild = new GameObject(names[i] + "_Level_" + patchConfig.LODlevel + 1);
 
-            patchChild.AddComponent<GeneratePlane>();
+            //patchChild.AddComponent<GeneratePlane>();
+            addMeshGenerationScript(patchChild);
 
             patchChild.transform.parent = patch.transform;
             patchChild.transform.localEulerAngles = Vector3.zero; //zero out local position and rotation
@@ -79,14 +80,14 @@ public class PatchLOD {
 
             //make new patch config
             float newDistanceThreshold;
-            if (patchConfig.LODlevel >= 5)
+            /*if (patchConfig.LODlevel >= 5)
             {
-                newDistanceThreshold = 0;
+                //newDistanceThreshold = 0;
             }
             else {
                 newDistanceThreshold = patchConfig.distanceThreshold / 2f;
-            }
-            
+            }*/
+            newDistanceThreshold = patchConfig.distanceThreshold / 2f;
 
             PatchConfig patchConfigChild = new PatchConfig(names[i], patchConfig.uAxis, patchConfig.vAxis, patchConfig.LODlevel + 1, LODOffset, patchConfig.vertices,patchConfig.planetObject,newDistanceThreshold);
 
@@ -94,6 +95,33 @@ public class PatchLOD {
             //have patchConfig child inherit everything from parent
             patchChild.GetComponent<GeneratePlane>().Generate(patchConfigChild,powerof2Frac);
             AddChild(patchChild);
+        }
+    }
+
+    public void addMeshGenerationScript(GameObject patchChild) {
+        int planetType = patchConfig.planetObject.GetComponent<Sphere>().planetType; //is this the right object?
+        switch (planetType) {
+            case 0:
+                patchChild.AddComponent<HotPlanetNoise>();
+                break;
+            case 1:
+                patchChild.AddComponent<IcePlanetNoise>();
+                break;
+            case 2:
+                patchChild.AddComponent<LifePlanetNoise>();
+                break;
+            case 3:
+                patchChild.AddComponent<BarrenPlanetNoise>();
+                break;
+            case 4:
+                patchChild.AddComponent<DesertPlanetNoise>();
+                break;
+            case 5:
+                patchChild.AddComponent<GasPlanetNoise>();
+                break;
+            default:
+                patchChild.AddComponent<BarrenPlanetNoise>();
+                break;
         }
     }
 
@@ -165,7 +193,7 @@ public class PatchLOD {
         {
             //need to take into account that all patches have the same location, but are offset differently
             float distance = Vector3.Distance(node.position, player.transform.position);
-            if (distance < node.patchConfig.distanceThreshold)
+            if (distance < node.patchConfig.distanceThreshold &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD)
             {
                 node.nextLOD();
             }else if (distance > 4* node.patchConfig.distanceThreshold) //if distance between player and patch is too large

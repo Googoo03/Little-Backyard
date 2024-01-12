@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 using Simplex;
 using Worley;
 
-public class GeneratePlane : MonoBehaviour
+public abstract class GeneratePlane : MonoBehaviour
 {
     public int xVertCount, yVertCount;
     private int radius;
@@ -14,10 +14,19 @@ public class GeneratePlane : MonoBehaviour
     float[] heights;
     public PatchConfig patch;
 
-    public Noise noise;
-    public WorleyNoise worleyNoise;
+    protected int octaves;
+    protected float lacunarity;
+    protected float persistance;
+    protected int seed;
+    protected float scale;
 
-    //public abstract float NoiseValue(float x, float y, float z, float scale);
+    protected float oceanFloor;
+    protected float oceanMulitplier;
+    protected float landMultiplier;
+    protected float frequency;
+    protected float amplitude;
+
+    public abstract float NoiseValue(Vector3 pos, float scale);
     public void Generate(PatchConfig planePatch,float LODstep) {
 
 
@@ -48,24 +57,26 @@ public class GeneratePlane : MonoBehaviour
 
 
         //GET NECESSARY VALUES FOR NOISE FROM PARENT PLANET
-        int octaves = planePatch.planetObject.GetComponent<Sphere>().getOctaves();
-        float lacunarity = planePatch.planetObject.GetComponent<Sphere>().getLacunarity();
-        float persistance = planePatch.planetObject.GetComponent<Sphere>().getPersistance();
-        int seed = planePatch.planetObject.GetComponent<Sphere>().getSeed();
-        float scale = planePatch.planetObject.GetComponent<Sphere>().getScale();
+        //octaves = planePatch.planetObject.GetComponent<Sphere>().getOctaves();
+        //lacunarity = planePatch.planetObject.GetComponent<Sphere>().getLacunarity();
+        //persistance = planePatch.planetObject.GetComponent<Sphere>().getPersistance();
+        seed = planePatch.planetObject.GetComponent<Sphere>().getSeed();
+        //scale = planePatch.planetObject.GetComponent<Sphere>().getScale();
 
-        float oceanFloor = planePatch.planetObject.GetComponent<Sphere>().getOceanFloor();
-        float oceanMulitplier = planePatch.planetObject.GetComponent<Sphere>().getOceanMultiplier();
-        float landMultiplier = planePatch.planetObject.GetComponent<Sphere>().getLandMultiplier();
+        //oceanFloor = planePatch.planetObject.GetComponent<Sphere>().getOceanFloor();
+        //oceanMulitplier = planePatch.planetObject.GetComponent<Sphere>().getOceanMultiplier();
+        //landMultiplier = planePatch.planetObject.GetComponent<Sphere>().getLandMultiplier();
 
         /*
         noise = new Noise(); //creates new simplex noise object for later use
         noise.Seed = seed;*/
 
-        Vector3 worleyPosition = planePatch.planetObject.transform.position;
+        //Vector3 worleyPosition = planePatch.planetObject.transform.position;
         //definitely not optimized, optimize later
-        worleyNoise = new WorleyNoise(false);
-        worleyNoise.Seed = seed;
+
+        //worleyNoise = new WorleyNoise(false);
+        //worleyNoise.Seed = seed;
+
         //generates Simplex Noise and stores in 3d array
 
         for (int y = 0; y < yVertCount; y++)
@@ -86,9 +97,6 @@ public class GeneratePlane : MonoBehaviour
                 float range = 1f;
 
                 OctaveNoise(vec, ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
-
-                int planetType = planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
-
                 
                 float addHeight = (noiseHeight > oceanFloor) ? (noiseHeight*landMultiplier) : (noiseHeight * oceanMulitplier);
                 
@@ -142,56 +150,20 @@ public class GeneratePlane : MonoBehaviour
         return (x > 0) ? lambda * Mathf.Exp(-(x * lambda)) : 0;
     }
 
-    void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight)
-    {
-        //the getcomponent lines look ugly, is there a way to clean it up?
-        int regionLength = patch.planetObject.GetComponent<Sphere>().getRegionLength();
-
-        //ADD THIS BACK IN, THIS IS JUST FOR TESTING PURPOSES
-        /*for (int r = 0; r < regionLength - 1; r++)
-        {
-            float currentIndexHeight = patch.planetObject.GetComponent<Sphere>().getHeightArrayValue(r);
-            float nextIndexHeight = patch.planetObject.GetComponent<Sphere>().getHeightArrayValue(r+1);
-
-
-            if (currentHeight >= currentIndexHeight && currentHeight < nextIndexHeight)
-            {
-                Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r);
-                tex.SetPixel(x, y, color);
-                break;
-            }
-            if (r == regionLength - 2)
-            {
-                Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r-1);
-                tex.SetPixel(x, y, color);
-            }
-        }*/
-        tex.SetPixel(x, y, new Color(currentHeight,currentHeight,currentHeight));
-    }
+    protected abstract void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight);
 
     float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)
     {
 
-        float frequency = 1;
-        float amplitude = 1;
+        frequency = 1;
+        amplitude = 1;
 
         for (int g = 0; g < octaves; g++)
         {
-            float nx = transform.TransformPoint(vec).x;
-            float ny = transform.TransformPoint(vec).y;
-            float nz = transform.TransformPoint(vec).z;
-
-
-
-            float xx = ((nx - xVertCount) / scale) * frequency;
-            float yy = ((ny - yVertCount) / scale) * frequency;
-            float zz = ((nz - xVertCount) / scale) * frequency;
-
-            //THIS LINE HERE WILL CHANGE TO ACCOMODATE ADDITIONAL ALGORITHMS
-            float perlinValue = worleyNoise.Calculate(nx, ny, nz,scale);
-            //float perlinValue = noise.CalcPixel3D(xx, yy, zz, 1f / scale); // should return a value between 0 and 1
-
             
+            //THIS LINE HERE WILL CHANGE TO ACCOMODATE ADDITIONAL ALGORITHMS
+            float perlinValue = NoiseValue(vec, scale);
+
             noiseHeight += perlinValue * amplitude;
 
             amplitude *= persistance;

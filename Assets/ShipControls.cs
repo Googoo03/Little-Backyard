@@ -24,6 +24,8 @@ public class ShipControls : MonoBehaviour
     private Quaternion pitch;
     private Quaternion roll;
 
+    public float forward;
+
     private bool tiltShipPlanet = false;
     public float distanceToNearestPlanet;
     private float pullUpDistance = 1.1f; //should be grabbed from the planet when it's said and done
@@ -91,6 +93,8 @@ public class ShipControls : MonoBehaviour
         speed = (Input.GetKey(KeyCode.LeftShift)) ? 1f : 0.25f;
         if (isInAtmosphere()) SpeedCalibration();
 
+        forward = Input.GetAxis("Vertical");
+
         yawInput = Input.GetAxis("Mouse X") * mouseSensitivityX;
         pitchInput = Input.GetAxis("Mouse Y") * mouseSensitivityY;
 
@@ -120,7 +124,7 @@ public class ShipControls : MonoBehaviour
         transform.rotation = targetRotation;
         
         /////Moving forward
-        float forward = Input.GetAxis("Vertical");
+        
         ///////////////////////
 
         transform.position += transform.forward * (forward * speed) * Time.deltaTime;
@@ -167,8 +171,11 @@ public class ShipControls : MonoBehaviour
 
         // applies the rotation if and only if the player is looking towards the horizon or below
         dotProduct = Vector3.Dot(transform.forward, toPlanetCenter);
-        if (dotProduct < -0.2f) return;
 
+        //conditions when a reorientation is not necessary. Case 1 is when player is pointed away from planet
+        //Case 2 is when player is looking at planet but is in reverse
+        if (dotProduct < -0.2f) return;
+        if (dotProduct > -0.2f && forward < 0) return;
         //adjust player position such that it always stays at pullUpdistance when circling
         //HERE
         ///
