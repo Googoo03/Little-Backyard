@@ -19,6 +19,7 @@ public class LifePlanetNoise : GeneratePlane
         scale = 0.55f;
         lacunarity = 2;
         persistance = 0.5f;
+        changeHeight = true;
     }
 
     private float EaseInCirc(float x) {

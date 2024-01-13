@@ -20,6 +20,7 @@ public class IcePlanetNoise : GeneratePlane
         worleyScale = 3;
         lacunarity = 2;
         persistance = 0.5f;
+        changeHeight = true;
     }
     protected override void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight)
     {

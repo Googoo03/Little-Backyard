@@ -23,6 +23,7 @@ public class DesertPlanetNoise : GeneratePlane
         worleyScale = 2;
         lacunarity = 2;
         persistance = 0.1f;
+        changeHeight = true;
     }
     protected override void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight)
     {

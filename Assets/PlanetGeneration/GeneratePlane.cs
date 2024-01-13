@@ -25,13 +25,13 @@ public abstract class GeneratePlane : MonoBehaviour
     protected float landMultiplier;
     protected float frequency;
     protected float amplitude;
+    protected float range;
+
+    protected bool changeHeight;
 
     public abstract float NoiseValue(Vector3 pos, float scale);
     public void Generate(PatchConfig planePatch,float LODstep) {
 
-
-        
-        //ideally, shouldn't this be in the parent object, then every child references it?
 
         MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
         MeshRenderer rend = this.gameObject.AddComponent<MeshRenderer>();
@@ -57,27 +57,8 @@ public abstract class GeneratePlane : MonoBehaviour
 
 
         //GET NECESSARY VALUES FOR NOISE FROM PARENT PLANET
-        //octaves = planePatch.planetObject.GetComponent<Sphere>().getOctaves();
-        //lacunarity = planePatch.planetObject.GetComponent<Sphere>().getLacunarity();
-        //persistance = planePatch.planetObject.GetComponent<Sphere>().getPersistance();
         seed = planePatch.planetObject.GetComponent<Sphere>().getSeed();
-        //scale = planePatch.planetObject.GetComponent<Sphere>().getScale();
 
-        //oceanFloor = planePatch.planetObject.GetComponent<Sphere>().getOceanFloor();
-        //oceanMulitplier = planePatch.planetObject.GetComponent<Sphere>().getOceanMultiplier();
-        //landMultiplier = planePatch.planetObject.GetComponent<Sphere>().getLandMultiplier();
-
-        /*
-        noise = new Noise(); //creates new simplex noise object for later use
-        noise.Seed = seed;*/
-
-        //Vector3 worleyPosition = planePatch.planetObject.transform.position;
-        //definitely not optimized, optimize later
-
-        //worleyNoise = new WorleyNoise(false);
-        //worleyNoise.Seed = seed;
-
-        //generates Simplex Noise and stores in 3d array
 
         for (int y = 0; y < yVertCount; y++)
         {
@@ -94,14 +75,19 @@ public abstract class GeneratePlane : MonoBehaviour
                 float noiseHeight = 0f; // should return a value between 0 and 1
                 vec = vec.normalized; //makes it a sphere
 
-                float range = 1f;
+                range = 1f;
 
+
+
+
+
+                //GET NOISE VALUE
                 OctaveNoise(vec, ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
                 
                 float addHeight = (noiseHeight > oceanFloor) ? (noiseHeight*landMultiplier) : (noiseHeight * oceanMulitplier);
                 
                 //change vertex according to height map curve
-                vec *= (1.0f + addHeight);
+                if(changeHeight) vec *= (1.0f + addHeight);
                 float currentHeight = noiseHeight / range;
 
                 normals[i] = vec;
@@ -152,6 +138,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
     protected abstract void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight);
 
+
     float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)
     {
 
@@ -162,6 +149,9 @@ public abstract class GeneratePlane : MonoBehaviour
         {
             
             //THIS LINE HERE WILL CHANGE TO ACCOMODATE ADDITIONAL ALGORITHMS
+
+
+            //WHAT IF WE WANT OCTAVES FOR ONE ALGORITHM AND NOT FOR ANOTHER??
             float perlinValue = NoiseValue(vec, scale);
 
             noiseHeight += perlinValue * amplitude;
@@ -171,21 +161,6 @@ public abstract class GeneratePlane : MonoBehaviour
             range += amplitude / 4;
         }
         return noiseHeight;
-    }
-
-    public static float Perlin3d(float x, float y, float z)
-    {
-        float AB = Mathf.PerlinNoise(x, y);
-        float BC = Mathf.PerlinNoise(y, z);
-        float AC = Mathf.PerlinNoise(x, z);
-
-        float BA = Mathf.PerlinNoise(y, x);
-        float CB = Mathf.PerlinNoise(z, y);
-        float CA = Mathf.PerlinNoise(z, x);
-
-        float ABC = AB + BC + AC + BA + CB + CA;
-
-        return ABC / 6f;
     }
 
     public Vector3 getPosition(PatchConfig planePatch, float LODstep) { //returns the middle vertex position. Is used to

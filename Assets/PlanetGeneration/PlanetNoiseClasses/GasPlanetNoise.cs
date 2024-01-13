@@ -19,6 +19,7 @@ public class GasPlanetNoise : GeneratePlane
         //worleyScale = 3;
         lacunarity = 3;
         persistance = 0.9f;
+        changeHeight = false;
     }
     protected override void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight)
     {
