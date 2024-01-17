@@ -150,13 +150,6 @@ public class Sphere : MonoBehaviour
         transform.name = "Planet" + planetType.ToString();
 
 
-        //WE NEED TO READ "planetColors" FILE TO DETERMINE REGION ARRAY.
-        //ADDITIONALLY, WE NEED TO POSSIBLY COME UP WITH A WAY TO HAVE
-        //UNIQUE THRESHOLDS FOR EACH PLANET
-        //
-        //ONCE THAT'S DONE CHANGE THE ASSIGNMENT OF COLOR TO BOTH STEEPNESS
-        //AND ELEVATION, RATHER THAN JUST ELEVATION
-
         regions = new Color[4]; // this 4 is just a placeholder. ideally in the future there will be more colors
         for (int i = 0; i < regions.Length; ++i) {
             regions[i] = regionReference.GetPixel(i, planetType);
