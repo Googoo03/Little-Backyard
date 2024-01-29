@@ -53,11 +53,11 @@ public class Sphere : MonoBehaviour
     public int xVertCount;
     public int yVertCount;
     public float radius = 5f;
-    public int seed;
-    public float scale;
-    public int octaves;
-    public float persistance;
-    public float lacunarity;
+    [SerializeField] private int seed;
+    [SerializeField] private float scale;
+    [SerializeField] private int octaves;
+    [SerializeField] private float persistance;
+    [SerializeField] private float lacunarity;
 
     public float oceanFloor;
     public float oceanMultiplier;
@@ -154,7 +154,8 @@ public class Sphere : MonoBehaviour
         for (int i = 0; i < regions.Length; ++i) {
             regions[i] = regionReference.GetPixel(i, planetType);
         }
-
+        Color atmosphereColor = regionReference.GetPixel(4, planetType);
+        transform.GetChild(0).GetComponent<Renderer>().material.SetColor("_Atmosphere_Color", atmosphereColor);
         
         Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
         patches = new PatchConfig[]
@@ -169,6 +170,10 @@ public class Sphere : MonoBehaviour
         
         GeneratePatches();
     }
+
+
+
+
     //we NEED AN EVALUATE FUNCTION FOR THE HEIGHTCURVE
     public float evaluateHeightCurve(int index, float value) {
         return heightCurve[index].Evaluate(value);

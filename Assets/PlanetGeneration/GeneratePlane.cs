@@ -55,6 +55,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
         Texture2D tex = new Texture2D(xVertCount, yVertCount);
 
+        //float maxHeightReached = 1;
 
         //GET NECESSARY VALUES FOR NOISE FROM PARENT PLANET
         seed = planePatch.planetObject.GetComponent<Sphere>().getSeed();
@@ -85,8 +86,9 @@ public abstract class GeneratePlane : MonoBehaviour
                 OctaveNoise(vec, ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
                 
                 float addHeight = (noiseHeight > oceanFloor) ? (noiseHeight*landMultiplier) : (noiseHeight * oceanMulitplier);
+                //maxHeightReached = addHeight > maxHeightReached ? addHeight : maxHeightReached; //update maxHeightReached if needed.
                 
-                //change vertex according to height map curve
+                //change vertex according to addHeight
                 if(changeHeight) vec *= (1.0f + addHeight);
                 float currentHeight = noiseHeight / range;
 
