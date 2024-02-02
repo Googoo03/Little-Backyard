@@ -32,11 +32,14 @@ public abstract class GeneratePlane : MonoBehaviour
     public abstract float NoiseValue(Vector3 pos, float scale);
     public void Generate(PatchConfig planePatch,float LODstep) {
 
-
+        
         MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
         MeshRenderer rend = this.gameObject.AddComponent<MeshRenderer>();
 
-        rend.sharedMaterial = patchMaterial;
+        Material planetMaterial = Resources.Load("Planet_Shader", typeof(Material)) as Material;
+        //this.gameObject.GetComponent<Renderer>().material = planetMaterial;
+
+        rend.sharedMaterial = planetMaterial;
         Mesh m = mf.sharedMesh = new Mesh();
         patch = planePatch;
 
@@ -95,9 +98,10 @@ public abstract class GeneratePlane : MonoBehaviour
                 normals[i] = vec;
                 vertices[i] = vec * radius;
 
+                rend.sharedMaterial.SetColor("_Land", new Color(currentHeight, currentHeight, currentHeight, 1));
                 //SET TEXTURE PIXELS ACCORDINGLY
 
-                createPatchTexture(ref tex, x, y, currentHeight);
+                //createPatchTexture(ref planetMaterial, x, y, currentHeight);
 
             }
         }
@@ -138,7 +142,7 @@ public abstract class GeneratePlane : MonoBehaviour
         return (x > 0) ? lambda * Mathf.Exp(-(x * lambda)) : 0;
     }
 
-    protected abstract void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight);
+    protected abstract void createPatchTexture(ref Material mat, int x, int y, float currentHeight);
 
 
     float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)

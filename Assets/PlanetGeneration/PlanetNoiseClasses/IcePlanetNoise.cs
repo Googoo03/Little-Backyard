@@ -22,7 +22,7 @@ public class IcePlanetNoise : GeneratePlane
         persistance = 0.5f;
         changeHeight = true;
     }
-    protected override void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight)
+    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
         int regionLength = patch.planetObject.GetComponent<Sphere>().getRegionLength();
         for (int r = 0; r < regionLength - 1; r++)
@@ -34,13 +34,13 @@ public class IcePlanetNoise : GeneratePlane
             if (currentHeight >= currentIndexHeight && currentHeight < nextIndexHeight)
             {
                 Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r);
-                tex.SetPixel(x, y, color);
+                //tex.SetPixel(x, y, color);
                 break;
             }
             if (r == regionLength - 2)
             {
                 Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r - 1);
-                tex.SetPixel(x, y, color);
+                //tex.SetPixel(x, y, color);
             }
         }
     }

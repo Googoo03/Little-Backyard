@@ -19,9 +19,9 @@ public class BarrenPlanetNoise : GeneratePlane
         persistance = 0.5f;
         changeHeight = true;
     }
-    protected override void createPatchTexture(ref Texture2D tex, int x, int y, float currentHeight)
+    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
-        tex.SetPixel(x, y, new Color(currentHeight, currentHeight, currentHeight));
+        mat.SetColor("_Land", new Color(currentHeight,currentHeight,currentHeight,1));
     }
 
     private float EaseInOutCubic(float x) {

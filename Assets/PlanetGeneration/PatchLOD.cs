@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class PatchLOD {
@@ -8,15 +7,19 @@ public class PatchLOD {
     // HAVE ALL PATCHES BE PART OF A TREE THAT THE PLANET KEEPS TRACK OF
     private List<PatchLOD> childNode;
 
+    private Material planetMaterial;
+
     private GameObject patch;
     private PatchConfig patchConfig; //configuration data for the patch
     private PatchLOD parent;
     private Vector3 position;
+    public int test;
     
     public PatchLOD(GameObject patch, PatchLOD parent) {
         this.patch = patch;
         patchConfig = patch.GetComponent<GeneratePlane>().patch;
         childNode = new List<PatchLOD>() { };
+        //planetMaterial = Resources.Load("Planet_Shader", typeof(Material)) as Material;
         this.parent = parent;
 
         //the complicated math part should be refactored, it should be consolidated
@@ -93,9 +96,16 @@ public class PatchLOD {
 
 
             //have patchConfig child inherit everything from parent
+            //addFlatShader(patchChild);
             patchChild.GetComponent<GeneratePlane>().Generate(patchConfigChild,powerof2Frac);
+            
             AddChild(patchChild);
         }
+    }
+
+    private void addFlatShader(GameObject patchChild) {
+
+        patchChild.GetComponent<Renderer>().material = planetMaterial;
     }
 
     public void addMeshGenerationScript(GameObject patchChild) {
