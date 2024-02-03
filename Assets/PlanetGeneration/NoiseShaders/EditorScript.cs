@@ -12,7 +12,7 @@ public class EditorScript : MonoBehaviour
     //Wave wave;
     ComputeShader perlinNoise;
     int perlinNoiseHandle;
-    int resolution = 256;
+    int resolution = 16;
     public RenderTexture texture;
     private void Start()
     {
@@ -25,9 +25,14 @@ public class EditorScript : MonoBehaviour
 
         ComputeShader perlinNoise = (ComputeShader)Resources.Load("Simplex Noise");
         perlinNoiseHandle = perlinNoise.FindKernel("CSMain");
+        perlinNoise.SetInt("seed", 125643);
+        //perlinNoise.SetFloat("_DisplacementStrength", 2);
         perlinNoise.SetTexture(perlinNoiseHandle, "Result", texture);
 
+
         perlinNoise.Dispatch(perlinNoiseHandle, resolution / 8, resolution / 8, 1);
+        transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
+
     }
 
     private void OnSceneGUI()
