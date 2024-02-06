@@ -145,7 +145,7 @@ public class Sphere : MonoBehaviour
 
         //MAKE A NEW WAY OF GENERATING TYPE??? UGLY TO READ??
         //planetType = Mathf.FloorToInt((Perlin3d(px + seed, py + seed, pz + seed)*1000) % 6);
-        planetType = Random.Range(0, 6);
+        planetType = 2;
 
         transform.name = "Planet" + planetType.ToString();
 

@@ -4,12 +4,17 @@
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture2D<float4> Result;
+RWStructuredBuffer<float3> vertexBuffer;
 
 int startSeed = 0;
 int seed;
+int octaves;
+float persistance;
+float lacunarity;
 
-static const uint PermOriginal[] = {
-            151,160,137,91,90,15,
+const static int PermOriginal[] = 
+{
+    151,160,137,91,90,15,
             131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
             190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
             88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -37,7 +42,7 @@ static const uint PermOriginal[] = {
             138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
         };
 
-uint _perm[] = PermOriginal;
+int _perm[] = PermOriginal;
 
 
 uint PRNG()
@@ -102,9 +107,9 @@ float Generate(float x, float y, float z)
     float xs = x + s;
     float ys = y + s;
     float zs = z + s;
-    float i = FastFloor(xs);
-    float j = FastFloor(ys);
-    float k = FastFloor(zs);
+    int i = FastFloor(xs);
+    int j = FastFloor(ys);
+    int k = FastFloor(zs);
 
     float t = (i + j + k) * G3;
     float X0 = i - t; // Unskew the cell origin back to (x,y,z) space
@@ -197,9 +202,9 @@ float Generate(float x, float y, float z)
     float z3 = z0 - 1.0f + 3.0f * G3;
 
             // Wrap the integer indices at 256, to avoid indexing perm[] out of bounds
-    float ii = Mod(i, 256);
-    float jj = Mod(j, 256);
-    float kk = Mod(k, 256);
+    int ii = Mod(i, 256);
+    int jj = Mod(j, 256);
+    int kk = Mod(k, 256);
 
             // Calculate the contribution from the four corners
     float t0 = 0.6f - x0 * x0 - y0 * y0 - z0 * z0;
@@ -208,6 +213,7 @@ float Generate(float x, float y, float z)
     else
     {
         t0 *= t0;
+
         n0 = t0 * t0 * Grad(_perm[ii + _perm[jj + _perm[kk]]], x0, y0, z0);
     }
 
@@ -243,40 +249,37 @@ float Generate(float x, float y, float z)
     return 32.0f * (n0 + n1 + n2 + n3); // TODO: The scale factor is preliminary!
 }
 
-float CalcPixel3D(float x, float y, float z, float scale)
+float CalcPixel3D(float3 pos, float scale)
 {
-    float value = Generate(x * scale, y * scale, z * scale) * 128 + 128;
+    float value = Generate(pos.x * scale, pos.y * scale, pos.z * scale) * 128 + 128;
     value /= 255;
     value -= 0.5f;
     value *= 2;
     return value;
 }
 
-[numthreads(8, 8, 1)]
+[numthreads(1, 1, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
+    int index = (id.x + (id.y * 16)+id.z);
+    float3 vertexPos = vertexBuffer[index];
 
-    float x = (float) id.x;
-    float y = (float) id.y;
-    float z = (float) id.z;
-    
     if (seed != 0)
     {
         setSeedPRNG(seed);
         resetLookUpTable();
-    }
         
-    
-    int octaves = 2;
+    }
+
+
     float result = 0;
     float amplitude = 1;
-    float persistance = 0.5;
-    float frequency = 1/16.0;
-    float lacunarity = 2;
+    float frequency = 1;
+    
     for (int i = 0; i < octaves; ++i)
     {
-        result += (CalcPixel3D(x+40, y, z, frequency)) * amplitude;
+        result += (CalcPixel3D(vertexPos, frequency)) * amplitude;
         amplitude *= persistance;
         frequency *= lacunarity;
     }

@@ -156,8 +156,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uPatchCount: 1
   vPatchCount: 1
-  xVertCount: 12
-  yVertCount: 12
+  xVertCount: 16
+  yVertCount: 16
   radius: 1
   seed: 42
   scale: 0.55

@@ -27,8 +27,10 @@ public class HotPlanetNoise : GeneratePlane
         persistance = 0.5f;
         changeHeight = true;
     }
+    protected override void DispatchNoise(ref Vector3[] vertices)
+    { }
 
-    
+
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
         //EACH PLANET TYPE NEEDS TO HAVE INDEPENDENT TUNED PARAMETERS

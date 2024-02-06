@@ -29,6 +29,8 @@ public class BarrenPlanetNoise : GeneratePlane
     }
     //we want each planet class to have its necessary values and compute its noise values independently.
     //VARIABLES ARE INHERITED. THUS, HAVE THE NOISE PARAMETERS BE CLASS VARIABLES.
+    protected override void DispatchNoise(ref Vector3[] vertices)
+    { }
 
     public override float NoiseValue(Vector3 pos, float scale) {
 

@@ -52,6 +52,10 @@ public class DesertPlanetNoise : GeneratePlane
             }
         }
     }
+
+    protected override void DispatchNoise(ref Vector3[] vertices)
+    { }
+
     public override float NoiseValue(Vector3 pos, float scale)
     {
 

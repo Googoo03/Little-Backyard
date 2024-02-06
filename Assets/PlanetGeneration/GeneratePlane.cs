@@ -7,7 +7,7 @@ using Worley;
 
 public abstract class GeneratePlane : MonoBehaviour
 {
-    public int xVertCount, yVertCount;
+    public int xVertCount = 16, yVertCount = 16;
     private int radius;
     public Material patchMaterial;
     Color[] regions; //will i run into trouble if this is pointing to a reference?
@@ -29,14 +29,23 @@ public abstract class GeneratePlane : MonoBehaviour
 
     protected bool changeHeight;
 
+    [SerializeField]protected RenderTexture texture;
+
     public abstract float NoiseValue(Vector3 pos, float scale);
     public void Generate(PatchConfig planePatch,float LODstep) {
 
-        
+
+        texture = new RenderTexture(16, 16, 0, RenderTextureFormat.RFloat)
+        {
+            enableRandomWrite = true
+        };
+        texture.Create();
+
         MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
         MeshRenderer rend = this.gameObject.AddComponent<MeshRenderer>();
 
         Material planetMaterial = Resources.Load("Planet_Shader", typeof(Material)) as Material;
+        planetMaterial.SetFloat("_DisplacementStrength",0.1f);
         //this.gameObject.GetComponent<Renderer>().material = planetMaterial;
 
         rend.sharedMaterial = planetMaterial;
@@ -45,6 +54,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
         xVertCount = planePatch.vertices.x;
         yVertCount = planePatch.vertices.y;
+
         radius = 1;
 
         Vector2 offset = new Vector2(-0.5f, -0.5f) + planePatch.LODOffset; //to center all side meshes. Multiply by LODoffset to give correct quadrant
@@ -76,7 +86,7 @@ public abstract class GeneratePlane : MonoBehaviour
                 Vector3 vec = ((planePatch.uAxis * p.x) + (planePatch.vAxis * p.y) + (planePatch.height * 0.5f)); //determine plane vertex based on direction. p determines
                                                                                                                   //vertex location in grid
 
-                float noiseHeight = 0f; // should return a value between 0 and 1
+                //float noiseHeight = 0f; // should return a value between 0 and 1
                 vec = vec.normalized; //makes it a sphere
 
                 range = 1f;
@@ -86,7 +96,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
 
                 //GET NOISE VALUE
-                OctaveNoise(vec, ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
+                /*OctaveNoise(vec, ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
                 
                 float addHeight = (noiseHeight > oceanFloor) ? (noiseHeight*landMultiplier) : (noiseHeight * oceanMulitplier);
                 //maxHeightReached = addHeight > maxHeightReached ? addHeight : maxHeightReached; //update maxHeightReached if needed.
@@ -94,11 +104,11 @@ public abstract class GeneratePlane : MonoBehaviour
                 //change vertex according to addHeight
                 if(changeHeight) vec *= (1.0f + addHeight);
                 float currentHeight = noiseHeight / range;
-
+                */
                 normals[i] = vec;
                 vertices[i] = vec * radius;
 
-                rend.sharedMaterial.SetColor("_Land", new Color(currentHeight, currentHeight, currentHeight, 1));
+                //rend.sharedMaterial.SetColor("_Land", new Color(currentHeight, currentHeight, currentHeight, 1));
                 //SET TEXTURE PIXELS ACCORDINGLY
 
                 //createPatchTexture(ref planetMaterial, x, y, currentHeight);
@@ -106,13 +116,13 @@ public abstract class GeneratePlane : MonoBehaviour
             }
         }
 
-        tex.Apply();
+        /*tex.Apply();
         tex.alphaIsTransparency = true;
         tex.filterMode = FilterMode.Point;
         
         transform.GetComponent<Renderer>().material.mainTexture = tex;
-        transform.GetComponent<Renderer>().material.mainTextureScale = new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel);
-
+        
+        */
         //SET INDICES FOR THE MESH
         int[] indices = new int[(xVertCount - 1) * (yVertCount - 1) * 4];
         for (int y = 0; y < yVertCount - 1; y++)
@@ -136,11 +146,19 @@ public abstract class GeneratePlane : MonoBehaviour
 
         this.gameObject.AddComponent<MeshCollider>();
 
+        DispatchNoise(ref vertices);
+        transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
+        transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
+
+        //CAN EITHER SET THE OFFSET OR FIX THE UVS SUCH THAT IT SAMPLES CORRECTLY
+        //transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", new Vector2(1 << (patch.LODlevel-1), (1 << patch.LODlevel) ));
     }
 
     float ExponentialDistribution(float lambda, float x) {
         return (x > 0) ? lambda * Mathf.Exp(-(x * lambda)) : 0;
     }
+
+    protected abstract void DispatchNoise(ref Vector3[] vertices);
 
     protected abstract void createPatchTexture(ref Material mat, int x, int y, float currentHeight);
 
