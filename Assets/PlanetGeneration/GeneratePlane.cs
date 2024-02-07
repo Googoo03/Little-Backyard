@@ -83,6 +83,7 @@ public abstract class GeneratePlane : MonoBehaviour
                 Vector2 p = offset + new Vector2(x * step.x, y * step.y); //determines vertex location in grid
 
                 uvs[i] = p + Vector2.one * 0.5f;
+
                 Vector3 vec = ((planePatch.uAxis * p.x) + (planePatch.vAxis * p.y) + (planePatch.height * 0.5f)); //determine plane vertex based on direction. p determines
                                                                                                                   //vertex location in grid
 
@@ -151,7 +152,11 @@ public abstract class GeneratePlane : MonoBehaviour
         transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
 
         //CAN EITHER SET THE OFFSET OR FIX THE UVS SUCH THAT IT SAMPLES CORRECTLY
-        //transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", new Vector2(1 << (patch.LODlevel-1), (1 << patch.LODlevel) ));
+
+
+        /*patch.LODOffset * patch.LODlevel * -2*/
+        
+        
     }
 
     float ExponentialDistribution(float lambda, float x) {

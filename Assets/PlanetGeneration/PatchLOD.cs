@@ -98,7 +98,8 @@ public class PatchLOD {
             //have patchConfig child inherit everything from parent
             //addFlatShader(patchChild);
             patchChild.GetComponent<GeneratePlane>().Generate(patchConfigChild,powerof2Frac);
-            
+            patchChild.transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -LODOffset * (1 << patchConfigChild.LODlevel) );
+
             AddChild(patchChild);
         }
     }

@@ -21,8 +21,8 @@ public class LifePlanetNoise : GeneratePlane
         oceanMulitplier = 0.01f;
         landMultiplier = 0.07f;
 
-        octaves = 1;
-        scale = 0.55f;
+        octaves = 3;
+        scale = 0.25f;
         lacunarity = 2;
         persistance = 0.5f;
         changeHeight = true;
@@ -62,7 +62,7 @@ public class LifePlanetNoise : GeneratePlane
     }
 
     protected override void DispatchNoise(ref Vector3[] vertices) {
-        simplex = (ComputeShader)Instantiate(Resources.Load("Simplex Noise"));
+        simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
 
         for (int i = 0; i < vertices.Length; ++i)
         {
