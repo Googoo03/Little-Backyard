@@ -18,8 +18,8 @@ public class LifePlanetNoise : GeneratePlane
     {
         //set up noise parameters. surely theres a better way to do this
         oceanFloor = 0;
-        oceanMulitplier = 0.01f;
-        landMultiplier = 0.07f;
+        oceanMulitplier = 0.1f;
+        landMultiplier = 0.5f;
 
         octaves = 3;
         scale = 0.25f;
@@ -90,6 +90,10 @@ public class LifePlanetNoise : GeneratePlane
         simplex.SetFloat("octaves", octaves);
         simplex.SetFloat("persistance", persistance);
         simplex.SetFloat("lacunarity", lacunarity);
+
+        simplex.SetFloat("oceanMultiplier", oceanMulitplier);
+        simplex.SetFloat("landMultiplier", landMultiplier);
+        simplex.SetFloat("seaLevel", oceanFloor);
 
         simplex.Dispatch(simplexHandle, xVertCount, yVertCount, 1);
 

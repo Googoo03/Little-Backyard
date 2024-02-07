@@ -11,6 +11,9 @@ int seed;
 int octaves;
 float persistance;
 float lacunarity;
+float oceanMultiplier;
+float landMultiplier;
+float seaLevel;
 
 const static int PermOriginal[] = 
 {
@@ -283,5 +286,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         amplitude *= persistance;
         frequency *= lacunarity;
     }
+    result *= result > seaLevel ? landMultiplier : oceanMultiplier;
     Result[id.xy] = result;
 }
