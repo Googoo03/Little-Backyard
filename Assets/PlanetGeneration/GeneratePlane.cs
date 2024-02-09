@@ -33,11 +33,6 @@ public abstract class GeneratePlane : MonoBehaviour
 
     public abstract float NoiseValue(Vector3 pos, float scale);
 
-    /*public void Update()
-    {
-        float powerof2Frac = 1f / (1 << (patch.LODlevel + 1));
-        Generate(patch,powerof2Frac);
-    }*/
 
     public void Generate(PatchConfig planePatch,float LODstep) {
 
@@ -76,7 +71,7 @@ public abstract class GeneratePlane : MonoBehaviour
         Vector3[] normals = new Vector3[vertices.Length];
         Vector2[] uvs = new Vector2[vertices.Length];
 
-        Texture2D tex = new Texture2D(xVertCount, yVertCount);
+        //Texture2D tex = new Texture2D(xVertCount, yVertCount);
 
         //float maxHeightReached = 1;
 
@@ -102,38 +97,12 @@ public abstract class GeneratePlane : MonoBehaviour
 
                 range = 1f;
 
-
-
-
-
-                //GET NOISE VALUE
-                /*OctaveNoise(vec, ref range, ref noiseHeight, seed, scale, octaves, lacunarity, persistance);
-                
-                float addHeight = (noiseHeight > oceanFloor) ? (noiseHeight*landMultiplier) : (noiseHeight * oceanMulitplier);
-                //maxHeightReached = addHeight > maxHeightReached ? addHeight : maxHeightReached; //update maxHeightReached if needed.
-                
-                //change vertex according to addHeight
-                if(changeHeight) vec *= (1.0f + addHeight);
-                float currentHeight = noiseHeight / range;
-                */
                 normals[i] = vec;
                 vertices[i] = vec * radius;
-
-                //rend.sharedMaterial.SetColor("_Land", new Color(currentHeight, currentHeight, currentHeight, 1));
-                //SET TEXTURE PIXELS ACCORDINGLY
-
-                //createPatchTexture(ref planetMaterial, x, y, currentHeight);
 
             }
         }
 
-        /*tex.Apply();
-        tex.alphaIsTransparency = true;
-        tex.filterMode = FilterMode.Point;
-        
-        transform.GetComponent<Renderer>().material.mainTexture = tex;
-        
-        */
         //SET INDICES FOR THE MESH
         int[] indices = new int[(xVertCount - 1) * (yVertCount - 1) * 4];
         for (int y = 0; y < yVertCount - 1; y++)
@@ -159,18 +128,8 @@ public abstract class GeneratePlane : MonoBehaviour
 
         DispatchNoise(ref vertices);
         transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
-        transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
-
-        //CAN EITHER SET THE OFFSET OR FIX THE UVS SUCH THAT IT SAMPLES CORRECTLY
-
-
-        /*patch.LODOffset * patch.LODlevel * -2*/
+        transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));   
         
-        
-    }
-
-    float ExponentialDistribution(float lambda, float x) {
-        return (x > 0) ? lambda * Mathf.Exp(-(x * lambda)) : 0;
     }
 
     protected abstract void DispatchNoise(ref Vector3[] vertices);
@@ -178,7 +137,7 @@ public abstract class GeneratePlane : MonoBehaviour
     protected abstract void createPatchTexture(ref Material mat, int x, int y, float currentHeight);
 
 
-    float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)
+    /*float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)
     {
 
         frequency = 1;
@@ -200,7 +159,7 @@ public abstract class GeneratePlane : MonoBehaviour
             range += amplitude / 4;
         }
         return noiseHeight;
-    }
+    }*/
 
     public Vector3 getPosition(PatchConfig planePatch, float LODstep) { //returns the middle vertex position. Is used to
                                                                         //measure distance for LOD
