@@ -18,7 +18,7 @@ public abstract class GeneratePlane : MonoBehaviour
     protected float lacunarity;
     protected float persistance;
     protected int seed;
-    protected float scale;
+    [SerializeField] protected float scale;
 
     protected float oceanFloor;
     protected float oceanMulitplier;
@@ -32,6 +32,13 @@ public abstract class GeneratePlane : MonoBehaviour
     [SerializeField]protected RenderTexture texture;
 
     public abstract float NoiseValue(Vector3 pos, float scale);
+
+    /*public void Update()
+    {
+        float powerof2Frac = 1f / (1 << (patch.LODlevel + 1));
+        Generate(patch,powerof2Frac);
+    }*/
+
     public void Generate(PatchConfig planePatch,float LODstep) {
 
 
@@ -46,7 +53,10 @@ public abstract class GeneratePlane : MonoBehaviour
 
         Material planetMaterial = Resources.Load("Planet_Shader", typeof(Material)) as Material;
         planetMaterial.SetFloat("_DisplacementStrength",0.1f);
-        //this.gameObject.GetComponent<Renderer>().material = planetMaterial;
+
+        float TypePlanet = (float)planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
+        planetMaterial.SetFloat("_PlanetType", TypePlanet+1); //I guess pixel sampling is 1-indexed?
+
 
         rend.sharedMaterial = planetMaterial;
         Mesh m = mf.sharedMesh = new Mesh();

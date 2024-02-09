@@ -77,7 +77,7 @@ public class Sphere : MonoBehaviour
     public float oreSeed;
     public float oreScale;
     */
-    public int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
+    private int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
     public float pscale;
 
     

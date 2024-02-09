@@ -12,6 +12,7 @@ public class LifePlanetNoise : GeneratePlane
     ComputeShader simplex;
     private int simplexHandle;
     
+    
     Mesh mesh;
 
     public LifePlanetNoise()
@@ -21,8 +22,8 @@ public class LifePlanetNoise : GeneratePlane
         oceanMulitplier = 0.1f;
         landMultiplier = 0.5f;
 
-        octaves = 3;
-        scale = 0.25f;
+        octaves = 6;
+        scale = 0.75f;
         lacunarity = 2;
         persistance = 0.5f;
         changeHeight = true;

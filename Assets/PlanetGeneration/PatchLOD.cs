@@ -110,7 +110,7 @@ public class PatchLOD {
     }
 
     public void addMeshGenerationScript(GameObject patchChild) {
-        int planetType = patchConfig.planetObject.GetComponent<Sphere>().planetType; //is this the right object?
+        int planetType = patchConfig.planetObject.GetComponent<Sphere>().getPlanetType(); //is this the right object?
         switch (planetType) {
             case 0:
                 patchChild.AddComponent<HotPlanetNoise>();

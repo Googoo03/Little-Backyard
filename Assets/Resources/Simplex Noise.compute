@@ -280,6 +280,15 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float amplitude = 1;
     float frequency = 1;
     
+    
+    //would we want to calculate the vertices in here? it may be easier to apply the colors with the dot product that way
+    //we would need separate shaders regardless since vertices can't talk to each other
+    //pass 1 : get noise result
+    //pass 2 : pass in normals and distance from planet origin and assign color
+    //pass 3 : flat shading
+    
+    //so, pass in color regions and heights into planet shader and assign according
+    
     for (int i = 0; i < octaves; ++i)
     {
         result += (CalcPixel3D(vertexPos, frequency)) * amplitude;
