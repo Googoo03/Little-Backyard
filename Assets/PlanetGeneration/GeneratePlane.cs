@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Simplex;
 using Worley;
+using UnityEditor.PackageManager;
 
 public abstract class GeneratePlane : MonoBehaviour
 {
@@ -30,10 +31,27 @@ public abstract class GeneratePlane : MonoBehaviour
     protected bool changeHeight;
 
     [SerializeField]protected RenderTexture texture;
+    protected ComputeBuffer verts;
+    protected int shaderHandle;
 
     public abstract float NoiseValue(Vector3 pos, float scale);
 
+    protected void setComputeNoiseVariables(ref ComputeShader shader)
+    {
+        shaderHandle = shader.FindKernel("CSMain");
+        shader.SetInt("seed", 0);
 
+        shader.SetTexture(shaderHandle, "Result", texture);
+        shader.SetBuffer(shaderHandle, "vertexBuffer", verts);
+
+        shader.SetFloat("octaves", octaves);
+        shader.SetFloat("persistance", persistance);
+        shader.SetFloat("lacunarity", lacunarity);
+
+        shader.SetFloat("oceanMultiplier", oceanMulitplier);
+        shader.SetFloat("landMultiplier", landMultiplier);
+        shader.SetFloat("seaLevel", oceanFloor);
+    }
     public void Generate(PatchConfig planePatch,float LODstep) {
 
 
@@ -50,7 +68,7 @@ public abstract class GeneratePlane : MonoBehaviour
         planetMaterial.SetFloat("_DisplacementStrength",0.1f);
 
         float TypePlanet = (float)planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
-        planetMaterial.SetFloat("_PlanetType", TypePlanet+1); //I guess pixel sampling is 1-indexed?
+        planetMaterial.SetFloat("_PlanetType", TypePlanet+.99f); //I guess pixel sampling is 1-indexed?
 
 
         rend.sharedMaterial = planetMaterial;

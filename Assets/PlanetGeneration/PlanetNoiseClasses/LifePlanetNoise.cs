@@ -10,14 +10,17 @@ public class LifePlanetNoise : GeneratePlane
 {
     //Noise simplexNoise = new Noise();
     ComputeShader simplex;
-    private int simplexHandle;
+    //private int simplexHandle;
     
-    
+
+
     Mesh mesh;
 
     public LifePlanetNoise()
     {
         //set up noise parameters. surely theres a better way to do this
+
+
         oceanFloor = 0;
         oceanMulitplier = 0.1f;
         landMultiplier = 0.5f;
@@ -79,30 +82,16 @@ public class LifePlanetNoise : GeneratePlane
             vertices[i] = new Vector3(xx,yy,zz);
         }
 
-        ComputeBuffer verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+        verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
         verts.SetData(vertices);
 
-        simplexHandle = simplex.FindKernel("CSMain");
-        simplex.SetInt("seed", 0);
+        setComputeNoiseVariables(ref simplex);
 
-        simplex.SetTexture(simplexHandle, "Result", texture);
-        simplex.SetBuffer(simplexHandle, "vertexBuffer", verts);
-
-        simplex.SetFloat("octaves", octaves);
-        simplex.SetFloat("persistance", persistance);
-        simplex.SetFloat("lacunarity", lacunarity);
-
-        simplex.SetFloat("oceanMultiplier", oceanMulitplier);
-        simplex.SetFloat("landMultiplier", landMultiplier);
-        simplex.SetFloat("seaLevel", oceanFloor);
-
-        simplex.Dispatch(simplexHandle, xVertCount, yVertCount, 1);
-
-
-        
+        simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
         verts.Release();
     }
+
     public override float NoiseValue(Vector3 pos, float scale)
     {
 

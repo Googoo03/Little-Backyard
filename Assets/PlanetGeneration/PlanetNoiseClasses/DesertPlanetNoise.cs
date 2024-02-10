@@ -6,8 +6,8 @@ using Worley;
 
 public class DesertPlanetNoise : GeneratePlane
 {
-    Noise simplexNoise = new Noise();
-    WorleyNoise worleyNoise = new WorleyNoise(false);
+    ComputeShader simplex;
+    ComputeShader worley;
 
     int worleyScale;
 
@@ -20,7 +20,7 @@ public class DesertPlanetNoise : GeneratePlane
 
         octaves = 4;
         scale = 0.55f;
-        worleyScale = 2;
+        worleyScale = 4;
         lacunarity = 2;
         persistance = 0.1f;
         changeHeight = true;
@@ -54,7 +54,49 @@ public class DesertPlanetNoise : GeneratePlane
     }
 
     protected override void DispatchNoise(ref Vector3[] vertices)
-    { }
+    {
+        simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
+        worley = (ComputeShader)(Resources.Load("Worley Noise"));
+
+        Vector3[] simplexVerts = new Vector3[vertices.Length];
+        Vector3[] worleyVerts = new Vector3[vertices.Length];
+
+        for (int i = 0; i < vertices.Length; ++i)
+        {
+            Vector3 pos = vertices[i];
+            float nx = transform.TransformPoint(pos).x;
+            float ny = transform.TransformPoint(pos).y;
+            float nz = transform.TransformPoint(pos).z;
+
+            float xx = ((nx - xVertCount) / scale);
+            float yy = ((ny - yVertCount) / scale);
+            float zz = ((nz - xVertCount) / scale);
+
+            simplexVerts[i] = new Vector3(xx, yy, zz);
+            worleyVerts[i] = new Vector3(nx, ny, nz);
+        }
+
+        verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+        verts.SetData(simplexVerts);
+
+        setComputeNoiseVariables(ref simplex);
+        simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+
+
+        verts.SetData(worleyVerts);
+
+        setComputeNoiseVariables(ref worley);
+        Vector3[] points = new Vector3[27];
+        ComputeBuffer listPoints = new ComputeBuffer(27, sizeof(float) * 3);
+        listPoints.SetData(points);
+        worley.SetBuffer(shaderHandle,"points", listPoints);
+        worley.SetBool("inverse", false);
+        worley.SetFloat("scale", worleyScale);
+        worley.SetInt("octaves", 1);
+        worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+
+        verts.Release();
+    }
 
     public override float NoiseValue(Vector3 pos, float scale)
     {
@@ -67,9 +109,9 @@ public class DesertPlanetNoise : GeneratePlane
         float yy = ((ny - yVertCount) / scale) * frequency;
         float zz = ((nz - xVertCount) / scale) * frequency;
 
-        float noiseValue = simplexNoise.CalcPixel3D(xx, yy, zz, 1f / scale); // should return a value between 0 and 1
-        noiseValue += (worleyNoise.Calculate(nx, ny, nz, worleyScale))*0.1f;
+        //float noiseValue = simplexNoise.CalcPixel3D(xx, yy, zz, 1f / scale); // should return a value between 0 and 1
+        //noiseValue += (worleyNoise.Calculate(nx, ny, nz, worleyScale))*0.1f;
 
-        return noiseValue;
+        return 0;
     }
 }

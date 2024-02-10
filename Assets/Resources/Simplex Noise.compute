@@ -296,5 +296,5 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         frequency *= lacunarity;
     }
     result *= result > seaLevel ? landMultiplier : oceanMultiplier;
-    Result[id.xy] = result;
+    Result[id.xy] += result;
 }
