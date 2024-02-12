@@ -9,27 +9,22 @@ public class IcePlanetNoise : GeneratePlane
 {
     // Start is called before the first frame update
     public ComputeShader worley;
-    private int worleyHandle;
-    
-    private Mesh mesh;
-    //int worleyScale;
+    int worleyScale;
+
     public IcePlanetNoise()
     {
         
         //set up noise parameters. surely theres a better way to do this
         oceanFloor = 0;
-        oceanMulitplier = 0.07f;
-        landMultiplier = 0.07f;
+        oceanMulitplier = 0.3f;
+        landMultiplier = 0.3f;
         octaves = 1;
-        //worleyScale = 3;
+        worleyScale = 4;
         lacunarity = 2;
-        persistance = 0.5f;
+        persistance = 0.1f;
         changeHeight = true;
     }
-    private void Awake()
-    {
-        worley = (ComputeShader)Resources.Load("Simplex Noise");
-    }
+
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
         int regionLength = patch.planetObject.GetComponent<Sphere>().getRegionLength();
@@ -61,28 +56,30 @@ public class IcePlanetNoise : GeneratePlane
     //VARIABLES ARE INHERITED. THUS, HAVE THE NOISE PARAMETERS BE CLASS VARIABLES.worley.
     protected override void DispatchNoise(ref Vector3[] vertices)
     {
-        mesh = transform.GetComponent<MeshFilter>().mesh;
-        
+
+        worley = (ComputeShader)Resources.Load("Worley Noise");
+        Vector3[] worleyVerts = new Vector3[vertices.Length];
+
         for (int i = 0; i < vertices.Length; ++i)
         {
-            vertices[i] = transform.TransformPoint(mesh.vertices[i]);
+            worleyVerts[i] = transform.TransformPoint(vertices[i]);
         }
 
-        ComputeBuffer verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
-        verts.SetData(vertices);
+        verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+        verts.SetData(worleyVerts);
 
-        worleyHandle = worley.FindKernel("CSMain");
-        worley.SetInt("seed", 0);
-        //worley.SetFloat("_DisplacementStrength", 2);
-        worley.SetTexture(worleyHandle, "Result", texture);
-        worley.SetBuffer(worleyHandle, "vertexBuffer", verts);
-        worley.SetFloat("octaves", octaves);
-        worley.SetFloat("frequency", frequency);
-        worley.SetFloat("persistance", persistance);
-        worley.SetFloat("lacunarity", lacunarity);
+        setComputeNoiseVariables(ref worley);
 
-        worley.Dispatch(worleyHandle, xVertCount / 4, yVertCount / 4, 1);
-        transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
+        Vector3[] points = new Vector3[27];
+        ComputeBuffer listPoints = new ComputeBuffer(27, sizeof(float) * 3);
+        listPoints.SetData(points);
+
+        worley.SetBuffer(shaderHandle, "points", listPoints);
+
+        worley.SetBool("inverse", false);
+        worley.SetFloat("scale", worleyScale);
+
+        worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
         verts.Release();
     }

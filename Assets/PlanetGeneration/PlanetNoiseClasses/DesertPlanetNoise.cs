@@ -15,14 +15,14 @@ public class DesertPlanetNoise : GeneratePlane
     {
         //set up noise parameters. surely theres a better way to do this
         oceanFloor = 0;
-        oceanMulitplier = 0.01f;
-        landMultiplier = 0.06f;
+        oceanMulitplier = 1; //0.1f;
+        landMultiplier = 1; //0.2f;
 
         octaves = 4;
         scale = 0.55f;
         worleyScale = 4;
         lacunarity = 2;
-        persistance = 0.1f;
+        persistance = 0.5f;
         changeHeight = true;
     }
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
@@ -76,12 +76,13 @@ public class DesertPlanetNoise : GeneratePlane
             worleyVerts[i] = new Vector3(nx, ny, nz);
         }
 
+
         verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
-        verts.SetData(simplexVerts);
+        /*verts.SetData(simplexVerts);
 
         setComputeNoiseVariables(ref simplex);
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
-
+        */
 
         verts.SetData(worleyVerts);
 
@@ -94,7 +95,7 @@ public class DesertPlanetNoise : GeneratePlane
         worley.SetFloat("scale", worleyScale);
         worley.SetInt("octaves", 1);
         worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
-
+        
         verts.Release();
     }
 

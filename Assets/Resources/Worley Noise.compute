@@ -53,7 +53,7 @@ const static int PermOriginal[] = {
 
 int _permutation[] = PermOriginal;
 
-int Distance(float3 a, float3 b)
+float Distance(float3 a, float3 b)
 {
     float x = b[0] - a[0];
     float y = b[1] - a[1];
@@ -150,7 +150,7 @@ float Calculate(float3 pos, float scale)
             ///////////////
 
             //compare the point locations with the x,y,z and give a value between -1 and 1 based on it. or perhaps between 0 and 1?
-    float closestDistance = 1;
+    float closestDistance = maxDistance; //computes infinity value this might need to be changed back to 1
     for (int distIndex = 0; distIndex < 27; ++distIndex)
     {
 
@@ -160,13 +160,12 @@ float Calculate(float3 pos, float scale)
             closestDistance = distance;
                     
         }
-
     }
-    closestDistance = (closestDistance == 1 ? 1 : 1 - pow(2, -10 * closestDistance));
+    closestDistance = (closestDistance >= 1 ? 1 : 1 - pow(2, -1 * closestDistance));
 
 
     float val = closestDistance;
-            //val *= multiplier;
+
     return inverse == true ? 1 - val : val;
 }
 
@@ -180,7 +179,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     {
         setSeedPRNG(seed);
         resetLookUpTable();
-        
     }
 
     //compute noise with octaves 
@@ -190,7 +188,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     
     for (int i = 0; i < octaves; ++i)
     {
-        result += (Calculate(vertexPos, frequency * scale)) * amplitude;
+        result += (Calculate(vertexPos, frequency*scale)) * amplitude;
         amplitude *= persistance;
         frequency *= lacunarity;
     }
