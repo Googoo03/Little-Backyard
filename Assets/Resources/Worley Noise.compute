@@ -96,8 +96,8 @@ int FastFloor(float x) //returns the floor of x
 
 float FindClosest(float3 pos)
 {
-    float closestDistance = 1.41 / scale;
-    for (uint distIndex = 0; distIndex < 27; ++distIndex)
+    float closestDistance = 100;
+    for (uint distIndex = 0; distIndex < 5; ++distIndex)
     {
         //floating point errors in calculating the distance
         float _distance = distance(points[distIndex], pos);
@@ -109,6 +109,7 @@ float FindClosest(float3 pos)
     
     return closestDistance;
 }
+
 
 
 float Calculate(float3 pos, float scale)
@@ -129,25 +130,12 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     uint index = (id.x + (id.y * 16) + id.z);
     float3 vertexPos = vertexBuffer[index];
 
-    /*if (seed != 0)
-    {
-        setSeedPRNG(seed);
-        resetLookUpTable();
-    }*/
-
     //compute noise with octaves 
     float result = 0;
-    float amplitude = 1;
+    float amplitude = 0.1;
     float frequency = 1;
     
-    /*for (int i = 0; i < octaves; ++i)
-    {
-        result += (Calculate(vertexPos, scale)) * amplitude;
-        amplitude *= persistance;
-        frequency *= lacunarity;
-    }*/
-    result += (Calculate(vertexPos, scale)) * amplitude;
-    
+    result = FindClosest(vertexPos) * amplitude;
     //result *= result > seaLevel ? landMultiplier : oceanMultiplier;
-    Result[id.xy] += result;
+    Result[id.xy] = result;
 }

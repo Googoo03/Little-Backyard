@@ -107,7 +107,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
                 uvs[i] = p + Vector2.one * 0.5f;
 
-                Vector3 vec = ((planePatch.uAxis * p.x) + (planePatch.vAxis * p.y) + (planePatch.height * 0.5f)); //determine plane vertex based on direction. p determines
+                Vector3 vec = (planePatch.uAxis * p.x) + (planePatch.vAxis * p.y) + (planePatch.height * 0.5f); //determine plane vertex based on direction. p determines
                                                                                                                   //vertex location in grid
 
                 //float noiseHeight = 0f; // should return a value between 0 and 1
