@@ -50,7 +50,8 @@ public class SolarSystemGeneration : MonoBehaviour {
             if (hashCode % density == 0){
                 float cosineVal = Mathf.Cos( (hashCode % 360)); //the 500 is so its within 2pi range 
                 float sineVal = Mathf.Sin( (hashCode % 360));
-                GameObject newPlanet = Instantiate(planet, new Vector3(transform.position.x + (x* solarsystemSpacing*cosineVal), transform.position.y, transform.position.z + (x * solarsystemSpacing * sineVal)), Quaternion.identity);
+                Vector3 position = new Vector3(transform.position.x + (x * solarsystemSpacing * cosineVal), transform.position.y, transform.position.z + (x * solarsystemSpacing * sineVal));
+                GameObject newPlanet = Instantiate(planet, position, Quaternion.identity);
                 planets.Add(newPlanet);
 
                 //ROTATE RANDOMLY ALONG CIRCULAR PATH

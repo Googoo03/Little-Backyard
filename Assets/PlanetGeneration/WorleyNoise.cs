@@ -130,7 +130,7 @@ namespace Worley {
                 }
 
             }
-            closestDistance = (closestDistance == 1 ? 1 : 1 - MathF.Pow(2, -10 * closestDistance));
+            closestDistance = (closestDistance == 1 ? 1 : 1 - MathF.Pow(2, -5 * closestDistance));
 
 
             float val = closestDistance;

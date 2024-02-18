@@ -12,7 +12,7 @@ int startSeed = 0;
 int seed;
 bool inverse;
 
-float scale;
+int scale;
 
 int octaves;
 float persistance;
@@ -21,7 +21,7 @@ float oceanMultiplier;
 float landMultiplier;
 float seaLevel;
 
-
+/*
 const static int PermOriginal[] = {
             151,160,137,91,90,15,
             131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
@@ -55,9 +55,9 @@ int _permutation[] = PermOriginal;
 
 float Distance(float3 a, float3 b)
 {
-    float x = b[0] - a[0];
-    float y = b[1] - a[1];
-    float z = b[2] - a[2];
+    float x = b.x - a.x;
+    float y = b.y - a.y;
+    float z = b.z - a.z;
     return sqrt((x * x) + (y * y) + (z * z));
 
 }
@@ -88,110 +88,66 @@ void resetLookUpTable()
     }
 
 }
-
+*/
 int FastFloor(float x) //returns the floor of x
 {
     return (x > 0) ? ((int) x) : (((int) x) - 1);
 }
 
+float FindClosest(float3 pos)
+{
+    float closestDistance = 1.41 / scale;
+    for (uint distIndex = 0; distIndex < 27; ++distIndex)
+    {
+        //floating point errors in calculating the distance
+        float _distance = distance(points[distIndex], pos);
+        if (_distance < closestDistance)
+        {
+            closestDistance = _distance;
+        }
+    }
+    
+    return closestDistance;
+}
+
+
 float Calculate(float3 pos, float scale)
 {
-            //the scale should make the 1x1x1 cube be smaller accordingly
-    float maxDistance = 1.41 / scale;
-    //loat3 points[27] = 0;
-
-
-            //first figure out the 1x1x1 cube the point is situated in
-    float xs = (float) (FastFloor(pos[0] * scale) / scale);
-    float ys = (float) (FastFloor(pos[1] * scale) / scale);
-    float zs = (float) (FastFloor(pos[2] * scale) / scale);
-
-            //create the 27 cube kernel around the point
-    for (int i = -1; i < 2; ++i)
-    {
-        for (int j = -1; j < 2; ++j)
-        {
-            for (int k = -1; k < 2; ++k)
-            {
-                int index = ((i + 1) * 3 * 3) + ((j + 1) * 3) + (k + 1); //((3 * i) + j)* k; //this may be a wrong calculation
-                points[index] = float3(xs + (i / scale), ys + (j / scale), zs + (k / scale));
-            }
-        }
-    }
-
-            //NEED TO PROPERLY SHIFT THE POINTS BY AN APPROPRIATE VECTOR SUCH THAT 
-            //IT IS REPLICABLE AND ENERGY EFFICIENT
-            
-
-
-            //HERE
-    for (int index = 0; index < 27; ++index)
-    {
-                //for each point we want to offset it 
-                //such that each input will always give the same output
-
-
-                //NEED A DIFFERENT METHOD. THIS NO WORK
-        uint permutationSize = 256;
-
-        int xx = (int) (points[index][0] * 1000000) % permutationSize;
-        int yy = (int) (points[index][1] * 1000000) % permutationSize;
-        int zz = (int) (points[index][2] * 1000000) % permutationSize;
-
-        float3 offset = 
-        float3(
-                _permutation[xx] / 255.0,
-                _permutation[(yy + _permutation[xx]) % permutationSize] / 255.0,
-                _permutation[(zz + _permutation[(yy + _permutation[xx]) % permutationSize]) % permutationSize] / 255.0
-              );
-        points[index] += (offset / scale);
-
-    }
-            ///////////////
-
-            //compare the point locations with the x,y,z and give a value between -1 and 1 based on it. or perhaps between 0 and 1?
-    float closestDistance = maxDistance; //computes infinity value this might need to be changed back to 1
-    for (int distIndex = 0; distIndex < 27; ++distIndex)
-    {
-
-        float distance = Distance(points[distIndex], pos);
-        if (distance < closestDistance)
-        {
-            closestDistance = distance;
-                    
-        }
-    }
-    closestDistance = (closestDistance >= 1 ? 1 : 1 - pow(2, -1 * closestDistance));
-
-
-    float val = closestDistance;
-
-    return inverse == true ? 1 - val : val;
+    float3 n = float3( (int) pos.x, (int) pos.y, (int) pos.z);
+    float s = 1.0 / scale;
+    n += float3(s,s,s);
+    
+    return distance(pos, n);
 }
+
 
 [numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    int index = (id.x + (id.y * 16) + id.z);
+    
+    
+    uint index = (id.x + (id.y * 16) + id.z);
     float3 vertexPos = vertexBuffer[index];
 
-    if (seed != 0)
+    /*if (seed != 0)
     {
         setSeedPRNG(seed);
         resetLookUpTable();
-    }
+    }*/
 
     //compute noise with octaves 
     float result = 0;
     float amplitude = 1;
     float frequency = 1;
     
-    for (int i = 0; i < octaves; ++i)
+    /*for (int i = 0; i < octaves; ++i)
     {
-        result += (Calculate(vertexPos, frequency*scale)) * amplitude;
+        result += (Calculate(vertexPos, scale)) * amplitude;
         amplitude *= persistance;
         frequency *= lacunarity;
-    }
-    result *= result > seaLevel ? landMultiplier : oceanMultiplier;
+    }*/
+    result += (Calculate(vertexPos, scale)) * amplitude;
+    
+    //result *= result > seaLevel ? landMultiplier : oceanMultiplier;
     Result[id.xy] += result;
 }

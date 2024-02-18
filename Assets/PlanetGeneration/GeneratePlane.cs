@@ -1,15 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 using Simplex;
 using Worley;
-using UnityEditor.PackageManager;
+
 
 public abstract class GeneratePlane : MonoBehaviour
 {
     public int xVertCount = 16, yVertCount = 16;
-    private int radius;
+    private float radius;
     public Material patchMaterial;
     Color[] regions; //will i run into trouble if this is pointing to a reference?
     float[] heights;
@@ -60,11 +59,12 @@ public abstract class GeneratePlane : MonoBehaviour
             enableRandomWrite = true
         };
         texture.Create();
+        
 
         MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
         MeshRenderer rend = this.gameObject.AddComponent<MeshRenderer>();
 
-        Material planetMaterial = Resources.Load("Planet_Shader", typeof(Material)) as Material;
+        Material planetMaterial = Instantiate(Resources.Load("Planet_Shader", typeof(Material))) as Material;
         planetMaterial.SetFloat("_DisplacementStrength",0.1f);
 
         float TypePlanet = (float)planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
@@ -146,7 +146,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
         DispatchNoise(ref vertices);
         transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
-        transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));   
+        transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
         
     }
 

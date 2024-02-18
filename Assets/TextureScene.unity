@@ -270,7 +270,7 @@ Transform:
   m_GameObject: {fileID: 160406696}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1000, y: 300, z: 1000}
+  m_LocalPosition: {x: 0, y: 300, z: 0}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -291,7 +291,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   planet: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
   seed: 167.6
-  scale: 2000
+  scale: 1.27
   density: 7
   RegionWidth: 40
   RegionHeight: 40
@@ -369,13 +369,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4124095710423020485, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.11
+      objectReference: {fileID: 0}
+    - target: {fileID: 4124095710423020485, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 2.6
       objectReference: {fileID: 0}
     - target: {fileID: 4124095710423020485, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -1.58
       objectReference: {fileID: 0}
     - target: {fileID: 9044583953940408933, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
