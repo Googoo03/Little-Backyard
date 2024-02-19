@@ -89,29 +89,22 @@ public class DesertPlanetNoise : GeneratePlane
         setComputeNoiseVariables(ref worley);
 
         //initialize points vector array
-        Vector3[] points = new Vector3[5];
+        List<Vector3> points = new List<Vector3>();
+        points = patch.planetObject.GetComponent<Sphere>().getWorleyPoints();
         //set random points
-        for (int i = 0; i < points.Length; ++i) {
-            Vector3 point = new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), Random.Range(-1, 1));
-            point.Normalize();
-            point += transform.position;
-            points[i] = point;
-        }
-        
-        Vector3[] origpoints = new Vector3[27];
 
-        ComputeBuffer listPoints = new ComputeBuffer(points.Length, sizeof(float) * 3);
+        //EACH PLANE MAKES A DIFFERENT SET OF POINTS
+
+
+
+        ComputeBuffer listPoints = new ComputeBuffer(points.Count, sizeof(float) * 3);
         listPoints.SetData(points);
 
         worley.SetBuffer(shaderHandle,"points", listPoints);
-        //worley.SetBool("inverse", false);
+        worley.SetBool("inverse", true);
         //worley.SetFloat("scale", 4.0f);
         //worley.SetInt("octaves", 1);
         worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
-
-
-        //listPoints.GetData(points);
-        //verts.GetData(origpoints);
         
         verts.Release();
         listPoints.Release();

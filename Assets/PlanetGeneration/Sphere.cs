@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
 public struct PatchConfig
 {
@@ -68,15 +69,7 @@ public class Sphere : MonoBehaviour
 
     public Color[] regions; //turn this into a 2D array and access directly?
     float[] heights = {0.5f, 0.7f, 0.8f, 0.9f };
-    public AnimationCurve[] heightCurve;
 
-    /*
-    public GameObject ore;
-    public GameObject iron;
-    public GameObject meteorite;
-    public float oreSeed;
-    public float oreScale;
-    */
     private int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
     public float pscale;
 
@@ -84,6 +77,7 @@ public class Sphere : MonoBehaviour
     private PatchConfig[] patches;
     private List<PatchLOD> LOD;
 
+    [SerializeField]private List<Vector3> worleyPoints = new List<Vector3>();
 
     public bool nextLOD;
     public bool prevLOD;
@@ -104,14 +98,80 @@ public class Sphere : MonoBehaviour
         ////////////////////////////////////////////////////
     }
 
-    public void nextLODLevel() {
+    
+
+    void Start()
+    {
+        LOD = new List<PatchLOD>() { };
+
+        //create seed using a hash
+        var hash = new Hash128();
+        hash.Append(transform.position.x);
+        hash.Append(transform.position.y);
+        hash.Append(transform.position.z);
+
+        seed = hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
+        ////////////////////////////////////
+
+
+        //MAKE A NEW WAY OF GENERATING TYPE??? UGLY TO READ??
+        //planetType = Mathf.FloorToInt((Perlin3d(px + seed, py + seed, pz + seed)*1000) % 6);
+        //planetType = Random.Range(0,6);
+
+        //set the planet type and name
+        planetType = 4;
+        transform.name = "Planet" + planetType.ToString();
+
+
+        //set the atmosphere color
+        Color atmosphereColor = regionReference.GetPixel(4, planetType);
+        transform.GetChild(0).GetComponent<Renderer>().material.SetColor("_Atmosphere_Color", atmosphereColor);
+        ////////////////////////////
+
+        //create all 6 sides of the sphere-cube
+        Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
+        patches = new PatchConfig[]
+        {
+         new PatchConfig("top", Vector3.right, Vector3.forward,0, Vector2.zero,xyVert,transform.gameObject,4),
+         new PatchConfig("bottom", Vector3.left, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, 4),
+         new PatchConfig("left", Vector3.up, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, 4),
+         new PatchConfig("right", Vector3.down, Vector3.forward,0, Vector2.zero,xyVert, transform.gameObject,4),
+         new PatchConfig("front", Vector3.right, Vector3.down, 0, Vector2.zero, xyVert, transform.gameObject, 4),
+         new PatchConfig("back", Vector3.right, Vector3.up, 0, Vector2.zero, xyVert, transform.gameObject, 4)
+        };
+
+        //create a list of points for worleyNoise
+        generateWorleyPoints(10);
+
+        //generate the patches when finished configuring
+        GeneratePatches();
+    }
+    private void generateWorleyPoints(int num) {
+        for (int i = 0; i < num; ++i)
+        {
+            Vector3 point = new Vector3(UnityEngine.Random.Range(-5, 5), UnityEngine.Random.Range(-5, 5), UnityEngine.Random.Range(-5, 5));
+            point.Normalize();
+            //this should be multiplied by the radius in the future
+            point += transform.position;
+            worleyPoints.Add(point);
+        }
+    }
+
+    public ref List<Vector3> getWorleyPoints() {
+        return ref worleyPoints;
+    }
+
+
+    public void nextLODLevel()
+    {
         for (int i = 0; i < LOD.Count; ++i)
         {
             LOD[i].traverseAndGenerate(LOD[i]);
         }
     }
 
-    public void checkPatchDistances(GameObject player) {
+    public void checkPatchDistances(GameObject player)
+    {
         for (int i = 0; i < LOD.Count; ++i)
         {
             LOD[i].LODbyDistance(LOD[i], player);
@@ -125,59 +185,6 @@ public class Sphere : MonoBehaviour
             LOD[i].prevLOD(LOD[i]);
         }
 
-    }
-
-    void Start()
-    {
-        LOD = new List<PatchLOD>() { };
-
-        var hash = new Hash128();
-        hash.Append(transform.position.x);
-        hash.Append(transform.position.y);
-        hash.Append(transform.position.z);
-
-        seed = hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
-
-
-        float px = (transform.position.x / pscale);
-        float py = transform.position.y / pscale;
-        float pz = transform.position.z / pscale;
-
-        //MAKE A NEW WAY OF GENERATING TYPE??? UGLY TO READ??
-        //planetType = Mathf.FloorToInt((Perlin3d(px + seed, py + seed, pz + seed)*1000) % 6);
-        //planetType = Random.Range(0,6);
-        planetType = 4;
-
-        transform.name = "Planet" + planetType.ToString();
-
-
-        regions = new Color[4]; // this 4 is just a placeholder. ideally in the future there will be more colors
-        for (int i = 0; i < regions.Length; ++i) {
-            regions[i] = regionReference.GetPixel(i, planetType);
-        }
-        Color atmosphereColor = regionReference.GetPixel(4, planetType);
-        transform.GetChild(0).GetComponent<Renderer>().material.SetColor("_Atmosphere_Color", atmosphereColor);
-        
-        Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
-        patches = new PatchConfig[]
-        {
-         new PatchConfig("top", Vector3.right, Vector3.forward,0, Vector2.zero,xyVert,transform.gameObject,4),
-         new PatchConfig("bottom", Vector3.left, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, 4),
-         new PatchConfig("left", Vector3.up, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, 4),
-         new PatchConfig("right", Vector3.down, Vector3.forward,0, Vector2.zero,xyVert, transform.gameObject,4),
-         new PatchConfig("front", Vector3.right, Vector3.down, 0, Vector2.zero, xyVert, transform.gameObject, 4),
-         new PatchConfig("back", Vector3.right, Vector3.up, 0, Vector2.zero, xyVert, transform.gameObject, 4)
-        };
-        
-        GeneratePatches();
-    }
-
-
-
-
-    //we NEED AN EVALUATE FUNCTION FOR THE HEIGHTCURVE
-    public float evaluateHeightCurve(int index, float value) {
-        return heightCurve[index].Evaluate(value);
     }
 
     //THIS SHOULD ALL BE IN THE PATCH ITSELF, NOT THE PARENT. IT WILL MAKE IT MUCH EASIER WHEN IMPLEMENTING AN LOD SYSTEM

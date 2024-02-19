@@ -107,7 +107,7 @@ float FindClosest(float3 pos)
         }
     }
     
-    return closestDistance;
+    return inverse == true ? 1.0- closestDistance : closestDistance;
 }
 
 
@@ -132,10 +132,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     //compute noise with octaves 
     float result = 0;
-    float amplitude = 0.1;
+    float amplitude = 1;
     float frequency = 1;
     
     result = FindClosest(vertexPos) * amplitude;
-    //result *= result > seaLevel ? landMultiplier : oceanMultiplier;
+    result *= result > seaLevel ? landMultiplier : oceanMultiplier;
+    
     Result[id.xy] = result;
 }
