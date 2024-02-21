@@ -6,4 +6,4 @@ In this project, a procedural galaxy will be generated for the player. Using cle
 
 The planets use a dynamic Level Of Detail system to create the needed geometry on the fly. This makes it possible for each planet to be planet-sized while still containing detail on the minute levels. The terrain of each planet uses a mix of algorithms. As of now, each planet uses a mix of Worley Noise and Simplex Noise to generate its various terrains. In the future, more noise algorithms will be introduced to create rivers, towns, and economies on each of these planets.
 
-![Procedural Planet](https://raw.githubusercontent.com/Googoo03/Space-Game/blob/4d3436bb3048e8a8d605e48044d27719baff2edb/.github/images/ProceduralPlanetPic.png)
+![Procedural Planet](https://raw.githubusercontent.com/Googoo03/Space-Game/4d3436bb3048e8a8d605e48044d27719baff2edb/.github/images/ProceduralPlanetPic.png)
