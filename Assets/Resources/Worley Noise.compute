@@ -21,6 +21,8 @@ float oceanMultiplier;
 float landMultiplier;
 float seaLevel;
 
+bool mode;
+
 /*
 const static int PermOriginal[] = {
             151,160,137,91,90,15,
@@ -97,7 +99,7 @@ int FastFloor(float x) //returns the floor of x
 float FindClosest(float3 pos)
 {
     float closestDistance = 100;
-    for (uint distIndex = 0; distIndex < 5; ++distIndex)
+    for (uint distIndex = 0; distIndex < 25; ++distIndex)
     {
         //floating point errors in calculating the distance
         float _distance = distance(points[distIndex], pos);
@@ -107,10 +109,18 @@ float FindClosest(float3 pos)
         }
     }
     
-    return inverse == true ? 1.0- closestDistance : closestDistance;
+    return closestDistance;
 }
 
+float QuarticSmooth(float x)
+{
+    return pow(x,4);
+}
 
+float easeInCirc(float x)
+{
+    return 1 - sqrt(1 - pow(x, 2));
+}
 
 float Calculate(float3 pos, float scale)
 {
@@ -121,6 +131,15 @@ float Calculate(float3 pos, float scale)
     return distance(pos, n);
 }
 
+float EaseInOutCubic(float x)
+{
+    return x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2;
+}
+
+float easeOutCirc(float x)
+{
+    return sqrt(1 - pow(x - 1, 2));
+}
 
 [numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -136,7 +155,24 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float frequency = 1;
     
     result = FindClosest(vertexPos) * amplitude;
-    result *= result > seaLevel ? landMultiplier : oceanMultiplier;
     
-    Result[id.xy] = result;
+    //replace the .8 later. It represents the sealevel 0-1
+   
+    result = (result > 1) ? 1 : result;
+    result = (result < seaLevel) ? 1-easeOutCirc((seaLevel - result)/seaLevel) : 1;
+
+    //result = easeInCirc( result);
+    
+    //result *= result > seaLevel ? landMultiplier : oceanMultiplier;
+    
+    if (mode)
+    {
+        //mulitply mode, mode = 1
+        Result[id.xy] *= (inverse == true) ? 1.0 - result : result;
+    }
+    else
+    {
+        //add mode, mode = 0
+        Result[id.xy] += (inverse == true) ? 1.0 - result : result;
+    }
 }

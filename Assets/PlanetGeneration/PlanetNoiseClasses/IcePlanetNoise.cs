@@ -9,7 +9,7 @@ public class IcePlanetNoise : GeneratePlane
 {
     // Start is called before the first frame update
     public ComputeShader worley;
-    int worleyScale;
+
 
     public IcePlanetNoise()
     {
@@ -19,7 +19,6 @@ public class IcePlanetNoise : GeneratePlane
         oceanMulitplier = 0.3f;
         landMultiplier = 0.3f;
         octaves = 1;
-        worleyScale = 4;
         lacunarity = 2;
         persistance = 0.1f;
         changeHeight = true;
@@ -65,20 +64,25 @@ public class IcePlanetNoise : GeneratePlane
             worleyVerts[i] = transform.TransformPoint(vertices[i]);
         }
 
-        verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+        verts = new ComputeBuffer(worleyVerts.Length, sizeof(float) * 3);
         verts.SetData(worleyVerts);
+
+        //set worley points
+        List<Vector3> points = new List<Vector3>();
+        points = patch.planetObject.GetComponent<Sphere>().getWorleyPoints();
 
         setComputeNoiseVariables(ref worley);
 
-        Vector3[] points = new Vector3[27];
-        ComputeBuffer listPoints = new ComputeBuffer(27, sizeof(float) * 3);
+        ComputeBuffer listPoints = new ComputeBuffer(points.Count, sizeof(float) * 3);
         listPoints.SetData(points);
-
         worley.SetBuffer(shaderHandle, "points", listPoints);
 
-        worley.SetBool("inverse", false);
-        worley.SetFloat("scale", worleyScale);
+        ///////////////////////////////////
 
+
+
+        worley.SetBool("inverse", true);
+        worley.SetBool("mode", false); //set to add mode
         worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
         verts.Release();

@@ -15,10 +15,10 @@ public class DesertPlanetNoise : GeneratePlane
     {
         //set up noise parameters. surely theres a better way to do this
         oceanFloor = 0;
-        oceanMulitplier = 0.2f;
-        landMultiplier = 0.2f;
+        oceanMulitplier = .1f;
+        landMultiplier = .5f;
 
-        octaves = 1;
+        octaves = 6;
         scale = 0.55f;
         //worleyScale = 4;
         lacunarity = 2;
@@ -55,7 +55,7 @@ public class DesertPlanetNoise : GeneratePlane
 
     protected override void DispatchNoise(ref Vector3[] vertices)
     {
-        //simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
+        simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
         worley = (ComputeShader)Instantiate(Resources.Load("Worley Noise"));
 
         Vector3[] simplexVerts = new Vector3[vertices.Length];
@@ -76,16 +76,15 @@ public class DesertPlanetNoise : GeneratePlane
             worleyVerts[i] = new Vector3(nx, ny, nz);
         }
 
-
+        //SIMPLEX NOISE
         verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
-        /*verts.SetData(simplexVerts);
+        verts.SetData(simplexVerts);
 
         setComputeNoiseVariables(ref simplex);
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
-        */
+        ////////////////
 
         verts.SetData(worleyVerts);
-
         setComputeNoiseVariables(ref worley);
 
         //initialize points vector array
@@ -101,7 +100,8 @@ public class DesertPlanetNoise : GeneratePlane
         listPoints.SetData(points);
 
         worley.SetBuffer(shaderHandle,"points", listPoints);
-        worley.SetBool("inverse", true);
+        worley.SetBool("inverse", false);
+        worley.SetBool("mode", true); //set to mulitply mode
         //worley.SetFloat("scale", 4.0f);
         //worley.SetInt("octaves", 1);
         worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);

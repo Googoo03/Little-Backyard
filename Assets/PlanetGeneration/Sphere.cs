@@ -141,7 +141,7 @@ public class Sphere : MonoBehaviour
         };
 
         //create a list of points for worleyNoise
-        generateWorleyPoints(10);
+        generateWorleyPoints(25);
 
         //generate the patches when finished configuring
         GeneratePatches();
@@ -149,7 +149,7 @@ public class Sphere : MonoBehaviour
     private void generateWorleyPoints(int num) {
         for (int i = 0; i < num; ++i)
         {
-            Vector3 point = new Vector3(UnityEngine.Random.Range(-5, 5), UnityEngine.Random.Range(-5, 5), UnityEngine.Random.Range(-5, 5));
+            Vector3 point = new Vector3(UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-100, 100));
             point.Normalize();
             //this should be multiplied by the radius in the future
             point += transform.position;
