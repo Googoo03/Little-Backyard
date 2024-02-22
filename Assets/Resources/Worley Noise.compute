@@ -21,83 +21,28 @@ float oceanMultiplier;
 float landMultiplier;
 float seaLevel;
 
-bool mode;
+bool mode; //either add mode or multiply mode
+bool edgeDetect;
+float edgeThreshold;
 
-/*
-const static int PermOriginal[] = {
-            151,160,137,91,90,15,
-            131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
-            190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
-            88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
-            77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
-            102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
-            135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
-            5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
-            223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
-            129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
-            251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
-            49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-            138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180,
-            151,160,137,91,90,15,
-            131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
-            190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
-            88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
-            77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
-            102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
-            135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
-            5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
-            223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
-            129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
-            251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
-            49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-            138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
-        };
-
-int _permutation[] = PermOriginal;
-
-float Distance(float3 a, float3 b)
-{
-    float x = b.x - a.x;
-    float y = b.y - a.y;
-    float z = b.z - a.z;
-    return sqrt((x * x) + (y * y) + (z * z));
-
-}
-
-uint PRNG()
-{
-    //c is the increment, a is the factor, the seed is our starting factor, m is modulus
-    uint a = 22695477;
-    uint m = 256;
-    uint c = 1;
-    //if (startSeed == 0) startSeed = seed;
-    uint val = ((startSeed * a) + c) % m;
-    startSeed = val;
-    return val;
-}
-
-void setSeedPRNG(int seed)
-{
-    startSeed = seed;
-}
-
-void resetLookUpTable()
-{
-    for (int i = 0; i < 256; ++i)
-    {
-        _permutation[i] = PRNG();
-
-    }
-
-}
-*/
 int FastFloor(float x) //returns the floor of x
 {
     return (x > 0) ? ((int) x) : (((int) x) - 1);
 }
 
+float easeOutCirc(float x)
+{
+    return sqrt(1 - pow(x - 1, 2));
+}
+
+float easeInCirc(float x)
+{
+    return 1 - sqrt(1 - pow(x, 2));
+}
+
 float FindClosest(float3 pos)
 {
+    
     float closestDistance = 100;
     for (uint distIndex = 0; distIndex < 25; ++distIndex)
     {
@@ -114,13 +59,40 @@ float FindClosest(float3 pos)
 
 float QuarticSmooth(float x)
 {
-    return pow(x,4);
+    return pow(x, 4);
 }
 
-float easeInCirc(float x)
+float EaseInOutCubic(float x)
 {
-    return 1 - sqrt(1 - pow(x, 2));
+    return x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2;
 }
+
+float FindEdge(float3 pos)
+{
+    //create second closest and closest vals
+    //if within boundary, then edge
+    
+    float closestDistance = 100;
+    float secondClosest = 100;
+    for (uint distIndex = 0; distIndex < 25; ++distIndex)
+    {
+
+        float _distance = distance(points[distIndex], pos);
+        //closest is always smallest
+        if (_distance < closestDistance)
+        {
+            secondClosest = closestDistance;
+            closestDistance = _distance;
+        }
+        
+        
+    }
+    float difference = abs(secondClosest - closestDistance);
+    bool edge = (difference < edgeThreshold);
+    closestDistance = (edge) ? EaseInOutCubic( ( edgeThreshold - difference) / edgeThreshold) : 0;
+    return closestDistance;
+}
+
 
 float Calculate(float3 pos, float scale)
 {
@@ -131,15 +103,7 @@ float Calculate(float3 pos, float scale)
     return distance(pos, n);
 }
 
-float EaseInOutCubic(float x)
-{
-    return x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2;
-}
 
-float easeOutCirc(float x)
-{
-    return sqrt(1 - pow(x - 1, 2));
-}
 
 [numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -154,12 +118,23 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float amplitude = 1;
     float frequency = 1;
     
-    result = FindClosest(vertexPos) * amplitude;
+    
     
     //replace the .8 later. It represents the sealevel 0-1
-   
-    result = (result > 1) ? 1 : result;
-    result = (result < seaLevel) ? 1-easeOutCirc((seaLevel - result)/seaLevel) : 1;
+    if (!edgeDetect)
+    {
+        //standard craters
+        result = FindClosest(vertexPos) * amplitude;
+        result = (result > 1) ? 1 : result;
+        result = (result < seaLevel) ? 1 - easeOutCirc((seaLevel - result) / seaLevel) : 1;
+    }
+    else
+    {
+        result = FindEdge(vertexPos) * amplitude;
+        result = (result > 1) ? 1 : result;
+        //result = (result < seaLevel) ? 1 - easeOutCirc((seaLevel - result) / seaLevel) : 1;
+    }
+
 
     //result = easeInCirc( result);
     

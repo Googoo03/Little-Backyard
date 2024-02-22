@@ -58,6 +58,8 @@ public class BarrenPlanetNoise : GeneratePlane
 
 
         worley.SetBool("inverse", false);
+        worley.SetBool("edgeDetect", true);
+        worley.SetFloat("edgeThreshold", 0.6f);
         worley.SetBool("mode", false); //set to add mode
         worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
