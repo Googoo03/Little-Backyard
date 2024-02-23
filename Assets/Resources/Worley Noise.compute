@@ -23,6 +23,7 @@ float seaLevel;
 
 bool mode; //either add mode or multiply mode
 bool edgeDetect;
+bool volcano_crater;
 float edgeThreshold;
 
 int FastFloor(float x) //returns the floor of x
@@ -72,8 +73,8 @@ float FindEdge(float3 pos)
     //create second closest and closest vals
     //if within boundary, then edge
     
-    float closestDistance = 100;
-    float secondClosest = 100;
+    float closestDistance = 1000;
+    float secondClosest = 1000;
     for (uint distIndex = 0; distIndex < 25; ++distIndex)
     {
 
@@ -81,16 +82,22 @@ float FindEdge(float3 pos)
         //closest is always smallest
         if (_distance < closestDistance)
         {
+            
             secondClosest = closestDistance;
             closestDistance = _distance;
+        }
+        else if (_distance < secondClosest)
+        {
+            secondClosest = _distance;
         }
         
         
     }
-    float difference = abs(secondClosest - closestDistance);
+    //FIGURE OUT NEW WAY TO COMPUTE THE SECOND AND FIRST DISTANCE
+    float difference = secondClosest - closestDistance;
     bool edge = (difference < edgeThreshold);
-    closestDistance = (edge) ? EaseInOutCubic( ( edgeThreshold - difference) / edgeThreshold) : 0;
-    return closestDistance;
+    float value = (edge) ? EaseInOutCubic((edgeThreshold-difference)/edgeThreshold) : 0;
+    return value;
 }
 
 
@@ -126,19 +133,20 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         //standard craters
         result = FindClosest(vertexPos) * amplitude;
         result = (result > 1) ? 1 : result;
-        result = (result < seaLevel) ? 1 - easeOutCirc((seaLevel - result) / seaLevel) : 1;
+        if (volcano_crater)
+        {
+            result = (result < seaLevel) ? easeInCirc((seaLevel - result) / seaLevel) : 0;
+        }
+        else
+        {
+            
+            result = (result < seaLevel) ? 1 - easeOutCirc((seaLevel - result) / seaLevel) : 1;
+        }
     }
     else
     {
         result = FindEdge(vertexPos) * amplitude;
-        result = (result > 1) ? 1 : result;
-        //result = (result < seaLevel) ? 1 - easeOutCirc((seaLevel - result) / seaLevel) : 1;
     }
-
-
-    //result = easeInCirc( result);
-    
-    //result *= result > seaLevel ? landMultiplier : oceanMultiplier;
     
     if (mode)
     {
