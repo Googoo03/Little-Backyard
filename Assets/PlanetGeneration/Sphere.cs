@@ -119,7 +119,7 @@ public class Sphere : MonoBehaviour
         //planetType = Random.Range(0,6);
 
         //set the planet type and name
-        planetType = 0;//UnityEngine.Random.Range(1,4);
+        planetType = UnityEngine.Random.Range(0,6);
         transform.name = "Planet" + planetType.ToString();
 
 

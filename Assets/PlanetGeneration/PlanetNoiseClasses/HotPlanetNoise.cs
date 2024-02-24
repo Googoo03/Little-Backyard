@@ -8,15 +8,15 @@ using Worley;
 public class HotPlanetNoise : GeneratePlane
 {
     // Start is called before the first frame update
-    Noise simplexNoise = new Noise();
+    ComputeShader simplex;
     ComputeShader worley;
 
     public HotPlanetNoise()
     {
         //set up noise parameters. surely theres a better way to do this
-        oceanFloor = 0.3f;
-        oceanMulitplier = 0.08f;
-        landMultiplier = 0.02f;
+        oceanFloor = 0f;
+        oceanMulitplier = 0.2f;
+        landMultiplier = 0.2f;
 
         octaves = 4;
         scale = 0.4f;
@@ -26,23 +26,44 @@ public class HotPlanetNoise : GeneratePlane
     }
     protected override void DispatchNoise(ref Vector3[] vertices)
     {
-        worley = (ComputeShader)Resources.Load("Worley Noise");
+        simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
+        worley = (ComputeShader)Instantiate(Resources.Load("Worley Noise"));
 
-
+        Vector3[] simplexVerts = new Vector3[vertices.Length];
         Vector3[] worleyVerts = new Vector3[vertices.Length];
+
         for (int i = 0; i < vertices.Length; ++i)
         {
-            worleyVerts[i] = transform.TransformPoint(vertices[i]);
+            Vector3 pos = vertices[i];
+            float nx = transform.TransformPoint(pos).x;
+            float ny = transform.TransformPoint(pos).y;
+            float nz = transform.TransformPoint(pos).z;
+
+            float xx = ((nx - xVertCount) / scale);
+            float yy = ((ny - yVertCount) / scale);
+            float zz = ((nz - xVertCount) / scale);
+
+            simplexVerts[i] = new Vector3(xx, yy, zz);
+            worleyVerts[i] = new Vector3(nx, ny, nz);
         }
 
-        verts = new ComputeBuffer(worleyVerts.Length, sizeof(float) * 3);
+        //SIMPLEX NOISE
+        verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+        verts.SetData(simplexVerts);
+
+        setComputeNoiseVariables(ref simplex);
+        simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+        ////////////////
+
         verts.SetData(worleyVerts);
+
+
+        oceanFloor = 0.3f;
+        setComputeNoiseVariables(ref worley);
 
         //set worley points
         List<Vector3> points = new List<Vector3>();
         points = patch.planetObject.GetComponent<Sphere>().getWorleyPoints();
-
-        setComputeNoiseVariables(ref worley);
 
         ComputeBuffer listPoints = new ComputeBuffer(points.Count, sizeof(float) * 3);
         listPoints.SetData(points);
@@ -93,19 +114,6 @@ public class HotPlanetNoise : GeneratePlane
     }
     public override float NoiseValue(Vector3 pos, float scale)
     {
-
-        /*float nx = transform.TransformPoint(pos).x;
-        float ny = transform.TransformPoint(pos).y;
-        float nz = transform.TransformPoint(pos).z;
-
-        float xx = ((nx - xVertCount) / scale) * frequency;
-        float yy = ((ny - yVertCount) / scale) * frequency;
-        float zz = ((nz - xVertCount) / scale) * frequency;
-
-        float noiseValue = (worleyNoise.Calculate(nx, ny, nz, worleyScale)) * 0.5f; // should return a value between 0 and 1
-        noiseValue -= simplexNoise.CalcPixel3D(xx, yy, zz, 1f / scale);
-
-        return noiseValue;*/
         return 0;
     }
 }
