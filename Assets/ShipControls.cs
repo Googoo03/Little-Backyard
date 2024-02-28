@@ -10,16 +10,24 @@ public class ShipControls : MonoBehaviour
 	public float mouseSensitivityY = 250;
     public float rollSensitivity;
 
-    public GameObject nearbyPlanet;
+    [SerializeField]private GameObject nearbyPlanet;
+    [SerializeField]private GameObject shipModel;
+    private Vector3 shipOriginalRotation;
 
     public SolarSystemQuadTree planetQuadTree;
 
     public Quaternion targetRotation;
     public Quaternion lastOrientation;
 
-    private float yawInput;
-    private float pitchInput;
-    private float rollInput;
+    
+    [SerializeField]private float rollInput;
+    [SerializeField] private float pitchInput;
+    [SerializeField] private float yawInput;
+
+    private float rollChange;
+    private float yawChange;
+    [SerializeField] private float pitchChange;
+
     private Quaternion yaw;
     private Quaternion pitch;
     private Quaternion roll;
@@ -34,10 +42,13 @@ public class ShipControls : MonoBehaviour
     private Vector3 horizonDirection = new Vector3(1,1,1);
 
     bool inAtmosphere; //would it be smart to initialize to false?
+
+
     
 	// Use this for initialization
 	void Start () {
         targetRotation = new Quaternion();
+        shipOriginalRotation = shipModel.transform.localEulerAngles;
 	}
 	
 	// Update is called once per frame
@@ -93,28 +104,20 @@ public class ShipControls : MonoBehaviour
         speed = (Input.GetKey(KeyCode.LeftShift)) ? 1f : 0.25f;
         if (isInAtmosphere()) SpeedCalibration();
 
-        forward = Input.GetAxis("Vertical");
-
-        yawInput = Input.GetAxis("Mouse X") * mouseSensitivityX;
-        pitchInput = Input.GetAxis("Mouse Y") * mouseSensitivityY;
-
-
-        float rollChange = -InputAxis(KeyCode.Q, KeyCode.E) * rollSensitivity * Time.deltaTime;
-        if (rollChange == 0)
-        {
-            rollInput *= 1-(rollSensitivity*Time.deltaTime); //diminish roll with time if no input change
-            if (Mathf.Abs(rollInput) <= .00001f) rollInput = 0; //arbitrary small number so there is no creep
-        }
-        else {
-            rollInput += rollChange; //smooth rolling
-            rollInput = Mathf.Clamp(rollInput, -1f, 1f); //prevents infinite speed increase
-        }
-
+        setKeyInputs();
         
 
-        yaw = Quaternion.AngleAxis(yawInput, transform.up);
-        pitch = Quaternion.AngleAxis(-pitchInput, transform.right);
+        smoothKey(ref rollInput, rollSensitivity, rollChange);
+        smoothKey(ref pitchInput, mouseSensitivityY, pitchChange);
+        smoothKey(ref yawInput, mouseSensitivityX, yawChange);
+
+
+        yaw = Quaternion.AngleAxis(yawChange*mouseSensitivityX, transform.up);
+        pitch = Quaternion.AngleAxis(-pitchChange*mouseSensitivityY, transform.right);
         roll = Quaternion.AngleAxis(-rollInput, transform.forward);
+
+        //set offset rotation of ship_model
+        shipModel.transform.localRotation = Quaternion.Euler(shipOriginalRotation) * Quaternion.Euler(new Vector3(10*sigmoidFunction(-pitchInput), 10 * sigmoidFunction(rollInput), 10 * sigmoidFunction(yawInput)));
 
         targetRotation = yaw * pitch * roll * targetRotation;
         lastOrientation = yaw*pitch*roll*lastOrientation;//perhaps delete later.
@@ -131,11 +134,37 @@ public class ShipControls : MonoBehaviour
 
     }
 
+    private void setKeyInputs() {
+        forward = Input.GetAxis("Vertical");
+
+        yawChange = Input.GetAxis("Mouse X");
+        pitchChange = Input.GetAxisRaw("Mouse Y");
+        rollChange = -InputAxis(KeyCode.Q, KeyCode.E) * rollSensitivity * Time.deltaTime;
+    }
+
+    private void smoothKey(ref float axis, float sensitivity, float axisChange) {
+        if (axisChange == 0)
+        {
+            axis *= 1 - (sensitivity * Time.deltaTime); //diminish roll with time if no input change
+            if (Mathf.Abs(axis) <= .00001f) axis = 0; //arbitrary small number so there is no creep
+        }
+        else
+        {
+
+            axis += axisChange; //smooth rolling
+            axis = Mathf.Clamp(axis, -1f, 1f); //prevents infinite speed increase
+        }
+    }
+
     private void LODCheckDistance() { //measures the distance between the player and nearbyPlanet. If close enough
                                       //make new LOD      
             if (distanceToNearestPlanet < 4) {
                 nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(this.gameObject);
             }
+    }
+
+    private float sigmoidFunction(float x) {
+        return (1 / (1 + Mathf.Pow(2.78f, -5 * x))) - 0.5f;
     }
 
     private int InputAxis(KeyCode buttonA, KeyCode buttonB) {
