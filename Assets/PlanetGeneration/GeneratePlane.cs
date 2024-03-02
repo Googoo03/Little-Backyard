@@ -78,7 +78,7 @@ public abstract class GeneratePlane : MonoBehaviour
         xVertCount = planePatch.vertices.x;
         yVertCount = planePatch.vertices.y;
 
-        radius = 1;
+        radius = planePatch.radius;
 
         Vector2 offset = new Vector2(-0.5f, -0.5f) + planePatch.LODOffset; //to center all side meshes. Multiply by LODoffset to give correct quadrant
         Vector2 step = new Vector2(1f / (xVertCount - 1), 1f / (yVertCount - 1)); //determines the distance or "step" amount between vertices

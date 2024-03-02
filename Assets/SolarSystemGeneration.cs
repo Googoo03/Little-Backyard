@@ -8,14 +8,16 @@ using UnityEngine.UIElements;
 
 public class SolarSystemGeneration : MonoBehaviour {
 
-    public GameObject planet;
-    public float seed;
-    public float scale;
+    [SerializeField]private GameObject planet;
 
-    public int density;
 
-    public int RegionWidth;
-    public int RegionHeight;
+    [SerializeField]private float seed;
+    [SerializeField]private int density;
+
+    [SerializeField] private int planetCount;
+
+    [SerializeField]private int RegionWidth;
+    [SerializeField]private int RegionHeight;
 
     public float solarsystemSpacing;
 
@@ -36,21 +38,26 @@ public class SolarSystemGeneration : MonoBehaviour {
 
     public void GenerateSolarSystem() {
         List<GameObject> planets = new List<GameObject> { };
-        for (int x = Mathf.FloorToInt(transform.localScale.x + 5); x < RegionWidth; x++)
+
+
+
+        for (int x = 0; x < planetCount; x++)
         {
 
-
-            //fix so that a reasonable amount of planets spawn. maybe put a cap? 
-            //ALSO ADD SO THAT THE PLANETS ARE SPUN AROUND A RANDOM THETA TO MAKE RANDOM PLACEMENT
             var hashValue = new Hash128();
             hashValue.Append(transform.position.x + x); //Keep these two append functions separate
             hashValue.Append(seed);
             int hashCode = hashValue.GetHashCode();
+            //fix so that a reasonable amount of planets spawn. maybe put a cap? 
+            //ALSO ADD SO THAT THE PLANETS ARE SPUN AROUND A RANDOM THETA TO MAKE RANDOM PLACEMENT
+
 
             if (hashCode % density == 0){
                 float cosineVal = Mathf.Cos( (hashCode % 360)); //the 500 is so its within 2pi range 
                 float sineVal = Mathf.Sin( (hashCode % 360));
-                Vector3 position = new Vector3(transform.position.x + (x * solarsystemSpacing * cosineVal), transform.position.y, transform.position.z + (x * solarsystemSpacing * sineVal));
+                float fracX = ( (x+1) / (float)planetCount) * RegionWidth; //each planet is a set fraction distance away from the sun.
+
+                Vector3 position = new Vector3(transform.position.x + (fracX * cosineVal), transform.position.y, transform.position.z + (fracX * sineVal));
                 GameObject newPlanet = Instantiate(planet, position, Quaternion.identity);
                 planets.Add(newPlanet);
 
@@ -59,9 +66,7 @@ public class SolarSystemGeneration : MonoBehaviour {
                 //add planets to root of quadtree
                 quadTree.addPlanet(newPlanet);
                 }
-        }
-        //transform.GetChild(0).GetComponent<ShipControls>().planets = planets;
-        
+        }  
     }
 
     private void GenerateQuadTree() {

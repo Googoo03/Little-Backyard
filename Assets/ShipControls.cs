@@ -6,8 +6,8 @@ using UnityEngine;
 public class ShipControls : MonoBehaviour
 {
 	public float speed;
-	public float mouseSensitivityX = 250;
-	public float mouseSensitivityY = 250;
+	public float mouseSensitivityX;
+	public float mouseSensitivityY;
     public float rollSensitivity;
 
     [SerializeField]private GameObject nearbyPlanet;
@@ -34,9 +34,12 @@ public class ShipControls : MonoBehaviour
 
     public float forward;
 
-    private bool tiltShipPlanet = false;
-    public float distanceToNearestPlanet;
-    private float pullUpDistance = 1.1f; //should be grabbed from the planet when it's said and done
+    [SerializeField]private bool tiltShipPlanet = false;
+    [SerializeField]private float distanceToNearestPlanet;
+    [SerializeField]private float initialDistanceThreshold;
+    [SerializeField] private float atmosphereDistance;
+    [SerializeField] private float pullUpDistance;
+    //private float pullUpDistance = 1.1f; //should be grabbed from the planet when it's said and done
 
     public float angle;
     private Vector3 horizonDirection = new Vector3(1,1,1);
@@ -108,12 +111,12 @@ public class ShipControls : MonoBehaviour
         
 
         smoothKey(ref rollInput, rollSensitivity, rollChange);
-        smoothKey(ref pitchInput, mouseSensitivityY, pitchChange);
+        smoothKey(ref pitchInput,mouseSensitivityY, pitchChange);
         smoothKey(ref yawInput, mouseSensitivityX, yawChange);
 
 
-        yaw = Quaternion.AngleAxis(yawChange*mouseSensitivityX, transform.up);
-        pitch = Quaternion.AngleAxis(-pitchChange*mouseSensitivityY, transform.right);
+        yaw = Quaternion.AngleAxis(yawChange, transform.up);
+        pitch = Quaternion.AngleAxis(-pitchChange, transform.right);
         roll = Quaternion.AngleAxis(-rollInput, transform.forward);
 
         //set offset rotation of ship_model
@@ -137,9 +140,9 @@ public class ShipControls : MonoBehaviour
     private void setKeyInputs() {
         forward = Input.GetAxis("Vertical");
 
-        yawChange = Input.GetAxis("Mouse X");
-        pitchChange = Input.GetAxisRaw("Mouse Y");
-        rollChange = -InputAxis(KeyCode.Q, KeyCode.E) * rollSensitivity * Time.deltaTime;
+        yawChange = Input.GetAxis("Mouse X") * mouseSensitivityX;
+        pitchChange = Input.GetAxis("Mouse Y") * mouseSensitivityY;
+        rollChange = -InputAxis(KeyCode.Q, KeyCode.E) * rollSensitivity;
     }
 
     private void smoothKey(ref float axis, float sensitivity, float axisChange) {
@@ -151,14 +154,14 @@ public class ShipControls : MonoBehaviour
         else
         {
 
-            axis += axisChange; //smooth rolling
+            axis += axisChange*Time.deltaTime; //smooth rolling
             axis = Mathf.Clamp(axis, -1f, 1f); //prevents infinite speed increase
         }
     }
 
     private void LODCheckDistance() { //measures the distance between the player and nearbyPlanet. If close enough
                                       //make new LOD      
-            if (distanceToNearestPlanet < 4) {
+            if (distanceToNearestPlanet < initialDistanceThreshold) {
                 nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(this.gameObject);
             }
     }
@@ -187,7 +190,7 @@ public class ShipControls : MonoBehaviour
 
     private bool isInAtmosphere()
     { //used to tilt the ship towards the planet if within range.
-        return distanceToNearestPlanet < 1.5f ? true : false;
+        return distanceToNearestPlanet < atmosphereDistance ? true : false;
     }
 
     private void tiltTowardsPlanet() {
@@ -230,10 +233,14 @@ public class ShipControls : MonoBehaviour
 
     }
 
+
     private void traverseQuadTree(SolarSystemQuadTree node) {
         
         if (node.getPlanetCount() == 1) { //return if 1 planet. I.E no extra children
             nearbyPlanet = node.getPlanet(0);
+            initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold();
+            atmosphereDistance = nearbyPlanet.GetComponent<Sphere>().getAtmosphereDistance();
+            pullUpDistance = nearbyPlanet.GetComponent<Sphere>().getRadius() + 0.1f;
         }
         if (node.getPlanetCount() == 0)
         { //return if 1 planet. I.E no extra children

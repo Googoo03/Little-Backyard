@@ -15,7 +15,8 @@ public struct PatchConfig
     public Vector2Int vertices;
     public GameObject planetObject;
     public float distanceThreshold;
-    public PatchConfig(string aName, Vector3 aUAxis, Vector3 aVAxis, int level,Vector2 LODoffset, Vector2Int xyVert, GameObject planet, float distanceT)
+    public float radius;
+    public PatchConfig(string aName, Vector3 aUAxis, Vector3 aVAxis, int level,Vector2 LODoffset, Vector2Int xyVert, GameObject planet, float distanceT, float _radius)
     {
         //seed, persistance, lacunarity, octaves, ref heightCurve, planetType, ref regions, ref heights
         name = aName;
@@ -28,6 +29,7 @@ public struct PatchConfig
         planetObject = planet;
         distanceThreshold = distanceT;
         maxLOD = 5;
+        radius = _radius;
         
     }
 }
@@ -53,7 +55,7 @@ public class Sphere : MonoBehaviour
     public int vPatchCount = 1; //purpose is unknown
     public int xVertCount;
     public int yVertCount;
-    public float radius = 5f;
+    private float radius = 5f;
     [SerializeField] private int seed;
     [SerializeField] private float scale;
     [SerializeField] private int octaves;
@@ -75,12 +77,14 @@ public class Sphere : MonoBehaviour
 
     
     private PatchConfig[] patches;
-    private List<PatchLOD> LOD;
+    [SerializeField]private List<PatchLOD> LOD;
 
     [SerializeField]private List<Vector3> worleyPoints = new List<Vector3>();
 
     public bool nextLOD;
     public bool prevLOD;
+
+    private float initialDistanceThreshold;
     private void Update()
     {
         //////////THIS AND THE UPDATE FUNCTION ARE ONLY FOR TESTING PURPOSES, MEANT TO BE REMOVED LATER
@@ -126,18 +130,20 @@ public class Sphere : MonoBehaviour
         //set the atmosphere color
         Color atmosphereColor = regionReference.GetPixel(4, planetType);
         transform.GetChild(0).GetComponent<Renderer>().material.SetColor("_Atmosphere_Color", atmosphereColor);
+        transform.GetChild(0).transform.localScale = Vector3.one * (radius + 0.1f)*2;
         ////////////////////////////
 
         //create all 6 sides of the sphere-cube
         Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
+        initialDistanceThreshold = 4 * radius;
         patches = new PatchConfig[]
         {
-         new PatchConfig("top", Vector3.right, Vector3.forward,0, Vector2.zero,xyVert,transform.gameObject,4),
-         new PatchConfig("bottom", Vector3.left, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, 4),
-         new PatchConfig("left", Vector3.up, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, 4),
-         new PatchConfig("right", Vector3.down, Vector3.forward,0, Vector2.zero,xyVert, transform.gameObject,4),
-         new PatchConfig("front", Vector3.right, Vector3.down, 0, Vector2.zero, xyVert, transform.gameObject, 4),
-         new PatchConfig("back", Vector3.right, Vector3.up, 0, Vector2.zero, xyVert, transform.gameObject, 4)
+         new PatchConfig("top", Vector3.right, Vector3.forward,0, Vector2.zero,xyVert,transform.gameObject,initialDistanceThreshold,radius),
+         new PatchConfig("bottom", Vector3.left, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius),
+         new PatchConfig("left", Vector3.up, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius),
+         new PatchConfig("right", Vector3.down, Vector3.forward,0, Vector2.zero,xyVert, transform.gameObject,initialDistanceThreshold,radius),
+         new PatchConfig("front", Vector3.right, Vector3.down, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius),
+         new PatchConfig("back", Vector3.right, Vector3.up, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius)
         };
 
         //create a list of points for worleyNoise
@@ -153,6 +159,7 @@ public class Sphere : MonoBehaviour
             point.Normalize();
             //this should be multiplied by the radius in the future
             point += transform.position;
+            point *= radius;
             worleyPoints.Add(point);
         }
     }
@@ -160,7 +167,6 @@ public class Sphere : MonoBehaviour
     public ref List<Vector3> getWorleyPoints() {
         return ref worleyPoints;
     }
-
 
     public void nextLODLevel()
     {
@@ -235,6 +241,14 @@ public class Sphere : MonoBehaviour
         }
     }
 
+    public float getAtmosphereDistance() {
+        return (radius + 0.5f);
+    }
+
+    public float getRadius() {
+        return radius;
+    }
+
     public int getPlanetType() {
         return planetType;
     }
@@ -287,6 +301,10 @@ public class Sphere : MonoBehaviour
     }
     public float getScale() {
         return scale;
+    }
+
+    public float getInitialDistanceThreshold() {
+        return initialDistanceThreshold;
     }
 
     void GeneratePatches()

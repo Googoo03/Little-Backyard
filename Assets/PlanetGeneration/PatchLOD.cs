@@ -14,6 +14,8 @@ public class PatchLOD {
     private PatchLOD parent;
     private Vector3 position;
     public int test;
+
+    [SerializeField]private float distance;
     
     public PatchLOD(GameObject patch, PatchLOD parent) {
         this.patch = patch;
@@ -83,16 +85,18 @@ public class PatchLOD {
 
             //make new patch config
             float newDistanceThreshold;
-            /*if (patchConfig.LODlevel >= 5)
-            {
-                //newDistanceThreshold = 0;
-            }
-            else {
-                newDistanceThreshold = patchConfig.distanceThreshold / 2f;
-            }*/
-            newDistanceThreshold = patchConfig.distanceThreshold / 2f;
+            newDistanceThreshold = patchConfig.distanceThreshold / 8f;
 
-            PatchConfig patchConfigChild = new PatchConfig(names[i], patchConfig.uAxis, patchConfig.vAxis, patchConfig.LODlevel + 1, LODOffset, patchConfig.vertices,patchConfig.planetObject,newDistanceThreshold);
+            PatchConfig patchConfigChild = new PatchConfig(
+                names[i], 
+                patchConfig.uAxis, 
+                patchConfig.vAxis, 
+                patchConfig.LODlevel + 1, 
+                LODOffset, 
+                patchConfig.vertices,
+                patchConfig.planetObject,
+                newDistanceThreshold, patchConfig.radius
+                );
 
 
             //have patchConfig child inherit everything from parent
@@ -203,11 +207,11 @@ public class PatchLOD {
         else
         {
             //need to take into account that all patches have the same location, but are offset differently
-            float distance = Vector3.Distance(node.position, player.transform.position);
-            if (distance < node.patchConfig.distanceThreshold &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD)
+            distance = Vector3.Distance(node.position, player.transform.position);
+            if (distance < (node.patchConfig.distanceThreshold + node.patchConfig.radius) &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD)
             {
                 node.nextLOD();
-            }else if (distance > 4* node.patchConfig.distanceThreshold) //if distance between player and patch is too large
+            }else if (distance > 4* (node.patchConfig.distanceThreshold+node.patchConfig.radius)) //if distance between player and patch is too large
                                                                         //then undo the LOD
             {
                 node.prevLOD(node.parent);
