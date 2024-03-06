@@ -18,8 +18,8 @@ public class DesertPlanetNoise : GeneratePlane
         oceanMulitplier = .1f;
         landMultiplier = .5f;
 
-        octaves = 6;
-        scale = 0.55f;
+        octaves = 12;
+        scale = 5f;
         //worleyScale = 4;
         lacunarity = 2;
         persistance = 0.5f;

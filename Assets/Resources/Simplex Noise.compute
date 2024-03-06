@@ -15,6 +15,9 @@ float oceanMultiplier;
 float landMultiplier;
 float seaLevel;
 
+bool absValue;
+float mountainStrength;
+
 const static int PermOriginal[] = 
 {
     151,160,137,91,90,15,
@@ -261,6 +264,27 @@ float CalcPixel3D(float3 pos, float scale)
     return value;
 }
 
+
+float easeInCirc(float x)
+{
+    return 1 - sqrt(1 - pow(x, 2));
+}
+
+float easeOutCirc(float x)
+{
+    return sqrt(1 - pow(x - 1, 2));
+}
+
+float Smooth(float x)
+{
+    return pow(x, 0.3);
+}
+
+float easeInOutQuint(float x)
+{
+    return x < 0.5 ? 16 * x * x * x * x * x : 1 - pow(-2 * x + 2, 5) / 2;
+}
+
 [numthreads(1, 1, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -295,6 +319,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         amplitude *= persistance;
         frequency *= lacunarity;
     }
-    result *= result > seaLevel ? landMultiplier : oceanMultiplier;
+    oceanMultiplier *= absValue ? 0 : 1;
+    result = (absValue) ? (1 - Smooth(abs(result)))*mountainStrength : result;
+    result *= (result > seaLevel) ? landMultiplier : oceanMultiplier;
     Result[id.xy] += result;
 }

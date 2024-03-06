@@ -23,10 +23,10 @@ public class LifePlanetNoise : GeneratePlane
 
         oceanFloor = 0;
         oceanMulitplier = 0.1f;
-        landMultiplier = 0.5f;
+        landMultiplier = 0.3f;
 
-        octaves = 6;
-        scale = 0.75f;
+        octaves = 20;
+        scale = 3f;
         lacunarity = 2;
         persistance = 0.5f;
         changeHeight = true;
@@ -36,34 +36,8 @@ public class LifePlanetNoise : GeneratePlane
         return 1 - Mathf.Sqrt(1 - Mathf.Pow(x, 2));
     }
 
-    
-    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
-    {
-        //EACH PLANET TYPE NEEDS TO HAVE INDEPENDENT TUNED PARAMETERS
 
-
-
-        //the getcomponent lines look ugly, is there a way to clean it up?
-        int regionLength = patch.planetObject.GetComponent<Sphere>().getRegionLength();
-        for (int r = 0; r < regionLength - 1; r++)
-        {
-            float currentIndexHeight = patch.planetObject.GetComponent<Sphere>().getHeightArrayValue(r);
-            float nextIndexHeight = patch.planetObject.GetComponent<Sphere>().getHeightArrayValue(r+1);
-
-
-            if (currentHeight >= currentIndexHeight && currentHeight < nextIndexHeight)
-            {
-                Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r);
-                mat.SetColor("_Land", color);
-                break;
-            }
-            if (r == regionLength - 2)
-            {
-                Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r-1);
-                mat.SetColor("_Land", color);
-            }
-        }
-    }
+    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight) { }
 
     protected override void DispatchNoise(ref Vector3[] vertices) {
         simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
@@ -86,20 +60,22 @@ public class LifePlanetNoise : GeneratePlane
         verts.SetData(vertices);
 
         setComputeNoiseVariables(ref simplex);
+        simplex.SetBool("absValue", false);
+        
+
+        simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+
+        simplex.SetFloat("seed", 100);
+        simplex.SetFloat("mountainStrength", 10f);
+        simplex.SetFloat("persistance", 0.8f);
+        simplex.SetFloat("lacunarity", 0.25f);
+        simplex.SetInt("octaves", 3);
+        simplex.SetBool("absValue", true);
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
         verts.Release();
     }
 
-    public override float NoiseValue(Vector3 pos, float scale)
-    {
-
-
-
-        /*float noiseValue = simplexNoise.CalcPixel3D(xx, yy, zz, 1f / scale); // should return a value between 0 and 1
-        noiseValue = EaseInCirc(noiseValue);
-        return noiseValue;*/
-        return 0;
-    }
+    public override float NoiseValue(Vector3 pos, float scale) { return 0; }
 }

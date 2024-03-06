@@ -19,7 +19,7 @@ public class HotPlanetNoise : GeneratePlane
         landMultiplier = 0.2f;
 
         octaves = 4;
-        scale = 0.4f;
+        scale = 3f;
         lacunarity = 2;
         persistance = 0.5f;
         changeHeight = true;

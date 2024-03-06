@@ -192,7 +192,7 @@ public abstract class GeneratePlane : MonoBehaviour
         Vector2 p = offset + new Vector2( (xVert/2) * step.x, (yVert/2) * step.y);
 
         Vector3 vec = ((planePatch.uAxis * p.x) + (planePatch.vAxis * p.y) + (planePatch.height * 0.5f));
-        vec = vec.normalized;
+        vec = vec.normalized * radius;
 
         vec += this.transform.position;
         return vec;

@@ -123,7 +123,8 @@ public class Sphere : MonoBehaviour
         //planetType = Random.Range(0,6);
 
         //set the planet type and name
-        planetType = UnityEngine.Random.Range(0,5);
+        //planetType = UnityEngine.Random.Range(0,5);
+        planetType = 4;
         transform.name = "Planet" + planetType.ToString();
 
 
@@ -157,9 +158,10 @@ public class Sphere : MonoBehaviour
         {
             Vector3 point = new Vector3(UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-100, 100));
             point.Normalize();
+            point *= radius;
             //this should be multiplied by the radius in the future
             point += transform.position;
-            point *= radius;
+            
             worleyPoints.Add(point);
         }
     }
