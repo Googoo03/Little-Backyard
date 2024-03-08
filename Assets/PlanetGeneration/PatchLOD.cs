@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class PatchLOD {
 
@@ -87,6 +88,10 @@ public class PatchLOD {
             float newDistanceThreshold;
             newDistanceThreshold = patchConfig.distanceThreshold / 2f;
 
+            int xVertCount = patchConfig.vertices.x;
+            int yVertCount = patchConfig.vertices.y;
+            Vector2 vertexOffset = new Vector2(-(float)xVertCount / (1 << patchConfig.LODlevel+1), -(float)yVertCount / (1 << patchConfig.LODlevel+1)) * binaryOperator[i];
+
             PatchConfig patchConfigChild = new PatchConfig(
                 names[i], 
                 patchConfig.uAxis, 
@@ -95,7 +100,9 @@ public class PatchLOD {
                 LODOffset, 
                 patchConfig.vertices,
                 patchConfig.planetObject,
-                newDistanceThreshold, patchConfig.radius
+                newDistanceThreshold, 
+                patchConfig.radius,
+                patchConfig.textureOffset + vertexOffset
                 );
 
 
@@ -103,6 +110,11 @@ public class PatchLOD {
             //addFlatShader(patchChild);
             patchChild.GetComponent<GeneratePlane>().Generate(patchConfigChild,powerof2Frac);
             patchChild.transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -LODOffset * (1 << patchConfigChild.LODlevel) );
+            patchChild.transform.GetComponent<Renderer>().material.SetVector("_Tile", new Vector4(1 << patchConfigChild.LODlevel, 1 << patchConfigChild.LODlevel, 0, 0));
+
+           
+            patchChild.transform.GetComponent<Renderer>().material.SetVector("_Offset", new Vector4(patchConfigChild.textureOffset.x,patchConfigChild.textureOffset.y, 0, 0));
+
 
             AddChild(patchChild);
         }

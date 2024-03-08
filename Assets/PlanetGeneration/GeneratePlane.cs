@@ -147,7 +147,8 @@ public abstract class GeneratePlane : MonoBehaviour
         DispatchNoise(ref vertices);
         transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
         transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
-        
+
+
     }
 
     protected abstract void DispatchNoise(ref Vector3[] vertices);

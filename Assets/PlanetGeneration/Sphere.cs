@@ -9,6 +9,9 @@ public struct PatchConfig
     public int maxLOD;
     public int LODlevel;
     public Vector2 LODOffset;
+
+    public Vector2 textureOffset;
+
     public Vector3 uAxis;
     public Vector3 vAxis;
     public Vector3 height;
@@ -16,15 +19,20 @@ public struct PatchConfig
     public GameObject planetObject;
     public float distanceThreshold;
     public float radius;
-    public PatchConfig(string aName, Vector3 aUAxis, Vector3 aVAxis, int level,Vector2 LODoffset, Vector2Int xyVert, GameObject planet, float distanceT, float _radius)
+    public PatchConfig(string aName, Vector3 aUAxis, Vector3 aVAxis, int level,Vector2 LODoffset, Vector2Int xyVert, GameObject planet, float distanceT, float _radius, Vector2 texOffset)
     {
         //seed, persistance, lacunarity, octaves, ref heightCurve, planetType, ref regions, ref heights
         name = aName;
         uAxis = aUAxis;
         vAxis = aVAxis;
+
         height = Vector3.Cross(vAxis, uAxis);
+
         LODlevel = level;
         LODOffset = LODoffset;
+
+        textureOffset = texOffset;
+
         vertices = xyVert;
         planetObject = planet;
         distanceThreshold = distanceT;
@@ -139,12 +147,12 @@ public class Sphere : MonoBehaviour
         initialDistanceThreshold = 4 * radius;
         patches = new PatchConfig[]
         {
-         new PatchConfig("top", Vector3.right, Vector3.forward,0, Vector2.zero,xyVert,transform.gameObject,initialDistanceThreshold,radius),
-         new PatchConfig("bottom", Vector3.left, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius),
-         new PatchConfig("left", Vector3.up, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius),
-         new PatchConfig("right", Vector3.down, Vector3.forward,0, Vector2.zero,xyVert, transform.gameObject,initialDistanceThreshold,radius),
-         new PatchConfig("front", Vector3.right, Vector3.down, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius),
-         new PatchConfig("back", Vector3.right, Vector3.up, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius)
+         new PatchConfig("top", Vector3.right, Vector3.forward,0, Vector2.zero,xyVert,transform.gameObject,initialDistanceThreshold,radius, Vector2.zero),
+         new PatchConfig("bottom", Vector3.left, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius, Vector2.zero),
+         new PatchConfig("left", Vector3.up, Vector3.forward, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius,Vector2.zero),
+         new PatchConfig("right", Vector3.down, Vector3.forward,0, Vector2.zero,xyVert, transform.gameObject,initialDistanceThreshold,radius,Vector2.zero),
+         new PatchConfig("front", Vector3.right, Vector3.down, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius, Vector2.zero),
+         new PatchConfig("back", Vector3.right, Vector3.up, 0, Vector2.zero, xyVert, transform.gameObject, initialDistanceThreshold, radius, Vector2.zero)
         };
 
         //create a list of points for worleyNoise
