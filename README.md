@@ -10,4 +10,4 @@ The planets use a dynamic Level Of Detail system to create the needed geometry o
 
 Each planet is made of a cube-sphere. There are 6 sides to each cube, whose lengths are normalized to give the impression of a sphere. Each side of the sphere is the root of an individual quadtree, which extends in height when the player crosses a boundary threshold. This continues recursively until a maximum height is reached. Example here.
 
-![LOD_Example](https://raw.githubusercontent.com/Googoo03/Space-Game/4d3436bb3048e8a8d605e48044d27719baff2edb/.github/images/DynamicLOD.png)
+![LOD_Example](https://raw.githubusercontent.com/Googoo03/Space-Game/fa63fe534175d9518bdfca7bc8a105b07b1a7ae8/.github/images/DynamicLOD.png)
