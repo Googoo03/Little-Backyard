@@ -23,7 +23,7 @@ public class LifePlanetNoise : GeneratePlane
 
         oceanFloor = 0;
         oceanMulitplier = 0.1f;
-        landMultiplier = 0.3f;
+        landMultiplier = 0.15f;
 
         octaves = 20;
         scale = 3f;
@@ -66,7 +66,7 @@ public class LifePlanetNoise : GeneratePlane
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
         simplex.SetFloat("seed", 100);
-        simplex.SetFloat("mountainStrength", 10f);
+        simplex.SetFloat("mountainStrength", 5f);
         simplex.SetFloat("persistance", 0.8f);
         simplex.SetFloat("lacunarity", 0.25f);
         simplex.SetInt("octaves", 3);

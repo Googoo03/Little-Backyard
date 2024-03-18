@@ -112,7 +112,10 @@ public class PatchLOD {
             patchChild.transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -LODOffset * (1 << patchConfigChild.LODlevel) );
             patchChild.transform.GetComponent<Renderer>().material.SetVector("_Tile", new Vector4(1 << patchConfigChild.LODlevel, 1 << patchConfigChild.LODlevel, 0, 0));
 
-           
+            float textureTiling = (1 << patchConfigChild.maxLOD) / (1 << patchConfigChild.LODlevel);
+            patchChild.transform.GetComponent<Renderer>().material.SetVector("_Tiling", new Vector4(textureTiling, textureTiling, 0, 0));
+
+
             patchChild.transform.GetComponent<Renderer>().material.SetVector("_Offset", new Vector4(patchConfigChild.textureOffset.x,patchConfigChild.textureOffset.y, 0, 0));
 
 
