@@ -5,6 +5,8 @@
 // with cs.SetTexture
 RWTexture2D<float4> Result;
 RWStructuredBuffer<float3> vertexBuffer;
+//RWStructuredBuffer<float3> normalBuffer;
+RWStructuredBuffer<float3> vertexWorldBuffer;
 
 int startSeed = 0;
 int seed;
@@ -290,7 +292,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
     int index = (id.x + (id.y * 16)+id.z);
-    float3 vertexPos = vertexBuffer[index];
+    float3 vertexPos = vertexWorldBuffer[index];
 
     if (seed != 0)
     {
@@ -323,4 +325,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     result = (absValue) ? (1 - Smooth(abs(result)))*mountainStrength : result;
     result *= (result > seaLevel) ? landMultiplier : oceanMultiplier;
     Result[id.xy] += result;
+    
+    //(vertexData.normal * r.x * (distortionScale) );
+    vertexBuffer[index] += (normalize(vertexBuffer[index]) * result); //normally this would be normal * result but the vertex position should be identical for a sphere.
 }

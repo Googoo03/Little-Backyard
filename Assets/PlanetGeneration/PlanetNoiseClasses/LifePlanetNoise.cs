@@ -40,8 +40,11 @@ public class LifePlanetNoise : GeneratePlane
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight) { }
 
     protected override void DispatchNoise(ref Vector3[] vertices) {
-        simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
 
+        simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
+        Vector3[] verticesWorldSpace = new Vector3[vertices.Length];
+
+        //////CONVERTS RELATIVE VERTEX POINTS INTO WORLD SPACE POSITIONS
         for (int i = 0; i < vertices.Length; ++i)
         {
             Vector3 pos = vertices[i];
@@ -53,11 +56,15 @@ public class LifePlanetNoise : GeneratePlane
             float yy = ((ny - yVertCount) / scale);
             float zz = ((nz - xVertCount) / scale);
 
-            vertices[i] = new Vector3(xx,yy,zz);
+            verticesWorldSpace[i] = new Vector3(xx,yy,zz);
         }
+        /////////////////////////////////////////////////////////////////
 
         verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
         verts.SetData(vertices);
+
+        worldVerts = new ComputeBuffer(verticesWorldSpace.Length, sizeof(float) * 3);
+        worldVerts.SetData(verticesWorldSpace);
 
         setComputeNoiseVariables(ref simplex);
         simplex.SetBool("absValue", false);
@@ -73,6 +80,10 @@ public class LifePlanetNoise : GeneratePlane
         simplex.SetBool("absValue", true);
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+        
+        
+        verts.GetData(vertices);
+
 
         verts.Release();
     }

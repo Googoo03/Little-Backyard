@@ -31,6 +31,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
     [SerializeField]protected RenderTexture texture;
     protected ComputeBuffer verts;
+    protected ComputeBuffer worldVerts;
     protected int shaderHandle;
 
     public abstract float NoiseValue(Vector3 pos, float scale);
@@ -42,6 +43,8 @@ public abstract class GeneratePlane : MonoBehaviour
 
         shader.SetTexture(shaderHandle, "Result", texture);
         shader.SetBuffer(shaderHandle, "vertexBuffer", verts);
+
+        shader.SetBuffer(shaderHandle, "vertexWorldBuffer", worldVerts);
 
         shader.SetFloat("octaves", octaves);
         shader.SetFloat("persistance", persistance);
@@ -134,6 +137,8 @@ public abstract class GeneratePlane : MonoBehaviour
                 indices[i + 3] = x + 1 + y * xVertCount;
             }
         }
+        DispatchNoise(ref vertices); //change the vertices, then set them
+
         m.vertices = vertices;
         m.normals = normals;
         m.uv = uvs;
@@ -144,7 +149,9 @@ public abstract class GeneratePlane : MonoBehaviour
 
         this.gameObject.AddComponent<MeshCollider>();
 
-        DispatchNoise(ref vertices);
+
+        m.RecalculateNormals();
+
         transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
         transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
 

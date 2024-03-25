@@ -290,7 +290,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   planet: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
-  seed: 3596345
+  seed: 3726668
   density: 1
   planetCount: 3
   RegionWidth: 80
