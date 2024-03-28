@@ -296,6 +296,25 @@ MonoBehaviour:
   RegionWidth: 80
   RegionHeight: 80
   solarsystemSpacing: 1
+--- !u!1 &573247462 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4156666392651312756, guid: e7624d12d32d3426ea30613788c3244f,
+    type: 3}
+  m_PrefabInstance: {fileID: 903820971}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &573247466
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573247462}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1c12df4621dd3a43ae81b1027b3c24e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerCamera: {fileID: 0}
 --- !u!1001 &903820971
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -481,7 +500,11 @@ PrefabInstance:
         type: 3}
       insertIndex: 0
       addedObject: {fileID: 6366536374520570576}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4156666392651312756, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 573247466}
   m_SourcePrefab: {fileID: 100100000, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
 --- !u!850595691 &1950401255
 LightingSettings:
@@ -607,6 +630,16 @@ PrefabInstance:
         type: 3}
       propertyPath: radius
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2848743650586428118, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+        type: 3}
+      propertyPath: Deep_Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2848743650586428118, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+        type: 3}
+      propertyPath: Shallow_Color.a
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 114009840963039382, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}

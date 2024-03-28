@@ -82,33 +82,9 @@ Shader "Custom/Planet_Surface_Shader"
             return ret;
         }
 
-        float3 WorldToTangentNormalVector(Input IN, float3 normal) {
-            float3 t2w0 = WorldNormalVector(IN, float3(1,0,0));
-            float3 t2w1 = WorldNormalVector(IN, float3(0,1,0));
-            float3 t2w2 = WorldNormalVector(IN, float3(0,0,1));
-            float3x3 t2w = float3x3(t2w0, t2w1, t2w2);
-            return normalize(mul(t2w, normal));
-        }
-
         void vert(inout appdata_full vertexData, out Input o) {
 
             UNITY_INITIALIZE_OUTPUT(Input, o);
-
-            distortionScale = 0.5;
-
-            textureSize = 16; //assumes the texture is 16x16
-            texelSize = 1.0 / textureSize;
-
-            float2 _uv = vertexData.texcoord.xy; //get original uv
-            float2 _uvOffset = float2(texelSize * _Offset.x, texelSize * _Offset.y); //create offset
-            _uv += _uvOffset; //shift
-            _uv *= _Tile.xy; //shrink
-
-            //float multiplier = (r.x > _L1) ? _LandMultiplier : _OceanMultiplier; //if the value exceeds ocean level, then multiply by landmultiplier, otherwise by OceanMultiplier
-
-
-            float4 r = tex2Dlod(_HeightMap, float4(_uv, 0.0, 0.0));
-            //vertexData.vertex.xyz += (vertexData.normal * r.x * (distortionScale) ); //distort vertex posiiton
 
             o.normal = vertexData.normal;
             o.vertPos = vertexData.vertex;
@@ -142,19 +118,6 @@ Shader "Custom/Planet_Surface_Shader"
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
             fixed4 red = tex2D (_HeightMap, IN.uv_HeightMap);
-
-            //CALCULATE THE SURFACE NORMAL
-            /*float3 worldInterpolatedNormalVector = IN.worldNormal;
-
-            float3 ddxPos = ddx(IN.worldPos);
-            float3 ddyPos = ddy(IN.worldPos)  * _ProjectionParams.x;
-            float3 worldCrossProduct = cross(ddxPos, ddyPos);
-            //turns the worldCrossProduct to tangent space;
-            float3 normal = WorldToTangentNormalVector(IN,worldCrossProduct);
-            o.Normal = normal;*/
-
-            //////////////////////////////
-
 
             //GET THE 2 SURFACE TEXTURE ALONG WITH CLIFF OVERRIDE TEXTURE
             int index = (red.r > _L1) + (red.r > _L2); //gets the index according to the height level
