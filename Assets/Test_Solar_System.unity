@@ -315,6 +315,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerCamera: {fileID: 0}
+  mat: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
 --- !u!1001 &903820971
 PrefabInstance:
   m_ObjectHideFlags: 0
