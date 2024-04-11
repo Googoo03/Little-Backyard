@@ -10,6 +10,7 @@ Shader "Custom/Atmosphere_IE"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _PlanetPos ("Planet Position", Vector) = (0,0,0,0)
+        _SunPos ("Sun Position", Vector) = (0,0,0,0)
         _Color ("Atmosphere Color", Color) = (1,1,1,1)
         _Radius ("Planet Radius", float) = 5
         _AtmosphereHeight ("Atmosphere Height", float) = 0.5
@@ -40,18 +41,24 @@ Shader "Custom/Atmosphere_IE"
                 float2 uv : TEXCOORD0;
                 float4 screenPos : TEXCOORD1;
                 float3 viewVector : TEXCOORD2;
+                float3 worldNormal : TEXCOORD4;
                 float4 vertex : SV_POSITION;
             };
 
             UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
-            v2f vert (appdata v)
+            v2f vert (appdata_base v)
             {
                 v2f o;
+
+                float3 worldNormal = normalize(mul(unity_ObjectToWorld, float4(v.normal, 0)).xyz);
+
+                o.worldNormal = worldNormal;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
+                //o.uv = v.uv;
 
                 o.screenPos = ComputeScreenPos(o.vertex);
+                o.uv = (o.screenPos.xy/o.screenPos.w);
 
                 float3 viewVector = mul(unity_CameraInvProjection, float4((o.screenPos.xy/o.screenPos.w) * 2 - 1, 0, -1));
                 o.viewVector = mul(unity_CameraToWorld, float4(viewVector,0));
@@ -61,6 +68,7 @@ Shader "Custom/Atmosphere_IE"
 
             sampler2D _MainTex;
             float3 _PlanetPos;
+            float3 _SunPos;
             float _Radius;
             float _AtmosphereHeight;
             float _Density;
@@ -75,6 +83,10 @@ Shader "Custom/Atmosphere_IE"
                 float3 w1 = scalar * v;
                 float3 w2 = mu - w1;
                 return (scalar < 0 && cameraDistanceToPlanet > _Radius+_AtmosphereHeight) ? w2 * 1000 : w2;
+            }
+
+            float QuadraticSolve(float a, float b, float c, bool plus){
+                return plus ? ( (-b + sqrt(b*b - 4*a*c)) / 2*a) : ( (-b - sqrt(b*b - 4*a*c)) / 2*a);
             }
 
             fixed4 frag (v2f i) : SV_Target
@@ -98,20 +110,69 @@ Shader "Custom/Atmosphere_IE"
                 float _A = 180 - _C - angleView_W2;
                 float intersection_atmosphere_scalar = ((_Radius + _AtmosphereHeight) * (sin(_A)) / sin_angleView_W2);
 
+                
+
                 float depthTextureSample = SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, i.screenPos);
                 float terrainLevel = LinearEyeDepth(depthTextureSample);
 
                 float atmosphere_depth = clamp(terrainLevel - intersection_atmosphere_scalar,0,_AtmosphereHeight);
 
+                
+
                 fixed4 noColor = tex2D(_MainTex, i.uv);
                 fixed4 atmosphereColor = _Color;
                 atmosphereColor *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
+
+                /////////ONLY SHOW WHERE INTERSECTS WITH LIGHT
+                float r = _Radius + _AtmosphereHeight;
+                float3 Q = _WorldSpaceCameraPos - _PlanetPos;
+                float a = 1;//viewDirection * viewDirection;
+                float b = 2 * dot(viewDirection, Q);
+                float c = dot(Q,Q) - r*r;
+                float d = (dot(viewDirection,Q)*dot(viewDirection,Q)) - c;
+
+                /*float3 pos0 = _WorldSpaceCameraPos;
+                float3 pos1 = _WorldSpaceCameraPos + (viewDirection*10000);
+                float z0 = _WorldSpaceCameraPos.z;
+
+                float x1 = x
+
+                float xc = _PlanetPos.x;
+                float yc = _PlanetPos.y;
+                float zc = _PlanetPos.z;
+
+                float _A = (pos0.x-xc)*(pos0.x-xc) + (pos0.y-yc)*(pos0.y-yc) + (pos0.z-zc)*(pos0.z-zc) - r*r;
+                
+                float _C = (pos0.x-pos1.x)*(pos0.x-pos1.x) + (pos0.y-pos1.y)*(pos0.y-pos1.y) + (pos0.z-pos1.z)*(pos0.z-pos1.z);
+                float _B = (pos1.x-xc)*(pos1.x-xc) + (pos1.y-yc)*(pos1.y-yc) + (pos1.z-zc)*(pos1.z-zc) - _A - _C - r*r;
+                
+                float t1 = QuadraticSolve(_A,_B,_C,true);*/
+                float t1 = -1;
+                float t2 = -1;
+                float atmosphereAlpha = 1;
+                float dotProduct = 0;
+
+                if(d >= 0){
+                    t1 = QuadraticSolve(a,b,c,false);
+                    t2 = QuadraticSolve(a,b,c,true);
+
+                    if(t1 >= 0 || t2 >=0){
+
+                    
+                    float3 intersectionPoint = _WorldSpaceCameraPos + (t1*viewDirection);
+
+                    float3 normalVector = normalize(intersectionPoint - _PlanetPos); //is this right?
+                    float3 lightVector = normalize(_SunPos - _PlanetPos);
+                    dotProduct = dot(lightVector,normalVector); //always outputs -1, why?
+                    //dot product's not working.
+                    atmosphereColor *= dotProduct;
+                    }
+                }
+                
+                /////////////////////////////////////////////////
                  
 
-                fixed4 col = (distanceToPlanet < (_Radius + _AtmosphereHeight) ) ? lerp(atmosphereColor,noColor,exp(-atmosphere_depth * _Density) ) : noColor;
-
-
-                //lerp(noColor,atmosphereColor,exp()
+                fixed4 col = (distanceToPlanet < (_Radius + _AtmosphereHeight) ) ? lerp( float4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density) ) : noColor;
 
                 return col;
             }
