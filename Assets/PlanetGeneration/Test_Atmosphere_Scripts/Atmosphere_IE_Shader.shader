@@ -121,7 +121,9 @@ Shader "Custom/Atmosphere_IE"
 
                 fixed4 noColor = tex2D(_MainTex, i.uv);
                 fixed4 atmosphereColor = _Color;
-                atmosphereColor *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
+                float atmosphereAlpha = 1;
+
+                atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
 
                 /////////ONLY SHOW WHERE INTERSECTS WITH LIGHT
                 float r = _Radius + _AtmosphereHeight;
@@ -149,7 +151,7 @@ Shader "Custom/Atmosphere_IE"
                 float t1 = QuadraticSolve(_A,_B,_C,true);*/
                 float t1 = -1;
                 float t2 = -1;
-                float atmosphereAlpha = 1;
+                
                 float dotProduct = 0;
 
                 if(d >= 0){
@@ -165,14 +167,15 @@ Shader "Custom/Atmosphere_IE"
                     float3 lightVector = normalize(_SunPos - _PlanetPos);
                     dotProduct = dot(lightVector,normalVector); //always outputs -1, why?
                     //dot product's not working.
-                    atmosphereColor *= dotProduct;
+                    atmosphereAlpha *= dotProduct;
+                    atmosphereAlpha = max(0,atmosphereAlpha);
                     }
                 }
                 
                 /////////////////////////////////////////////////
-                 
+                
 
-                fixed4 col = (distanceToPlanet < (_Radius + _AtmosphereHeight) ) ? lerp( float4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density) ) : noColor;
+                fixed4 col = (distanceToPlanet < (_Radius + _AtmosphereHeight) ) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
 
                 return col;
             }

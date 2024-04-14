@@ -13,6 +13,8 @@ Shader "Custom/Planet_Surface_Shader"
 
         _CliffThreshold ("Cliff Threshold", float) = 0.1
 
+        _SunPos ("Sun Position", vector) = (5,300,5,1)
+
         //_PlanetPos("Planet Position", Vector) = (31.06755,300,10.62083,0)
 
         _L1 ("Level1", float) = 0.1 //these correspond to the boundary level between each texture
@@ -34,6 +36,7 @@ Shader "Custom/Planet_Surface_Shader"
         float4 _Tile;
         float4 _Offset;
         float4 _Tiling;
+        float4 _SunPos;
 
         float4 _PlanetPos;
 
@@ -141,7 +144,14 @@ Shader "Custom/Planet_Surface_Shader"
             //APPLY SURFACE COLOR
             fixed4 normalAlbedo = fixed4(blend( c1, blendOpacity,c2,1-blendOpacity),0);
 
+            float3 toSunVector = normalize(_SunPos - IN.worldPos);
+            float3 toPlanetVector = normalize(IN.vertPos);
+            float mask = max(0,dot(toSunVector,toPlanetVector));
+
             o.Albedo = blend(normalAlbedo, 1-cliffOpacity, cliff, cliffOpacity);
+            o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.1 ? mask : 1;
+
+
             o.Alpha = c1.a;
             /////////////////////
             

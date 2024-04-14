@@ -223,10 +223,11 @@ public class PatchLOD {
         {
             //need to take into account that all patches have the same location, but are offset differently
             distance = Vector3.Distance(node.position, player.transform.position);
+
             if (distance < (node.patchConfig.distanceThreshold) &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD)
             {
                 node.nextLOD();
-            }else if (distance > 4* (node.patchConfig.distanceThreshold+node.patchConfig.radius)) //if distance between player and patch is too large
+            }else if (distance > (1.5f*node.patchConfig.distanceThreshold)+node.patchConfig.radius) //if distance between player and patch is too large
                                                                         //then undo the LOD
             {
                 node.prevLOD(node.parent);

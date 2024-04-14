@@ -18,6 +18,7 @@ public struct PatchConfig
     public Vector2Int vertices;
     public GameObject planetObject;
     public float distanceThreshold;
+
     public float radius;
     public PatchConfig(string aName, Vector3 aUAxis, Vector3 aVAxis, int level,Vector2 LODoffset, Vector2Int xyVert, GameObject planet, float distanceT, float _radius, Vector2 texOffset)
     {
@@ -63,7 +64,10 @@ public class Sphere : MonoBehaviour
     public int vPatchCount = 1; //purpose is unknown
     public int xVertCount;
     public int yVertCount;
+
     private float radius = 5f;
+    [SerializeField] private float atmosphereHeight;
+
     [SerializeField] private int seed;
     [SerializeField] private float scale;
     [SerializeField] private int octaves;
@@ -252,7 +256,7 @@ public class Sphere : MonoBehaviour
     }
 
     public float getAtmosphereDistance() {
-        return (radius + 0.5f);
+        return (radius + atmosphereHeight);
     }
 
     public float getRadius() {
