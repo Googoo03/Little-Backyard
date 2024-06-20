@@ -83,6 +83,9 @@ public class HotPlanetNoise : GeneratePlane
         verts.Release();
     }
 
+    protected override void DispatchFoliage() { }
+
+    protected override void GenerateFoliage(Vector3 startPos) { }
 
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {

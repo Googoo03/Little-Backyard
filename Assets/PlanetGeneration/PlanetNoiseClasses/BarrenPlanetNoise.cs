@@ -24,7 +24,11 @@ public class BarrenPlanetNoise : GeneratePlane
         mat.SetColor("_Land", new Color(currentHeight,currentHeight,currentHeight,1));
     }
 
-    private float EaseInOutCubic(float x) {
+    protected override void DispatchFoliage() { }
+
+    protected override void GenerateFoliage(Vector3 startPos) { }
+
+        private float EaseInOutCubic(float x) {
         return x < 0.5 ? 4 * x * x * x : 1 - Mathf.Pow(-2 * x + 2, 3) / 2;
     }
     //we want each planet class to have its necessary values and compute its noise values independently.

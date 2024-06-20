@@ -3,7 +3,12 @@ guid: 8ddfb51c012ce4745b1157494908d920
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - patchMaterial: {instanceID: 0}
+  - texture: {instanceID: 0}
+  - tree_mesh: {fileID: 2494185979427425891, guid: b63b09457639caf4f863dda7ff07709c,
+      type: 3}
+  - tree_mat: {fileID: 2100000, guid: a1be75d7dfae0d841afa409a05798f02, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

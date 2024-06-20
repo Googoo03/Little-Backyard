@@ -316,6 +316,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerCamera: {fileID: 0}
   mat: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
+  planetPositions:
+  - {x: 24.790777, y: 300, z: 22.872778}
+  - {x: 24.790777, y: 300, z: 22.872778}
+  - {x: 24.790777, y: 300, z: 22.872778}
+  planetCount: 3
 --- !u!1001 &903820971
 PrefabInstance:
   m_ObjectHideFlags: 0

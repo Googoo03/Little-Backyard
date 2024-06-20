@@ -11,7 +11,9 @@ public class LifePlanetNoise : GeneratePlane
     //Noise simplexNoise = new Noise();
     ComputeShader simplex;
     //private int simplexHandle;
-    
+    [SerializeField] private Mesh tree_mesh;
+    [SerializeField] private Material tree_mat;
+    private List<Matrix4x4> tree_m = new List<Matrix4x4>(30);
 
 
     Mesh mesh;
@@ -38,6 +40,27 @@ public class LifePlanetNoise : GeneratePlane
 
 
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight) { }
+
+
+    protected override void GenerateFoliage(Vector3 startPos) {
+        //POISSON DISC DISTRIBUTION OF TREE MESHES. SETS TEH MATRICES FOR POSITION, ROTATION, AND SCALE.
+        tree_mesh = (Mesh)(Resources.Load("Tree/Tree"));
+        tree_mat = (Material)(Resources.Load("Tree/Tree_Mat"));
+
+        for (int i = 0; i < tree_m.Capacity; ++i) {
+            Vector3 pos = new Vector3(i, 300, i);
+            Quaternion rot = new Quaternion(1,1,1,0).normalized; //might have to change later
+            Vector3 sca = Vector3.one;
+            tree_m.Add(Matrix4x4.TRS(pos,rot,sca)); //transform rotation scale
+        }
+        return;
+
+    }
+
+    protected override void DispatchFoliage() {
+        //sends over to the gpu
+        Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m);
+    }
 
     protected override void DispatchNoise(ref Vector3[] vertices) {
 

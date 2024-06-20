@@ -1,0 +1,40 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float3> data_buffer;
+int seed;
+int startSeed;
+
+int k;
+int num;
+
+void setSeedPRNG(int seed)
+{
+    startSeed = seed;
+}
+
+uint PRNG()
+{
+    //c is the increment, a is the factor, the seed is our starting factor, m is modulus
+    uint a = 22695477;
+    uint m = 256;
+    uint c = 1;
+    //if (startSeed == 0) startSeed = seed;
+    uint val = ((startSeed * a) + c) % m;
+    startSeed = val;
+    return val;
+}
+
+[numthreads(1,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+    int index = (id.x + (id.y * 16) + id.z);
+
+    //1. start with middle position
+    //2. add as many points until failed points is met
+    //3. increment start point
+    //4. repeat 2-3 until num of points is met or until last point is used.
+}

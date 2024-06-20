@@ -47,6 +47,10 @@ public class IcePlanetNoise : GeneratePlane
         }
     }
 
+    protected override void DispatchFoliage() { }
+
+    protected override void GenerateFoliage(Vector3 startPos) { }
+
     private float EaseOutExpo(float x)
     {
         return x == 1 ? 1 : 1 - Mathf.Pow(2, -10 * x);

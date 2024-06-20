@@ -108,6 +108,8 @@ public class PatchLOD {
 
             //have patchConfig child inherit everything from parent
             //addFlatShader(patchChild);
+            patchChild.GetComponent<GeneratePlane>().generateFoliage = (patchConfigChild.LODlevel == patchConfigChild.maxLOD); //sets foliage flag if it is at the lowest level
+
             patchChild.GetComponent<GeneratePlane>().Generate(patchConfigChild,powerof2Frac);
             patchChild.transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -LODOffset * (1 << patchConfigChild.LODlevel) );
             patchChild.transform.GetComponent<Renderer>().material.SetVector("_Tile", new Vector4(1 << patchConfigChild.LODlevel, 1 << patchConfigChild.LODlevel, 0, 0));

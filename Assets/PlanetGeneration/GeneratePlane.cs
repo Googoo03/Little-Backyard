@@ -34,6 +34,8 @@ public abstract class GeneratePlane : MonoBehaviour
     protected ComputeBuffer worldVerts;
     protected int shaderHandle;
 
+    public bool generateFoliage;
+
     public abstract float NoiseValue(Vector3 pos, float scale);
 
     protected void setComputeNoiseVariables(ref ComputeShader shader)
@@ -155,14 +157,22 @@ public abstract class GeneratePlane : MonoBehaviour
         transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
         transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
 
-
+        if(generateFoliage) GenerateFoliage(getPosition(planePatch,planePatch.LODlevel)); //generate foliage if and only if it's at the lowest level
+        //DispatchFoliage();
     }
 
     protected abstract void DispatchNoise(ref Vector3[] vertices);
 
+    protected abstract void GenerateFoliage(Vector3 startPos);
+
+    protected abstract void DispatchFoliage();
+
     protected abstract void createPatchTexture(ref Material mat, int x, int y, float currentHeight);
 
-
+    private void Update()
+    {
+        if(generateFoliage) DispatchFoliage();
+    }
     /*float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)
     {
 

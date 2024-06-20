@@ -53,6 +53,10 @@ public class DesertPlanetNoise : GeneratePlane
         }
     }
 
+    protected override void DispatchFoliage() { }
+
+    protected override void GenerateFoliage(Vector3 startPos) { }
+
     protected override void DispatchNoise(ref Vector3[] vertices)
     {
         simplex = (ComputeShader)(Resources.Load("Simplex Noise"));

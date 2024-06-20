@@ -25,8 +25,10 @@ Shader "Custom/Atmosphere_IE"
         Pass
         {
             CGPROGRAM
+
             #pragma vertex vert
             #pragma fragment frag
+            #pragma target 5.0
 
             #include "UnityCG.cginc"
 
@@ -66,6 +68,7 @@ Shader "Custom/Atmosphere_IE"
                 return o;
             }
 
+
             sampler2D _MainTex;
             float3 _PlanetPos;
             float3 _SunPos;
@@ -75,6 +78,10 @@ Shader "Custom/Atmosphere_IE"
             float4 _Color;
 
             float distanceToPlanet;
+
+            RWStructuredBuffer<float3> planetPositions;
+            float numPlanets;
+
 
             float3 orthogonalProjection(float3 mu, float3 v, float cameraDistanceToPlanet) //calculates the orthogonal projection of v onto mu, returns the orthogonal vector
             {
@@ -89,13 +96,10 @@ Shader "Custom/Atmosphere_IE"
                 return plus ? ( (-b + sqrt(b*b - 4*a*c)) / 2*a) : ( (-b - sqrt(b*b - 4*a*c)) / 2*a);
             }
 
-            fixed4 frag (v2f i) : SV_Target
-            {
-                
+            fixed4 compute(v2f i, float3 planetPos){
                 float3 viewDirection = normalize(i.viewVector);
-
                 //set vector from camera to planet and get magnitude of said vector
-                float3 cameraToPlanetVector = _PlanetPos - _WorldSpaceCameraPos;
+                float3 cameraToPlanetVector =  planetPos - _WorldSpaceCameraPos;
                 float cameraDistanceToPlanet = length(cameraToPlanetVector);
 
                 //find the orgonal projection of the view vector onto the camera to planet vector
@@ -127,28 +131,12 @@ Shader "Custom/Atmosphere_IE"
 
                 /////////ONLY SHOW WHERE INTERSECTS WITH LIGHT
                 float r = _Radius + _AtmosphereHeight;
-                float3 Q = _WorldSpaceCameraPos - _PlanetPos;
+                float3 Q = _WorldSpaceCameraPos -  planetPos;
                 float a = 1;//viewDirection * viewDirection;
                 float b = 2 * dot(viewDirection, Q);
                 float c = dot(Q,Q) - r*r;
                 float d = (dot(viewDirection,Q)*dot(viewDirection,Q)) - c;
 
-                /*float3 pos0 = _WorldSpaceCameraPos;
-                float3 pos1 = _WorldSpaceCameraPos + (viewDirection*10000);
-                float z0 = _WorldSpaceCameraPos.z;
-
-                float x1 = x
-
-                float xc = _PlanetPos.x;
-                float yc = _PlanetPos.y;
-                float zc = _PlanetPos.z;
-
-                float _A = (pos0.x-xc)*(pos0.x-xc) + (pos0.y-yc)*(pos0.y-yc) + (pos0.z-zc)*(pos0.z-zc) - r*r;
-                
-                float _C = (pos0.x-pos1.x)*(pos0.x-pos1.x) + (pos0.y-pos1.y)*(pos0.y-pos1.y) + (pos0.z-pos1.z)*(pos0.z-pos1.z);
-                float _B = (pos1.x-xc)*(pos1.x-xc) + (pos1.y-yc)*(pos1.y-yc) + (pos1.z-zc)*(pos1.z-zc) - _A - _C - r*r;
-                
-                float t1 = QuadraticSolve(_A,_B,_C,true);*/
                 float t1 = -1;
                 float t2 = -1;
                 
@@ -163,8 +151,8 @@ Shader "Custom/Atmosphere_IE"
                     
                     float3 intersectionPoint = _WorldSpaceCameraPos + (t1*viewDirection);
 
-                    float3 normalVector = normalize(intersectionPoint - _PlanetPos); //is this right?
-                    float3 lightVector = normalize(_SunPos - _PlanetPos);
+                    float3 normalVector = normalize(intersectionPoint -  planetPos); //is this right?
+                    float3 lightVector = normalize(_SunPos -  planetPos);
                     dotProduct = dot(lightVector,normalVector); //always outputs -1, why?
                     //dot product's not working.
                     atmosphereAlpha *= dotProduct;
@@ -172,10 +160,93 @@ Shader "Custom/Atmosphere_IE"
                     }
                 }
                 
+                
                 /////////////////////////////////////////////////
                 
 
                 fixed4 col = (distanceToPlanet < (_Radius + _AtmosphereHeight) ) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
+                return col;
+            }
+
+            fixed4 frag (v2f i) : SV_Target
+            {
+                
+                float3 viewDirection = normalize(i.viewVector);
+                //set vector from camera to planet and get magnitude of said vector
+                float3 cameraToPlanetVector =  _PlanetPos - _WorldSpaceCameraPos;
+                float cameraDistanceToPlanet = length(cameraToPlanetVector);
+
+                //find the orgonal projection of the view vector onto the camera to planet vector
+                float3 orthogonalToPlanet = orthogonalProjection(cameraToPlanetVector, viewDirection,cameraDistanceToPlanet);
+                distanceToPlanet = length(orthogonalToPlanet);
+                
+
+                //find distance from camera, max being the atmosphere
+                float angleView_W2 = atan(cameraDistanceToPlanet / distanceToPlanet); //finds angle connecting the viewVector to W2
+                float sin_angleView_W2 = sin(angleView_W2);
+                float _C = asin( (sin_angleView_W2 * distanceToPlanet) / (_Radius + _AtmosphereHeight) );
+                float _A = 180 - _C - angleView_W2;
+                float intersection_atmosphere_scalar = ((_Radius + _AtmosphereHeight) * (sin(_A)) / sin_angleView_W2);
+
+                
+
+                float depthTextureSample = SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, i.screenPos);
+                float terrainLevel = LinearEyeDepth(depthTextureSample);
+
+                float atmosphere_depth = clamp(terrainLevel - intersection_atmosphere_scalar,0,_AtmosphereHeight);
+
+                
+
+                fixed4 noColor = tex2D(_MainTex, i.uv);
+                fixed4 atmosphereColor = _Color;
+                float atmosphereAlpha = 1;
+
+                atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
+
+                /////////ONLY SHOW WHERE INTERSECTS WITH LIGHT
+                float r = _Radius + _AtmosphereHeight;
+                float3 Q = _WorldSpaceCameraPos -  _PlanetPos;
+                float a = 1;//viewDirection * viewDirection;
+                float b = 2 * dot(viewDirection, Q);
+                float c = dot(Q,Q) - r*r;
+                float d = (dot(viewDirection,Q)*dot(viewDirection,Q)) - c;
+
+                float t1 = -1;
+                float t2 = -1;
+                
+                float dotProduct = 0;
+
+                if(d >= 0){
+                    t1 = QuadraticSolve(a,b,c,false);
+                    t2 = QuadraticSolve(a,b,c,true);
+
+                    if(t1 >= 0 || t2 >=0){
+
+                    
+                    float3 intersectionPoint = _WorldSpaceCameraPos + (t1*viewDirection);
+
+                    float3 normalVector = normalize(intersectionPoint -  _PlanetPos); //is this right?
+                    float3 lightVector = normalize(_SunPos -  _PlanetPos);
+                    dotProduct = dot(lightVector,normalVector); //always outputs -1, why?
+                    //dot product's not working.
+                    atmosphereAlpha *= dotProduct;
+                    atmosphereAlpha = max(0,atmosphereAlpha);
+                    }
+                }
+                
+                //USE BILLBOARD TECHNIQUE FOR MULTIPLE ATMOSPHERES??? SWITCH THE _PlanetPos WHENEVER A NEW CLOSEST PLANET IS ASSIGNED
+
+
+                /////////////////////////////////////////////////
+                
+
+                fixed4 col = (distanceToPlanet < (_Radius + _AtmosphereHeight) ) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
+                
+                /*fixed4 color;
+
+                for(int j = 0; j < numPlanets; ++j){
+                    color = compute(i, planetPositions[j].xyz);
+                }*/
 
                 return col;
             }

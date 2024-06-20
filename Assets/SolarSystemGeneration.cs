@@ -19,6 +19,8 @@ public class SolarSystemGeneration : MonoBehaviour {
     [SerializeField]private int RegionWidth;
     [SerializeField]private int RegionHeight;
 
+    List<GameObject> planets = new List<GameObject> { };
+
     public float solarsystemSpacing;
 
     public SolarSystemQuadTree quadTree; //doesnt show up for some reason, but is still there
@@ -37,7 +39,7 @@ public class SolarSystemGeneration : MonoBehaviour {
     // Update is called once per frame
 
     public void GenerateSolarSystem() {
-        List<GameObject> planets = new List<GameObject> { };
+        //List<GameObject> planets = new List<GameObject> { };
 
 
 

@@ -10,7 +10,7 @@ public class ShipControls : MonoBehaviour
 	public float mouseSensitivityY;
     public float rollSensitivity;
 
-    [SerializeField]private GameObject nearbyPlanet;
+    [SerializeField]public GameObject nearbyPlanet;
     [SerializeField]private GameObject shipModel;
     private Vector3 shipOriginalRotation;
 
@@ -238,9 +238,9 @@ public class ShipControls : MonoBehaviour
         
         if (node.getPlanetCount() == 1) { //return if 1 planet. I.E no extra children
             nearbyPlanet = node.getPlanet(0);
-            initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold();
-            atmosphereDistance = nearbyPlanet.GetComponent<Sphere>().getAtmosphereDistance();
-            pullUpDistance = nearbyPlanet.GetComponent<Sphere>().getRadius() + 0.1f;
+            initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold(); //for LOD loading
+            atmosphereDistance = nearbyPlanet.GetComponent<Sphere>().getAtmosphereDistance(); //self explanatory
+            pullUpDistance = nearbyPlanet.GetComponent<Sphere>().getRadius() * 1.1f;
         }
         if (node.getPlanetCount() == 0)
         { //return if 1 planet. I.E no extra children
