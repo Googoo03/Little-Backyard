@@ -31,10 +31,13 @@ uint PRNG()
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
-    int index = (id.x + (id.y * 16) + id.z);
+    int index = (id.x + (id.y * 16) + id.z); //this may need to switch to 15 later on 
 
-    //1. start with middle position
+    //1. start with middle position -- first index can be middle position. shouldnt matter where these indices are?
     //2. add as many points until failed points is met
     //3. increment start point
     //4. repeat 2-3 until num of points is met or until last point is used.
+    
+    //lets assume k=1, therefore no loop is needed
+    
 }
