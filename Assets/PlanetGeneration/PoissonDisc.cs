@@ -9,7 +9,7 @@ namespace Poisson
         private uint startSeed;
         private const float _2PI = 6.28f;
 
-        void setSeedPRNG(int seed)
+        public void setSeedPRNG(int seed)
         {
             startSeed = (uint)seed;
         }
@@ -26,24 +26,75 @@ namespace Poisson
             return val;
         }
 
-        void generatePoissonDisc(ref List<Vector3> points, int k, int num) {
+        private bool meetsDistanceThreshold(int radius, ref bool[] hashgrid,int startIndex,int maxX, int maxY) {
+            int halfradius = radius / 2;
+            for (int i = -halfradius; i < halfradius; ++i) {
+                for (int j = -halfradius; j < halfradius; ++j)
+                {
+                    //do bounds check for x and y, if outside, skip
 
-            int index = 0;
+                    ////////////////////////
+                    int index = startIndex + (maxX * j) + i;
+                    if (index > (maxX * maxY)-1 || index < 0) continue;
+                    if (!hashgrid[index])
+                    {
+                        continue;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        public void generatePoissonDisc(ref List<Vector3> points, int k, int num, int maxX, int maxY, int radius) {
+
+            //start with empty list, grow as needed
+            bool[] hashgrid = new bool[maxX*maxY];
+            
+
+            int index = 0; //current index of reference point
+            int bool_index; //index of new point in bool list
             int points_placed = 0;
 
             float rand;
             float x, y;
+            
 
-            while (index != points.Capacity && points_placed < num) { //while we havent placed enough points and havent reached the end of our array
-                index++;
+            x = maxX / 2;
+            y = maxY / 2;
+            points.Add(new Vector3(x, 0, y));
+            bool_index = ((int)y * maxX) + (int)x;
+            hashgrid[bool_index] = true;
+
+            while (index < points.Count && points_placed < num) { //while we havent placed enough points and havent reached the end of our array
+
                 for (int i = 0; i < k; i++) {
                     //generate new random number from 0 to 2pi
                     rand = ((float)PRNG() / 256.0f) * _2PI;
+
+
+                    
+
                     //figure out new point x,y position
-                    x = Mathf.Cos(rand);
-                    y = Mathf.Sin(rand);
+                    x = Mathf.Max(points[index].x+(Mathf.Cos(rand)*radius),0);
+                    y = Mathf.Max(points[index].z+(Mathf.Sin(rand)*radius),0);
+                    x = Mathf.Min(x, maxX);
+                    y = Mathf.Min(y, maxY-1);
                     //check if its valid, if so, add it, if not, skip it
+                    //float dist = Mathf.Sqrt((x - points[index].x) * (x - points[index].x) + (y - points[index].y) * (y - points[index].y));
+                    bool_index = ((int)Mathf.Max(y-1,0) *maxX) + (int)x;
+                    if (meetsDistanceThreshold(radius,ref hashgrid,bool_index,maxX,maxY)) {
+                        hashgrid[bool_index] = true;
+                        Vector3 newpoint = new Vector3(x, 0, y);
+                        points.Add(newpoint);
+                        points_placed++;
+                    }
+                    //find out what hash grid it belongs to. If it's already true, then skip, otherwise set it true and add it to points
+
                 }
+                index++;
             }
             return;
         }
