@@ -8,7 +8,7 @@ public class Poisson_Test_Script : MonoBehaviour
 {
     [SerializeField] private Mesh tree_mesh;
     [SerializeField] private Material tree_mat;
-    private List<Matrix4x4> tree_m = new List<Matrix4x4>(30);
+    private List<Matrix4x4> tree_m = new List<Matrix4x4>(50);
     [SerializeField] private int seed;
     [SerializeField] private int k;
     [SerializeField] private int num;

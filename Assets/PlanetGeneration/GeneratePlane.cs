@@ -34,9 +34,28 @@ public abstract class GeneratePlane : MonoBehaviour
     protected ComputeBuffer worldVerts;
     protected int shaderHandle;
 
+    //FOLIAGE PARAMETERS
     public bool generateFoliage;
+    protected int tree_k = 5;
+    protected int tree_nummax = 256;
+    protected int tree_radius = 8;
+
+    protected int rock_k;
+    protected int rock_nummax;
+    protected int rock_radius;
 
     public abstract float NoiseValue(Vector3 pos, float scale);
+
+    protected int generateUniqueSeed(Vector3 pos) {
+
+        //FIX THIS
+        var hash = new Hash128();
+        hash.Append(pos.x);
+        hash.Append(pos.y);
+        hash.Append(pos.z);
+
+        return hash.GetHashCode();
+    }
 
     protected void setComputeNoiseVariables(ref ComputeShader shader)
     {
@@ -157,13 +176,13 @@ public abstract class GeneratePlane : MonoBehaviour
         transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
         transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
 
-        if(generateFoliage) GenerateFoliage(getPosition(planePatch,planePatch.LODlevel)); //generate foliage if and only if it's at the lowest level
+        if(generateFoliage) GenerateFoliage(ref vertices, transform.position); //generate foliage if and only if it's at the lowest level
         //DispatchFoliage();
     }
 
     protected abstract void DispatchNoise(ref Vector3[] vertices);
 
-    protected abstract void GenerateFoliage(Vector3 startPos);
+    protected abstract void GenerateFoliage(ref Vector3[] vertices, Vector3 origin);
 
     protected abstract void DispatchFoliage();
 

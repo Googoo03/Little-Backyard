@@ -433,7 +433,7 @@ MonoBehaviour:
   seed: 864
   k: 10
   num: 1000
-  radius: 16
+  radius: 8
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

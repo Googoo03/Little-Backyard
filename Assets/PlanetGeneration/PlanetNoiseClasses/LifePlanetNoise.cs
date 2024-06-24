@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Simplex;
 using System;
+using Poisson;
 
 
 
@@ -13,9 +14,9 @@ public class LifePlanetNoise : GeneratePlane
     //private int simplexHandle;
     [SerializeField] private Mesh tree_mesh;
     [SerializeField] private Material tree_mat;
+
+    private PoissonDisc poissonSampling = new PoissonDisc(); //used for generating foliage
     private List<Matrix4x4> tree_m = new List<Matrix4x4>(30);
-
-
     Mesh mesh;
 
     public LifePlanetNoise()
@@ -42,16 +43,22 @@ public class LifePlanetNoise : GeneratePlane
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight) { }
 
 
-    protected override void GenerateFoliage(Vector3 startPos) {
+    protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) {
         //POISSON DISC DISTRIBUTION OF TREE MESHES. SETS TEH MATRICES FOR POSITION, ROTATION, AND SCALE.
-        tree_mesh = (Mesh)(Resources.Load("Tree/Tree"));
+        tree_mesh = (Mesh)(Resources.Load<GameObject>("Tree/Tree").GetComponent<MeshFilter>().sharedMesh);
         tree_mat = (Material)(Resources.Load("Tree/Tree_Mat"));
+        
 
-        for (int i = 0; i < tree_m.Capacity; ++i) {
-            Vector3 pos = new Vector3(i, 300, i);
-            Quaternion rot = new Quaternion(1,1,1,0).normalized; //might have to change later
-            Vector3 sca = Vector3.one;
-            tree_m.Add(Matrix4x4.TRS(pos,rot,sca)); //transform rotation scale
+        List<Vector3> positions = new List<Vector3>(tree_m.Capacity);
+        poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount*yVertCount/2]));
+        poissonSampling.generatePoissonDisc(ref positions, ref vertices, tree_k, 256, xVertCount, yVertCount, tree_radius);
+
+        for (int i = 0; i < positions.Count; ++i) {
+            //Vector3 pos = new Vector3(i, 300, i);
+            Vector3 lookVec = new Vector3(positions[i].x, positions[i].y, positions[i].z);
+            Quaternion rot = Quaternion.LookRotation(-lookVec)/* * Quaternion.Euler(90,0,0)*/; //might have to change later
+            Vector3 sca = Vector3.one * .01f;
+            tree_m.Add(Matrix4x4.TRS(positions[i]+origin,rot,sca)); //transform rotation scale
         }
         return;
 
@@ -59,7 +66,7 @@ public class LifePlanetNoise : GeneratePlane
 
     protected override void DispatchFoliage() {
         //sends over to the gpu
-        Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m);
+        Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m); //does global position, needs local position. Convert local to global
     }
 
     protected override void DispatchNoise(ref Vector3[] vertices) {

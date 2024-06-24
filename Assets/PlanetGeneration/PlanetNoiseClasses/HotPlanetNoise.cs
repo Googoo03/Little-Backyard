@@ -85,7 +85,7 @@ public class HotPlanetNoise : GeneratePlane
 
     protected override void DispatchFoliage() { }
 
-    protected override void GenerateFoliage(Vector3 startPos) { }
+    protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) { }
 
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {

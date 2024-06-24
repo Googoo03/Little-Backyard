@@ -26,7 +26,7 @@ public class BarrenPlanetNoise : GeneratePlane
 
     protected override void DispatchFoliage() { }
 
-    protected override void GenerateFoliage(Vector3 startPos) { }
+    protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) { }
 
         private float EaseInOutCubic(float x) {
         return x < 0.5 ? 4 * x * x * x : 1 - Mathf.Pow(-2 * x + 2, 3) / 2;

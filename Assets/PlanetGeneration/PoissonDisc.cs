@@ -48,7 +48,7 @@ namespace Poisson
             return true;
         }
 
-        public void generatePoissonDisc(ref List<Vector3> points, int k, int num, int maxX, int maxY, int radius) {
+        public void generatePoissonDisc(ref List<Vector3> points, int k, int num, int maxX, int maxY, int radius) { // doesn't take in a reference vector field
 
             //start with empty list, grow as needed
             bool[] hashgrid = new bool[maxX*maxY];
@@ -95,6 +95,68 @@ namespace Poisson
 
                 }
                 index++;
+            }
+            return;
+        }
+
+        public void generatePoissonDisc(ref List<Vector3> points, ref Vector3[] vertices, int k, int num, int maxX, int maxY, int radius) //takes in a reference vector field
+        { // doesn't take in a reference vector field
+
+            //start with empty list, grow as needed
+            bool[] hashgrid = new bool[maxX * maxY];
+            
+
+
+            int index = 0; //current index of reference point
+            int bool_index; //index of new point in bool list
+            int points_placed = 0;
+
+            float rand;
+            float x, y;
+            float index_x, index_y;
+
+
+            x = maxX / 2;
+            y = maxY / 2;
+
+            index_x = x; index_y = y;
+
+            points.Add(new Vector3(x, 0, y));
+            bool_index = ((int)y * maxX) + (int)x;
+            hashgrid[bool_index] = true;
+
+            while (index < points.Count && points_placed < num)
+            { //while we havent placed enough points and havent reached the end of our array
+
+                for (int i = 0; i < k; i++)
+                {
+                    //generate new random number from 0 to 2pi
+                    rand = ((float)PRNG() / 256.0f) * _2PI;
+
+
+
+
+                    //figure out new point x,y position
+                    x = Mathf.Max(index_x + (Mathf.Cos(rand) * radius), 0);
+                    y = Mathf.Max(index_y + (Mathf.Sin(rand) * radius), 0);
+                    x = Mathf.Min(x, maxX);
+                    y = Mathf.Min(y, maxY - 1);
+                    //check if its valid, if so, add it, if not, skip it
+                    //float dist = Mathf.Sqrt((x - points[index].x) * (x - points[index].x) + (y - points[index].y) * (y - points[index].y));
+                    bool_index = ((int)Mathf.Max(y - 1, 0) * maxX) + (int)x;
+                    if (meetsDistanceThreshold(radius, ref hashgrid, bool_index, maxX, maxY))
+                    {
+                        hashgrid[bool_index] = true;
+                        Vector3 newpoint = vertices[bool_index];
+                        points.Add(newpoint);
+                        points_placed++;
+                    }
+                    //find out what hash grid it belongs to. If it's already true, then skip, otherwise set it true and add it to points
+
+                }
+                index++;
+                index_x = x;
+                index_y = y;
             }
             return;
         }
