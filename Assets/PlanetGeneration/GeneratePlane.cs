@@ -8,7 +8,7 @@ using Worley;
 public abstract class GeneratePlane : MonoBehaviour
 {
     public int xVertCount = 16, yVertCount = 16;
-    private float radius;
+    protected float radius;
     public Material patchMaterial;
     Color[] regions; //will i run into trouble if this is pointing to a reference?
     float[] heights;
@@ -36,9 +36,9 @@ public abstract class GeneratePlane : MonoBehaviour
 
     //FOLIAGE PARAMETERS
     public bool generateFoliage;
-    protected int tree_k = 5;
+    protected int tree_k;
     protected int tree_nummax = 256;
-    protected int tree_radius = 8;
+    protected int tree_radius;
 
     protected int rock_k;
     protected int rock_nummax;
@@ -78,7 +78,7 @@ public abstract class GeneratePlane : MonoBehaviour
     public void Generate(PatchConfig planePatch,float LODstep) {
 
 
-        texture = new RenderTexture(16, 16, 0, RenderTextureFormat.RFloat)
+        texture = new RenderTexture(15, 15, 0, RenderTextureFormat.RFloat)
         {
             enableRandomWrite = true
         };

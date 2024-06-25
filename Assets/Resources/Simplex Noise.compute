@@ -291,7 +291,7 @@ float easeInOutQuint(float x)
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
-    int index = (id.x + (id.y * 16)+id.z);
+    int index = (id.x + (id.y * 15)+id.z);
     float3 vertexPos = vertexWorldBuffer[index];
 
     if (seed != 0)

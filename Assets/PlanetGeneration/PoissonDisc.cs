@@ -114,12 +114,14 @@ namespace Poisson
             float rand;
             float x, y;
             float index_x, index_y;
+            float next_x, next_y;
 
 
             x = maxX / 2;
             y = maxY / 2;
+            next_x = x; next_y = y;
 
-            index_x = x; index_y = y;
+            index_x = next_x; index_y = next_y;
 
             points.Add(new Vector3(x, 0, y));
             bool_index = ((int)y * maxX) + (int)x;
@@ -146,6 +148,7 @@ namespace Poisson
                     bool_index = ((int)Mathf.Max(y - 1, 0) * maxX) + (int)x;
                     if (meetsDistanceThreshold(radius, ref hashgrid, bool_index, maxX, maxY))
                     {
+                        next_x = x; next_y = y;
                         hashgrid[bool_index] = true;
                         Vector3 newpoint = vertices[bool_index];
                         points.Add(newpoint);
@@ -155,8 +158,8 @@ namespace Poisson
 
                 }
                 index++;
-                index_x = x;
-                index_y = y;
+                index_x = next_x;
+                index_y = next_y;
             }
             return;
         }

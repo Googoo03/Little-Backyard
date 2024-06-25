@@ -15,8 +15,12 @@ public class LifePlanetNoise : GeneratePlane
     [SerializeField] private Mesh tree_mesh;
     [SerializeField] private Material tree_mat;
 
+    [SerializeField] private Mesh rock_mesh;
+    [SerializeField] private Material rock_mat;
+
     private PoissonDisc poissonSampling = new PoissonDisc(); //used for generating foliage
-    private List<Matrix4x4> tree_m = new List<Matrix4x4>(30);
+    private List<Matrix4x4> tree_m = new List<Matrix4x4>(1);
+    private List<Matrix4x4> rock_m = new List<Matrix4x4>(1);
     Mesh mesh;
 
     public LifePlanetNoise()
@@ -24,7 +28,7 @@ public class LifePlanetNoise : GeneratePlane
         //set up noise parameters. surely theres a better way to do this
 
 
-        oceanFloor = 0;
+        oceanFloor = 0.1f;
         oceanMulitplier = 0.1f;
         landMultiplier = 0.15f;
 
@@ -33,6 +37,12 @@ public class LifePlanetNoise : GeneratePlane
         lacunarity = 2;
         persistance = 0.5f;
         changeHeight = true;
+
+        tree_k = 5;
+        tree_radius = 12;
+
+        rock_k = 8; rock_radius = 12;
+        rock_nummax = 12;
     }
 
     private float EaseInCirc(float x) {
@@ -47,18 +57,37 @@ public class LifePlanetNoise : GeneratePlane
         //POISSON DISC DISTRIBUTION OF TREE MESHES. SETS TEH MATRICES FOR POSITION, ROTATION, AND SCALE.
         tree_mesh = (Mesh)(Resources.Load<GameObject>("Tree/Tree").GetComponent<MeshFilter>().sharedMesh);
         tree_mat = (Material)(Resources.Load("Tree/Tree_Mat"));
-        
 
-        List<Vector3> positions = new List<Vector3>(tree_m.Capacity);
+        rock_mesh = (Mesh)(Resources.Load<GameObject>("Rock/Rock").GetComponent<MeshFilter>().sharedMesh);
+        rock_mat = (Material)(Resources.Load("Rock/Rock_Mat"));
+
+
+        List<Vector3> tree_positions = new List<Vector3>(tree_m.Capacity);
+        List<Vector3> rock_positions = new List<Vector3>(rock_m.Capacity);
+
         poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount*yVertCount/2]));
-        poissonSampling.generatePoissonDisc(ref positions, ref vertices, tree_k, 256, xVertCount, yVertCount, tree_radius);
+        poissonSampling.generatePoissonDisc(ref tree_positions, ref vertices, tree_k, xVertCount*yVertCount, xVertCount, yVertCount, tree_radius);
 
-        for (int i = 0; i < positions.Count; ++i) {
-            //Vector3 pos = new Vector3(i, 300, i);
-            Vector3 lookVec = new Vector3(positions[i].x, positions[i].y, positions[i].z);
-            Quaternion rot = Quaternion.LookRotation(-lookVec)/* * Quaternion.Euler(90,0,0)*/; //might have to change later
+        poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount * yVertCount / 2] + new Vector3(1,0,0) ));
+        poissonSampling.generatePoissonDisc(ref rock_positions, ref vertices, rock_k, xVertCount * yVertCount, xVertCount, yVertCount, rock_radius);
+
+        for (int i = 0; i < tree_positions.Count; ++i) { //add the tree positions and subsequent rotations to the matrix buffer
+            
+            Vector3 lookVec = new Vector3(tree_positions[i].x, tree_positions[i].y, tree_positions[i].z);
+            if (lookVec.magnitude < (radius+oceanFloor*2)) continue; //dont generate in water
+            Quaternion rot = Quaternion.LookRotation(-lookVec);
             Vector3 sca = Vector3.one * .01f;
-            tree_m.Add(Matrix4x4.TRS(positions[i]+origin,rot,sca)); //transform rotation scale
+            tree_m.Add(Matrix4x4.TRS(tree_positions[i]+origin,rot,sca)); //transform rotation scale
+        }
+
+        for (int i = 0; i < rock_positions.Count; ++i)
+        { //add the tree positions and subsequent rotations to the matrix buffer
+
+            Vector3 lookVec = new Vector3(rock_positions[i].x, rock_positions[i].y, rock_positions[i].z);
+            
+            Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0,0,UnityEngine.Random.Range(0,180));
+            Vector3 sca = Vector3.one * .01f;
+            rock_m.Add(Matrix4x4.TRS(rock_positions[i] + origin, rot, sca)); //transform rotation scale
         }
         return;
 
@@ -66,7 +95,8 @@ public class LifePlanetNoise : GeneratePlane
 
     protected override void DispatchFoliage() {
         //sends over to the gpu
-        Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m); //does global position, needs local position. Convert local to global
+        Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m);
+        Graphics.DrawMeshInstanced(rock_mesh, 0, rock_mat, rock_m);
     }
 
     protected override void DispatchNoise(ref Vector3[] vertices) {

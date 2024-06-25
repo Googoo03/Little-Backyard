@@ -140,10 +140,10 @@ public class Sphere : MonoBehaviour
         transform.name = "Planet" + planetType.ToString();
 
 
-        //set the atmosphere color
-        Color atmosphereColor = regionReference.GetPixel(4, planetType);
-        transform.GetChild(0).GetComponent<Renderer>().material.SetColor("_Atmosphere_Color", atmosphereColor);
-        transform.GetChild(0).transform.localScale = Vector3.one * (radius + 0.1f)*2;
+        //set the ocean size
+        //Color atmosphereColor = regionReference.GetPixel(4, planetType);
+        //transform.GetChild(0).GetComponent<Renderer>().material.SetColor("_Atmosphere_Color", atmosphereColor);
+        transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor)*2;
         ////////////////////////////
 
         //create all 6 sides of the sphere-cube
