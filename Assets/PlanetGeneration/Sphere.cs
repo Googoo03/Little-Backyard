@@ -65,7 +65,7 @@ public class Sphere : MonoBehaviour
     public int xVertCount;
     public int yVertCount;
 
-    private float radius = 5f;
+    [SerializeField] private float radius;
     [SerializeField] private float atmosphereHeight;
 
     [SerializeField] private int seed;

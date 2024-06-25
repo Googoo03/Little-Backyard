@@ -149,7 +149,10 @@ Shader "Custom/Planet_Surface_Shader"
             float mask = max(0,dot(toSunVector,toPlanetVector));
 
             o.Albedo = blend(normalAlbedo, 1-cliffOpacity, cliff, cliffOpacity);
-            o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.1 ? mask : 1;
+            float dotProduct = dot(IN.normal,toSunVector)*mask;
+
+            o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.01 ? .25 : 1;
+            o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.1 ? .5 : 1;
 
 
             o.Alpha = c1.a;

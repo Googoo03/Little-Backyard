@@ -222,15 +222,15 @@ Shader "Custom/Atmosphere_IE"
 
                     if(t1 >= 0 || t2 >=0){
 
-                    
-                    float3 intersectionPoint = _WorldSpaceCameraPos + (t1*viewDirection);
+                    float t3 = t1 >= 0 ? t1 : t2;
+                    float3 intersectionPoint = _WorldSpaceCameraPos + (t3*viewDirection);
 
                     float3 normalVector = normalize(intersectionPoint -  _PlanetPos); //is this right?
                     float3 lightVector = normalize(_SunPos -  _PlanetPos);
                     dotProduct = dot(lightVector,normalVector); //always outputs -1, why?
                     //dot product's not working.
-                    atmosphereAlpha *= dotProduct;
-                    atmosphereAlpha = max(0,atmosphereAlpha);
+                    atmosphereAlpha *= max(0,dotProduct);
+                    //atmosphereAlpha = max(0,atmosphereAlpha);
                     }
                 }
                 

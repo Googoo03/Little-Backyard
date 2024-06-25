@@ -97,7 +97,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TexArray:
-        m_Texture: {fileID: 18700000, guid: 7e4a4e1374f3f724183be2d2e135c6f4, type: 3}
+        m_Texture: {fileID: 18700000, guid: 47c31da2681b2ba46b94e9431144e3da, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -146,6 +146,7 @@ Material:
     - _Ocean: {r: 0.56856954, g: 0.78113204, b: 0.42888564, a: 1}
     - _Offset: {r: 0, g: 0, b: 0, a: 0}
     - _PlanetPos: {r: 31.06755, g: 300, b: 10.62083, a: 0}
+    - _SunPos: {r: 5, g: 300, b: 5, a: 1}
     - _Tile: {r: 1, g: 1, b: 0, a: 0}
     - _Tiling: {r: 1, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []

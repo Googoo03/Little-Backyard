@@ -49,6 +49,7 @@ MonoBehaviour:
   vPatchCount: 1
   xVertCount: 15
   yVertCount: 15
+  radius: 5
   atmosphereHeight: 0
   seed: 42
   scale: 0.55
