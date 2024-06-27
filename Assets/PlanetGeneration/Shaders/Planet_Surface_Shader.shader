@@ -153,6 +153,7 @@ Shader "Custom/Planet_Surface_Shader"
 
             o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.01 ? .25 : 1;
             o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.1 ? .5 : 1;
+             o.Albedo *= dot(IN.normal,toSunVector)*mask >= 0.7 ? 1.5 : 1;
 
 
             o.Alpha = c1.a;

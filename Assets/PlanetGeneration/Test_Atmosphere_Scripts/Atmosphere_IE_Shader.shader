@@ -229,8 +229,10 @@ Shader "Custom/Atmosphere_IE"
                     float3 lightVector = normalize(_SunPos -  _PlanetPos);
                     dotProduct = dot(lightVector,normalVector); //always outputs -1, why?
                     //dot product's not working.
-                    atmosphereAlpha *= max(0,dotProduct);
-                    //atmosphereAlpha = max(0,atmosphereAlpha);
+                    if(t3 == t1){
+                        atmosphereAlpha *= max(0,dotProduct);
+                    }else if(t3 == t2) atmosphereAlpha *= sqrt(dot(intersectionPoint-_WorldSpaceCameraPos, intersectionPoint-_WorldSpaceCameraPos));
+                    //atmosphereAlpha = max(0,atmosphereAlpha);;
                     }
                 }
                 
@@ -239,8 +241,8 @@ Shader "Custom/Atmosphere_IE"
 
                 /////////////////////////////////////////////////
                 
-
-                fixed4 col = (distanceToPlanet < (_Radius + _AtmosphereHeight) ) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
+                fixed4 col;
+                col = (distanceToPlanet < (_Radius + _AtmosphereHeight)) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
                 
                 /*fixed4 color;
 

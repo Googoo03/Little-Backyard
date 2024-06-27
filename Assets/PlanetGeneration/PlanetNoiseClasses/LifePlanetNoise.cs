@@ -18,9 +18,13 @@ public class LifePlanetNoise : GeneratePlane
     [SerializeField] private Mesh rock_mesh;
     [SerializeField] private Material rock_mat;
 
+    [SerializeField] private Mesh grass_mesh;
+    [SerializeField] private Material grass_mat;
+
     private PoissonDisc poissonSampling = new PoissonDisc(); //used for generating foliage
     private List<Matrix4x4> tree_m = new List<Matrix4x4>(1);
     private List<Matrix4x4> rock_m = new List<Matrix4x4>(1);
+    private List<Matrix4x4> grass_m = new List<Matrix4x4>(1);
     Mesh mesh;
 
     public LifePlanetNoise()
@@ -41,8 +45,8 @@ public class LifePlanetNoise : GeneratePlane
         tree_k = 5;
         tree_radius = 12;
 
-        rock_k = 8; rock_radius = 12;
-        rock_nummax = 12;
+        rock_k = 2; rock_radius = 8;
+        rock_nummax = 6;
     }
 
     private float EaseInCirc(float x) {
@@ -61,15 +65,26 @@ public class LifePlanetNoise : GeneratePlane
         rock_mesh = (Mesh)(Resources.Load<GameObject>("Rock/Rock").GetComponent<MeshFilter>().sharedMesh);
         rock_mat = (Material)(Resources.Load("Rock/Rock_Mat"));
 
+        grass_mesh = (Mesh)(Resources.Load<GameObject>("Grass/Grass").GetComponent<MeshFilter>().sharedMesh);
+        grass_mat = (Material)(Resources.Load("Grass/Grass_Mat"));
+
 
         List<Vector3> tree_positions = new List<Vector3>(tree_m.Capacity);
         List<Vector3> rock_positions = new List<Vector3>(rock_m.Capacity);
+        int seed;
+        int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
+        //List<Vector3> grass_positions = new List<Vector3>(grass_m.Capacity);
 
-        poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount*yVertCount/2]));
+        seed = generateUniqueSeed(vertices[mid_index]);
+        poissonSampling.setSeedPRNG(seed);
         poissonSampling.generatePoissonDisc(ref tree_positions, ref vertices, tree_k, xVertCount*yVertCount, xVertCount, yVertCount, tree_radius);
 
-        poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount * yVertCount / 2] + new Vector3(1,0,0) ));
+        seed = generateUniqueSeed(vertices[mid_index] + new Vector3(1, 0, 0));
+        poissonSampling.setSeedPRNG(seed);
         poissonSampling.generatePoissonDisc(ref rock_positions, ref vertices, rock_k, xVertCount * yVertCount, xVertCount, yVertCount, rock_radius);
+
+        //poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount * yVertCount / 2] + new Vector3(2, 0, 0)));
+        //poissonSampling.generatePoissonDisc(ref grass_positions, ref vertices, 10, xVertCount * yVertCount, xVertCount, yVertCount, 2);
 
         for (int i = 0; i < tree_positions.Count; ++i) { //add the tree positions and subsequent rotations to the matrix buffer
             
@@ -89,6 +104,15 @@ public class LifePlanetNoise : GeneratePlane
             Vector3 sca = Vector3.one * .01f;
             rock_m.Add(Matrix4x4.TRS(rock_positions[i] + origin, rot, sca)); //transform rotation scale
         }
+        for (int i = 0; i < vertices.Length; ++i)
+        { //add the tree positions and subsequent rotations to the matrix buffer
+
+            Vector3 lookVec = vertices[i];
+            if (lookVec.magnitude < radius+0.15f || lookVec.magnitude > radius + 0.2f) continue; //corresponds to level1 in the shader. These need to communicate with one another
+            Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0, 0, 90);
+            Vector3 sca = Vector3.one * .01f;
+            grass_m.Add(Matrix4x4.TRS(vertices[i] + origin, rot, sca)); //transform rotation scale
+        }
         return;
 
     }
@@ -97,6 +121,7 @@ public class LifePlanetNoise : GeneratePlane
         //sends over to the gpu
         Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m);
         Graphics.DrawMeshInstanced(rock_mesh, 0, rock_mat, rock_m);
+        Graphics.DrawMeshInstanced(grass_mesh, 0, grass_mat, grass_m);
     }
 
     protected override void DispatchNoise(ref Vector3[] vertices) {
@@ -133,11 +158,11 @@ public class LifePlanetNoise : GeneratePlane
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
         simplex.SetFloat("seed", 100);
-        simplex.SetFloat("mountainStrength", 2f);
+        simplex.SetFloat("mountainStrength", 5f);
         simplex.SetFloat("persistance", 0.8f);
         simplex.SetFloat("lacunarity", 0.25f);
         simplex.SetInt("octaves", 3);
-        simplex.SetBool("absValue", true);
+        simplex.SetBool("absValue", false);
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         

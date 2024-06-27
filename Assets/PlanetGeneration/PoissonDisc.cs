@@ -116,6 +116,7 @@ namespace Poisson
             float index_x, index_y;
             float next_x, next_y;
 
+            bool found = false;
 
             x = maxX / 2;
             y = maxY / 2;
@@ -123,13 +124,24 @@ namespace Poisson
 
             index_x = next_x; index_y = next_y;
 
-            points.Add(new Vector3(x, 0, y));
-            bool_index = ((int)y * maxX) + (int)x;
+            /////CALCULATE FIRST POINT FROM CENTER BUT DONT ADD CENTER/////////////////
+            rand = ((float)PRNG() / 256.0f) * _2PI;
+
+            //figure out new point x,y position
+            x = Mathf.Max(index_x + (Mathf.Cos(rand) * radius), 0);
+            y = Mathf.Max(index_y + (Mathf.Sin(rand) * radius), 0);
+            x = Mathf.Min(x, maxX);
+            y = Mathf.Min(y, maxY - 1);
+            ///////////////////////////////////
+
+            bool_index = ((int)Mathf.Max(y - 1, 0) * maxX) + (int)x;
+            points.Add(vertices[bool_index]);
             hashgrid[bool_index] = true;
+
 
             while (index < points.Count && points_placed < num)
             { //while we havent placed enough points and havent reached the end of our array
-
+                found = false;
                 for (int i = 0; i < k; i++)
                 {
                     //generate new random number from 0 to 2pi
@@ -148,7 +160,10 @@ namespace Poisson
                     bool_index = ((int)Mathf.Max(y - 1, 0) * maxX) + (int)x;
                     if (meetsDistanceThreshold(radius, ref hashgrid, bool_index, maxX, maxY))
                     {
-                        next_x = x; next_y = y;
+                        if (!found) {
+                            next_x = x; next_y = y;
+                            found = true;
+                        }
                         hashgrid[bool_index] = true;
                         Vector3 newpoint = vertices[bool_index];
                         points.Add(newpoint);
