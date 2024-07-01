@@ -102,10 +102,6 @@ Shader "Custom/Planet_Surface_Shader"
             float3 toPlanetVector = normalize(IN.vertPos);
             float steepness = 1-dot(toPlanetVector,IN.normal);
             if(steepness > _CliffThreshold) return 1;
-            //WE NEED THE DOT PRODUCT BETWEEN THE VERTEX VECTOR AND THE NORMAL Vector
-            //ISSUE IS THAT THE NORMAL VECTOR IS IN TANGENT SPACE AND I DONT KNOW HOW THE NORMAL VECTOR IS CALCULATED IN SEBASTIAN LAGUES VIDEO
-            //IDEA IS THAT IF I CAN CONVERT EITHER THE VERTEX TO TANGENT SPACE OR CONVERT THE NORMAL VECTOR TO OBJECT SPACE THEN WE'D BE GOOD.
-            //SO, FIND A DIFFERENT WAY TO CALCULATE THE NORMAL VECTOR.
 
             return steepness;
         }
@@ -126,7 +122,9 @@ Shader "Custom/Planet_Surface_Shader"
             int index = (red.r > _L1) + (red.r > _L2); //gets the index according to the height level
             int indexPlusOne = index+1;//gets the next texture
 
+            ////////////////////////////////
             float texBounds[] = {0,_L1,_L2}; //this is for testing, this should be removed with a more dynamic version later.
+            ////////////////////////////////
 
             fixed4 c1 = UNITY_SAMPLE_TEX2DARRAY(_TexArray, float3(IN.uv_HeightMap * _Tiling.xy, index));
             fixed4 c2 = UNITY_SAMPLE_TEX2DARRAY(_TexArray, float3(IN.uv_HeightMap * _Tiling.xy, indexPlusOne));
@@ -153,7 +151,7 @@ Shader "Custom/Planet_Surface_Shader"
 
             o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.01 ? .25 : 1;
             o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.1 ? .5 : 1;
-             o.Albedo *= dot(IN.normal,toSunVector)*mask >= 0.7 ? 1.5 : 1;
+            o.Albedo *= dot(IN.normal,toSunVector)*mask >= 0.7 ? 1.5 : 1;
 
 
             o.Alpha = c1.a;

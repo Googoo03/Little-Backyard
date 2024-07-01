@@ -220,7 +220,8 @@ public class Sphere : MonoBehaviour
         patch.transform.localPosition = Vector3.zero;
         Vector2 startingLOD = Vector2.one;
 
-        patch.GetComponent<GeneratePlane>().Generate(aConf,1);
+        patch.GetComponent<GeneratePlane>().patch = aConf;
+            
 
         //add patch to the LOD system
         PatchLOD newLOD = new PatchLOD(patch.gameObject, null);

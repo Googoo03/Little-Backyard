@@ -54,7 +54,7 @@ public class GasPlanetNoise : GeneratePlane
     }
     //we want each planet class to have its necessary values and compute its noise values independently.
     //VARIABLES ARE INHERITED. THUS, HAVE THE NOISE PARAMETERS BE CLASS VARIABLES.
-    protected override void DispatchNoise(ref Vector3[] vertices)
+    protected override void DispatchNoise(ref Vector3[] vertices, Vector3 origin)
     {
         worley = (ComputeShader)Resources.Load("Worley Noise");
 

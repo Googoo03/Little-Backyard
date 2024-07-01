@@ -30,7 +30,7 @@ public class LifePlanetNoise : GeneratePlane
     public LifePlanetNoise()
     {
         //set up noise parameters. surely theres a better way to do this
-
+        
 
         oceanFloor = 0.1f;
         oceanMulitplier = 0.1f;
@@ -49,6 +49,8 @@ public class LifePlanetNoise : GeneratePlane
         rock_nummax = 6;
     }
 
+    
+
     private float EaseInCirc(float x) {
         return 1 - Mathf.Sqrt(1 - Mathf.Pow(x, 2));
     }
@@ -59,21 +61,23 @@ public class LifePlanetNoise : GeneratePlane
 
     protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) {
         //POISSON DISC DISTRIBUTION OF TREE MESHES. SETS TEH MATRICES FOR POSITION, ROTATION, AND SCALE.
-        tree_mesh = (Mesh)(Resources.Load<GameObject>("Tree/Tree").GetComponent<MeshFilter>().sharedMesh);
+        tree_mesh = (Resources.Load<GameObject>("Tree/Tree").GetComponent<MeshFilter>().sharedMesh);
         tree_mat = (Material)(Resources.Load("Tree/Tree_Mat"));
 
-        rock_mesh = (Mesh)(Resources.Load<GameObject>("Rock/Rock").GetComponent<MeshFilter>().sharedMesh);
+        rock_mesh = (Resources.Load<GameObject>("Rock/Rock").GetComponent<MeshFilter>().sharedMesh);
         rock_mat = (Material)(Resources.Load("Rock/Rock_Mat"));
 
-        grass_mesh = (Mesh)(Resources.Load<GameObject>("Grass/Grass").GetComponent<MeshFilter>().sharedMesh);
+        grass_mesh = (Resources.Load<GameObject>("Grass/Grass").GetComponent<MeshFilter>().sharedMesh);
         grass_mat = (Material)(Resources.Load("Grass/Grass_Mat"));
 
 
         List<Vector3> tree_positions = new List<Vector3>(tree_m.Capacity);
         List<Vector3> rock_positions = new List<Vector3>(rock_m.Capacity);
+        List<Vector3> grass_positions = new List<Vector3>(grass_m.Capacity);
+
         int seed;
         int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
-        //List<Vector3> grass_positions = new List<Vector3>(grass_m.Capacity);
+        
 
         seed = generateUniqueSeed(vertices[mid_index]);
         poissonSampling.setSeedPRNG(seed);
@@ -83,8 +87,8 @@ public class LifePlanetNoise : GeneratePlane
         poissonSampling.setSeedPRNG(seed);
         poissonSampling.generatePoissonDisc(ref rock_positions, ref vertices, rock_k, xVertCount * yVertCount, xVertCount, yVertCount, rock_radius);
 
-        //poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount * yVertCount / 2] + new Vector3(2, 0, 0)));
-        //poissonSampling.generatePoissonDisc(ref grass_positions, ref vertices, 10, xVertCount * yVertCount, xVertCount, yVertCount, 2);
+        poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount * yVertCount / 2] + new Vector3(2, 0, 0)));
+        poissonSampling.generatePoissonDisc(ref grass_positions, ref vertices, 10, xVertCount * yVertCount, xVertCount, yVertCount, 2);
 
         for (int i = 0; i < tree_positions.Count; ++i) { //add the tree positions and subsequent rotations to the matrix buffer
             
@@ -104,14 +108,14 @@ public class LifePlanetNoise : GeneratePlane
             Vector3 sca = Vector3.one * .01f;
             rock_m.Add(Matrix4x4.TRS(rock_positions[i] + origin, rot, sca)); //transform rotation scale
         }
-        for (int i = 0; i < vertices.Length; ++i)
+        for (int i = 0; i < grass_positions.Count; ++i)
         { //add the tree positions and subsequent rotations to the matrix buffer
 
-            Vector3 lookVec = vertices[i];
+            Vector3 lookVec = grass_positions[i];
             if (lookVec.magnitude < radius+0.15f || lookVec.magnitude > radius + 0.2f) continue; //corresponds to level1 in the shader. These need to communicate with one another
             Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0, 0, 90);
             Vector3 sca = Vector3.one * .01f;
-            grass_m.Add(Matrix4x4.TRS(vertices[i] + origin, rot, sca)); //transform rotation scale
+            grass_m.Add(Matrix4x4.TRS(grass_positions[i] + origin, rot, sca)); //transform rotation scale
         }
         return;
 
@@ -124,22 +128,19 @@ public class LifePlanetNoise : GeneratePlane
         Graphics.DrawMeshInstanced(grass_mesh, 0, grass_mat, grass_m);
     }
 
-    protected override void DispatchNoise(ref Vector3[] vertices) {
-
+    protected override void DispatchNoise(ref Vector3[] vertices, Vector3 origin) {
+        
         simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
         Vector3[] verticesWorldSpace = new Vector3[vertices.Length];
 
         //////CONVERTS RELATIVE VERTEX POINTS INTO WORLD SPACE POSITIONS
         for (int i = 0; i < vertices.Length; ++i)
         {
-            Vector3 pos = vertices[i];
-            float nx = transform.TransformPoint(pos).x;
-            float ny = transform.TransformPoint(pos).y;
-            float nz = transform.TransformPoint(pos).z;
+            Vector3 pos = origin + vertices[i]; //world space
 
-            float xx = ((nx - xVertCount) / scale);
-            float yy = ((ny - yVertCount) / scale);
-            float zz = ((nz - xVertCount) / scale);
+            float xx = ((pos.x - xVertCount) / scale);
+            float yy = ((pos.y - yVertCount) / scale);
+            float zz = ((pos.z - xVertCount) / scale);
 
             verticesWorldSpace[i] = new Vector3(xx,yy,zz);
         }
@@ -171,6 +172,9 @@ public class LifePlanetNoise : GeneratePlane
 
 
         verts.Release();
+        worldVerts.Release();
+        
+        
     }
 
     public override float NoiseValue(Vector3 pos, float scale) { return 0; }

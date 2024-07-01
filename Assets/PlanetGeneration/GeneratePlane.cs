@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using Simplex;
 using Worley;
@@ -12,7 +13,9 @@ public abstract class GeneratePlane : MonoBehaviour
     public Material patchMaterial;
     Color[] regions; //will i run into trouble if this is pointing to a reference?
     float[] heights;
+
     public PatchConfig patch;
+    public float LODstep; //powerof2Frac
 
     protected int octaves;
     protected float lacunarity;
@@ -49,6 +52,7 @@ public abstract class GeneratePlane : MonoBehaviour
     protected int generateUniqueSeed(Vector3 pos) {
 
         //FIX THIS
+        //new line for the sake of invoking a domain relaod
         var hash = new Hash128();
         hash.Append(pos.x);
         hash.Append(pos.y);
@@ -75,7 +79,17 @@ public abstract class GeneratePlane : MonoBehaviour
         shader.SetFloat("landMultiplier", landMultiplier);
         shader.SetFloat("seaLevel", oceanFloor);
     }
-    public void Generate(PatchConfig planePatch,float LODstep) {
+
+
+    private void Start() //this may need to be removed
+    {
+        //simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
+        Generate(patch);
+    }
+
+
+    public void Generate(PatchConfig planePatch)
+    {
 
 
         texture = new RenderTexture(15, 15, 0, RenderTextureFormat.RFloat)
@@ -83,26 +97,27 @@ public abstract class GeneratePlane : MonoBehaviour
             enableRandomWrite = true
         };
         texture.Create();
-        
+
+        LODstep = 1f / (1 << (patch.LODlevel));
 
         MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
         MeshRenderer rend = this.gameObject.AddComponent<MeshRenderer>();
 
         Material planetMaterial = Instantiate(Resources.Load("Planet_Shader", typeof(Material))) as Material;
-        planetMaterial.SetFloat("_DisplacementStrength",0.1f);
+        planetMaterial.SetFloat("_DisplacementStrength", 0.1f);
 
         float TypePlanet = (float)planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
-        planetMaterial.SetFloat("_PlanetType", TypePlanet+.99f); //I guess pixel sampling is 1-indexed?
+        planetMaterial.SetFloat("_PlanetType", TypePlanet + .99f); //I guess pixel sampling is 1-indexed?
 
 
         rend.sharedMaterial = planetMaterial;
         Mesh m = mf.sharedMesh = new Mesh();
-        patch = planePatch;
+        //patch = planePatch;
 
         xVertCount = planePatch.vertices.x;
         yVertCount = planePatch.vertices.y;
 
-        radius = planePatch.radius;
+        radius = patch.radius;
 
         Vector2 offset = new Vector2(-0.5f, -0.5f) + planePatch.LODOffset; //to center all side meshes. Multiply by LODoffset to give correct quadrant
         Vector2 step = new Vector2(1f / (xVertCount - 1), 1f / (yVertCount - 1)); //determines the distance or "step" amount between vertices
@@ -132,7 +147,7 @@ public abstract class GeneratePlane : MonoBehaviour
                 uvs[i] = p + Vector2.one * 0.5f;
 
                 Vector3 vec = (planePatch.uAxis * p.x) + (planePatch.vAxis * p.y) + (planePatch.height * 0.5f); //determine plane vertex based on direction. p determines
-                                                                                                                  //vertex location in grid
+                                                                                                                //vertex location in grid
 
                 //float noiseHeight = 0f; // should return a value between 0 and 1
                 vec = vec.normalized; //makes it a sphere
@@ -158,7 +173,13 @@ public abstract class GeneratePlane : MonoBehaviour
                 indices[i + 3] = x + 1 + y * xVertCount;
             }
         }
-        DispatchNoise(ref vertices); //change the vertices, then set them
+        /////////OUTSIDE INFORMATION USED FOR THREAD
+
+
+        Vector3 position = transform.position; //world position of planet
+        DispatchNoise(ref vertices, position);
+        //await Task.Run( () => DispatchNoise(ref vertices, position)); //change the vertices, then set them
+        ////////////////////////////////////////////
 
         m.vertices = vertices;
         m.normals = normals;
@@ -173,14 +194,25 @@ public abstract class GeneratePlane : MonoBehaviour
 
         m.RecalculateNormals();
 
+        //////////////////////SET THE TEXTURE SIZE, SCALE, AND TEXTURE ITSELF
         transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
         transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
 
-        if(generateFoliage) GenerateFoliage(ref vertices, transform.position); //generate foliage if and only if it's at the lowest level
+        if (generateFoliage) GenerateFoliage(ref vertices, transform.position); //generate foliage if and only if it's at the lowest level
         //DispatchFoliage();
+
+        transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -patch.LODOffset * (1 << patch.LODlevel));
+        transform.GetComponent<Renderer>().material.SetVector("_Tile", new Vector4(1 << patch.LODlevel, 1 << patch.LODlevel, 0, 0));
+
+        float textureTiling = (1 << patch.maxLOD) / (1 << patch.LODlevel);
+        transform.GetComponent<Renderer>().material.SetVector("_Tiling", new Vector4(textureTiling, textureTiling, 0, 0));
+
+
+        transform.GetComponent<Renderer>().material.SetVector("_Offset", new Vector4(patch.textureOffset.x, patch.textureOffset.y, 0, 0));
+        /////////////////////////////////////////////////////////////////////
     }
 
-    protected abstract void DispatchNoise(ref Vector3[] vertices);
+    protected abstract void DispatchNoise(ref Vector3[] vertices, Vector3 origin);
 
     protected abstract void GenerateFoliage(ref Vector3[] vertices, Vector3 origin);
 
@@ -216,22 +248,23 @@ public abstract class GeneratePlane : MonoBehaviour
         return noiseHeight;
     }*/
 
-    public Vector3 getPosition(PatchConfig planePatch, float LODstep) { //returns the middle vertex position. Is used to
+    public Vector3 getPosition() { //returns the middle vertex position. Is used to
                                                                         //measure distance for LOD
 
-        float xVert = planePatch.vertices.x;
-        float yVert = planePatch.vertices.y;
+        float xVert = patch.vertices.x;
+        float yVert = patch.vertices.y;
 
-        Vector2 offset = new Vector2(-0.5f, -0.5f) + planePatch.LODOffset; //to center all side meshes. Multiply by LODoffset to give correct quadrant
+        //FOR SOME REASON THE OFFSET IS NOT BEING SET
+        Vector2 offset = new Vector2(-0.5f, -0.5f) + patch.LODOffset; //to center all side meshes. Multiply by LODoffset to give correct quadrant
         Vector2 step = new Vector2(1f / (xVert - 1), 1f / (yVert - 1)); //determines the distance or "step" amount between vertices
         step *= LODstep; //make smaller steps if higher lod
 
         Vector2 p = offset + new Vector2( (xVert/2) * step.x, (yVert/2) * step.y);
 
-        Vector3 vec = ((planePatch.uAxis * p.x) + (planePatch.vAxis * p.y) + (planePatch.height * 0.5f));
-        vec = vec.normalized * radius;
+        Vector3 vec = ((patch.uAxis * p.x) + (patch.vAxis * p.y) + (patch.height * 0.5f));
+        vec = vec.normalized * patch.radius;
 
-        vec += this.transform.position;
+        vec += transform.position;
         return vec;
     }
 }

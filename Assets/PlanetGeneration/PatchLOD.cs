@@ -19,6 +19,11 @@ public class PatchLOD {
     [SerializeField]private float distance;
     
     public PatchLOD(GameObject patch, PatchLOD parent) {
+
+
+        //THE PARENT ROOTS OF THE LOD SYSTEMS DO NOT HAVE THEIR OFFSETS CORRECT
+
+
         this.patch = patch;
         patchConfig = patch.GetComponent<GeneratePlane>().patch;
         childNode = new List<PatchLOD>() { };
@@ -26,7 +31,8 @@ public class PatchLOD {
         this.parent = parent;
 
         //the complicated math part should be refactored, it should be consolidated
-        this.position = patch.GetComponent<GeneratePlane>().getPosition(patchConfig, 1f / (1 << (patchConfig.LODlevel))  );
+        Vector3 pos = patch.GetComponent<GeneratePlane>().getPosition();
+        this.position = pos;
         //needs gameObject plane, plane needs resolution, start position
     }
 
@@ -109,8 +115,8 @@ public class PatchLOD {
             //have patchConfig child inherit everything from parent
             //addFlatShader(patchChild);
             patchChild.GetComponent<GeneratePlane>().generateFoliage = (patchConfigChild.LODlevel == patchConfigChild.maxLOD); //sets foliage flag if it is at the lowest level
-
-            patchChild.GetComponent<GeneratePlane>().Generate(patchConfigChild,powerof2Frac);
+            patchChild.GetComponent<GeneratePlane>().patch = patchConfigChild;
+            /*
             patchChild.transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -LODOffset * (1 << patchConfigChild.LODlevel) );
             patchChild.transform.GetComponent<Renderer>().material.SetVector("_Tile", new Vector4(1 << patchConfigChild.LODlevel, 1 << patchConfigChild.LODlevel, 0, 0));
 
@@ -119,7 +125,7 @@ public class PatchLOD {
 
 
             patchChild.transform.GetComponent<Renderer>().material.SetVector("_Offset", new Vector4(patchConfigChild.textureOffset.x,patchConfigChild.textureOffset.y, 0, 0));
-
+            */
 
             AddChild(patchChild);
         }

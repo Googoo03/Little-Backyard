@@ -99,6 +99,10 @@ namespace Poisson
             return;
         }
 
+        private Vector3 interpolate(Vector3 a, Vector3 b, float t) {
+            return a + (b - a)*t;
+        }
+
         public void generatePoissonDisc(ref List<Vector3> points, ref Vector3[] vertices, int k, int num, int maxX, int maxY, int radius) //takes in a reference vector field
         { // doesn't take in a reference vector field
 
@@ -155,9 +159,11 @@ namespace Poisson
                     y = Mathf.Max(index_y + (Mathf.Sin(rand) * radius), 0);
                     x = Mathf.Min(x, maxX);
                     y = Mathf.Min(y, maxY - 1);
+
                     //check if its valid, if so, add it, if not, skip it
-                    //float dist = Mathf.Sqrt((x - points[index].x) * (x - points[index].x) + (y - points[index].y) * (y - points[index].y));
                     bool_index = ((int)Mathf.Max(y - 1, 0) * maxX) + (int)x;
+                    int interpolate_index = ((int)Mathf.Max(y, 0) * maxX) + (int)(x+1);
+
                     if (meetsDistanceThreshold(radius, ref hashgrid, bool_index, maxX, maxY))
                     {
                         if (!found) {
@@ -165,7 +171,8 @@ namespace Poisson
                             found = true;
                         }
                         hashgrid[bool_index] = true;
-                        Vector3 newpoint = vertices[bool_index];
+                        
+                        Vector3 newpoint = interpolate_index < (maxX*maxY)-1 ? interpolate( vertices[bool_index], vertices[interpolate_index],x-(int)x) : vertices[bool_index];
                         points.Add(newpoint);
                         points_placed++;
                     }
