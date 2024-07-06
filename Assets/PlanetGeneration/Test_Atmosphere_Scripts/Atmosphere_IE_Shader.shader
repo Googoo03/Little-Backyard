@@ -96,78 +96,6 @@ Shader "Custom/Atmosphere_IE"
                 return plus ? ( (-b + sqrt(b*b - 4*a*c)) / 2*a) : ( (-b - sqrt(b*b - 4*a*c)) / 2*a);
             }
 
-            fixed4 compute(v2f i, float3 planetPos){
-                float3 viewDirection = normalize(i.viewVector);
-                //set vector from camera to planet and get magnitude of said vector
-                float3 cameraToPlanetVector =  planetPos - _WorldSpaceCameraPos;
-                float cameraDistanceToPlanet = length(cameraToPlanetVector);
-
-                //find the orgonal projection of the view vector onto the camera to planet vector
-                float3 orthogonalToPlanet = orthogonalProjection(cameraToPlanetVector, viewDirection,cameraDistanceToPlanet);
-                distanceToPlanet = length(orthogonalToPlanet);
-                
-
-                //find distance from camera, max being the atmosphere
-                float angleView_W2 = atan(cameraDistanceToPlanet / distanceToPlanet); //finds angle connecting the viewVector to W2
-                float sin_angleView_W2 = sin(angleView_W2);
-                float _C = asin( (sin_angleView_W2 * distanceToPlanet) / (_Radius + _AtmosphereHeight) );
-                float _A = 180 - _C - angleView_W2;
-                float intersection_atmosphere_scalar = ((_Radius + _AtmosphereHeight) * (sin(_A)) / sin_angleView_W2);
-
-                
-
-                float depthTextureSample = SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, i.screenPos);
-                float terrainLevel = LinearEyeDepth(depthTextureSample);
-
-                float atmosphere_depth = clamp(terrainLevel - intersection_atmosphere_scalar,0,_AtmosphereHeight);
-
-                
-
-                fixed4 noColor = tex2D(_MainTex, i.uv);
-                fixed4 atmosphereColor = _Color;
-                float atmosphereAlpha = 1;
-
-                atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
-
-                /////////ONLY SHOW WHERE INTERSECTS WITH LIGHT
-                float r = _Radius + _AtmosphereHeight;
-                float3 Q = _WorldSpaceCameraPos -  planetPos;
-                float a = 1;//viewDirection * viewDirection;
-                float b = 2 * dot(viewDirection, Q);
-                float c = dot(Q,Q) - r*r;
-                float d = (dot(viewDirection,Q)*dot(viewDirection,Q)) - c;
-
-                float t1 = -1;
-                float t2 = -1;
-                
-                float dotProduct = 0;
-
-                if(d >= 0){
-                    t1 = QuadraticSolve(a,b,c,false);
-                    t2 = QuadraticSolve(a,b,c,true);
-
-                    if(t1 >= 0 || t2 >=0){
-
-                    
-                    float3 intersectionPoint = _WorldSpaceCameraPos + (t1*viewDirection);
-
-                    float3 normalVector = normalize(intersectionPoint -  planetPos); //is this right?
-                    float3 lightVector = normalize(_SunPos -  planetPos);
-                    dotProduct = dot(lightVector,normalVector); //always outputs -1, why?
-                    //dot product's not working.
-                    atmosphereAlpha *= dotProduct;
-                    atmosphereAlpha = max(0,atmosphereAlpha);
-                    }
-                }
-                
-                
-                /////////////////////////////////////////////////
-                
-
-                fixed4 col = (distanceToPlanet < (_Radius + _AtmosphereHeight) ) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
-                return col;
-            }
-
             fixed4 frag (v2f i) : SV_Target
             {
                 
@@ -178,7 +106,7 @@ Shader "Custom/Atmosphere_IE"
 
                 //find the orgonal projection of the view vector onto the camera to planet vector
                 float3 orthogonalToPlanet = orthogonalProjection(cameraToPlanetVector, viewDirection,cameraDistanceToPlanet);
-                distanceToPlanet = length(orthogonalToPlanet);
+                float distanceToPlanet = 0;
                 
 
                 //find distance from camera, max being the atmosphere
@@ -193,7 +121,7 @@ Shader "Custom/Atmosphere_IE"
                 float depthTextureSample = SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, i.screenPos);
                 float terrainLevel = LinearEyeDepth(depthTextureSample);
 
-                float atmosphere_depth = clamp(terrainLevel - intersection_atmosphere_scalar,0,_AtmosphereHeight);
+                
 
                 
 
@@ -201,7 +129,7 @@ Shader "Custom/Atmosphere_IE"
                 fixed4 atmosphereColor = _Color;
                 float atmosphereAlpha = 1;
 
-                atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
+                
 
                 /////////ONLY SHOW WHERE INTERSECTS WITH LIGHT
                 float r = _Radius + _AtmosphereHeight;
@@ -215,6 +143,7 @@ Shader "Custom/Atmosphere_IE"
                 float t2 = -1;
                 
                 float dotProduct = 0;
+                float atmosphere_depth = 0;
 
                 if(d >= 0){
                     t1 = QuadraticSolve(a,b,c,false);
@@ -222,18 +151,51 @@ Shader "Custom/Atmosphere_IE"
 
                     if(t1 >= 0 || t2 >=0){
 
-                    float t3 = t1 >= 0 ? t1 : t2;
+                    float t3;// = t1 >= 0 ? t1 : t2;
+                    if(t1 > 0 && t2 > 0){
+                        t3 = min(t1,t2);
+                    }else { t3 = t1 >= 0 ? t1 : t2;}
                     float3 intersectionPoint = _WorldSpaceCameraPos + (t3*viewDirection);
+                    distanceToPlanet = length(intersectionPoint-_PlanetPos);
+                    //atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
+                    //atmosphere_depth = clamp(terrainLevel - intersection_atmosphere_scalar,0,_AtmosphereHeight);
 
-                    float3 normalVector = normalize(intersectionPoint -  _PlanetPos); //is this right?
+                    
+                    
+                    float3 start_point;
+                    float3 end_point;
+
+                    if(terrainLevel < t3){
+                        //throw out   
+                        return noColor;
+                    }
+
+                    if(t3 == t1){ //if its measuring with the closest intersection
+                        //start_point = t3 > terrainLevel ? _WorldSpaceCameraPos : intersectionPoint;
+                        start_point = intersectionPoint;
+
+                    }else if(t3 == t2) {
+                        //
+                        start_point = _WorldSpaceCameraPos;
+
+                        //atmosphereAlpha *= length(intersectionPoint-_WorldSpaceCameraPos);
+                        //atmosphereAlpha *= max(0,dotProduct);
+                        
+                    }
+                    end_point = t2 > (terrainLevel) ? _WorldSpaceCameraPos+(terrainLevel*viewDirection) : _WorldSpaceCameraPos+(t2*viewDirection);
+                    
+                    float3 normalVector = normalize(end_point -  _PlanetPos); 
                     float3 lightVector = normalize(_SunPos -  _PlanetPos);
-                    dotProduct = dot(lightVector,normalVector); //always outputs -1, why?
-                    //dot product's not working.
-                    if(t3 == t1){
-                        atmosphereAlpha *= max(0,dotProduct);
-                    }else if(t3 == t2) atmosphereAlpha *= sqrt(dot(intersectionPoint-_WorldSpaceCameraPos, intersectionPoint-_WorldSpaceCameraPos));
+                    dotProduct = dot(lightVector,normalVector);
+
+                    //atmosphereAlpha *= sqrt(dot(intersectionPoint-_WorldSpaceCameraPos, intersectionPoint-_WorldSpaceCameraPos));
+                    atmosphere_depth = length(end_point-start_point);
+                    atmosphereAlpha *= min(1,saturate(atmosphere_depth));
+                    atmosphereAlpha *= max(0,dotProduct);
+                    //how much atmosphere you're looking through
                     //atmosphereAlpha = max(0,atmosphereAlpha);;
                     }
+                    
                 }
                 
                 //USE BILLBOARD TECHNIQUE FOR MULTIPLE ATMOSPHERES??? SWITCH THE _PlanetPos WHENEVER A NEW CLOSEST PLANET IS ASSIGNED
@@ -242,7 +204,7 @@ Shader "Custom/Atmosphere_IE"
                 /////////////////////////////////////////////////
                 
                 fixed4 col;
-                col = (distanceToPlanet < (_Radius + _AtmosphereHeight)) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
+                col = (distanceToPlanet < (_Radius + _AtmosphereHeight + .001)) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
                 
                 /*fixed4 color;
 

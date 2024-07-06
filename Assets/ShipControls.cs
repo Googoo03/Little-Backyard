@@ -132,6 +132,8 @@ public class ShipControls : MonoBehaviour
         /////Moving forward
         
         ///////////////////////
+        Rigidbody rigidbody = this.GetComponent<Rigidbody>();
+        rigidbody.AddTorque(roll.eulerAngles);
 
         transform.position += transform.forward * (forward * speed) * Time.deltaTime;
 
@@ -162,7 +164,7 @@ public class ShipControls : MonoBehaviour
     private void LODCheckDistance() { //measures the distance between the player and nearbyPlanet. If close enough
                                       //make new LOD      
             if (distanceToNearestPlanet < initialDistanceThreshold) {
-                nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(this.gameObject);
+                nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(transform.position);
             }
     }
 

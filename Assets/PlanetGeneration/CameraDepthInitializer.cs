@@ -8,7 +8,7 @@ public class CameraDepthInitializer : MonoBehaviour
     [SerializeField] private Camera playerCamera;
     [SerializeField] private Material mat;
     [SerializeField] protected List<Vector3> planetPositions;
-    [SerializeField] private int planetCount = 3;
+    //[SerializeField] private int planetCount = 3;
     
 
     void Start()

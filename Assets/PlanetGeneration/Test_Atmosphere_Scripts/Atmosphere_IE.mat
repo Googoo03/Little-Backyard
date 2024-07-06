@@ -61,10 +61,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AtmosphereHeight: 0.68
+    - _AtmosphereHeight: 0.7
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _Density: 0.92
+    - _Density: 0.3
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
@@ -74,7 +74,7 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Radius: 5
+    - _Radius: 4.92
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1

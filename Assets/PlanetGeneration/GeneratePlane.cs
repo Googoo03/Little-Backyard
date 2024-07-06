@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Simplex;
 using Worley;
+using UnityEngine.Rendering;
+using Unity.Collections;
 
 
 public abstract class GeneratePlane : MonoBehaviour
@@ -11,8 +13,6 @@ public abstract class GeneratePlane : MonoBehaviour
     public int xVertCount = 16, yVertCount = 16;
     protected float radius;
     public Material patchMaterial;
-    Color[] regions; //will i run into trouble if this is pointing to a reference?
-    float[] heights;
 
     public PatchConfig patch;
     public float LODstep; //powerof2Frac
@@ -36,6 +36,17 @@ public abstract class GeneratePlane : MonoBehaviour
     protected ComputeBuffer verts;
     protected ComputeBuffer worldVerts;
     protected int shaderHandle;
+
+    //MESH DETAILS
+    protected Mesh m;
+    protected MeshFilter mf;
+    protected MeshRenderer rend;
+    protected Vector3[] vertices;
+    protected Vector3[] normals;
+    protected Vector2[] uvs;
+    protected int[] indices;
+
+    private GameObject parent;
 
     //FOLIAGE PARAMETERS
     public bool generateFoliage;
@@ -84,6 +95,7 @@ public abstract class GeneratePlane : MonoBehaviour
     private void Start() //this may need to be removed
     {
         //simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
+        parent = transform.parent.gameObject;
         Generate(patch);
     }
 
@@ -98,10 +110,10 @@ public abstract class GeneratePlane : MonoBehaviour
         };
         texture.Create();
 
-        LODstep = 1f / (1 << (patch.LODlevel));
+        
 
-        MeshFilter mf = this.gameObject.AddComponent<MeshFilter>();
-        MeshRenderer rend = this.gameObject.AddComponent<MeshRenderer>();
+        mf = this.gameObject.AddComponent<MeshFilter>();
+        rend = this.gameObject.AddComponent<MeshRenderer>();
 
         Material planetMaterial = Instantiate(Resources.Load("Planet_Shader", typeof(Material))) as Material;
         planetMaterial.SetFloat("_DisplacementStrength", 0.1f);
@@ -111,7 +123,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
 
         rend.sharedMaterial = planetMaterial;
-        Mesh m = mf.sharedMesh = new Mesh();
+        m = mf.sharedMesh = new Mesh();
         //patch = planePatch;
 
         xVertCount = planePatch.vertices.x;
@@ -121,12 +133,14 @@ public abstract class GeneratePlane : MonoBehaviour
 
         Vector2 offset = new Vector2(-0.5f, -0.5f) + planePatch.LODOffset; //to center all side meshes. Multiply by LODoffset to give correct quadrant
         Vector2 step = new Vector2(1f / (xVertCount - 1), 1f / (yVertCount - 1)); //determines the distance or "step" amount between vertices
+
+        LODstep = 1f / (1 << (patch.LODlevel));
         step *= LODstep; //make smaller steps if higher lod
 
 
-        Vector3[] vertices = new Vector3[xVertCount * yVertCount];
-        Vector3[] normals = new Vector3[vertices.Length];
-        Vector2[] uvs = new Vector2[vertices.Length];
+        vertices = new Vector3[xVertCount * yVertCount];
+        normals = new Vector3[vertices.Length];
+        uvs = new Vector2[vertices.Length];
 
         //Texture2D tex = new Texture2D(xVertCount, yVertCount);
 
@@ -161,7 +175,7 @@ public abstract class GeneratePlane : MonoBehaviour
         }
 
         //SET INDICES FOR THE MESH
-        int[] indices = new int[(xVertCount - 1) * (yVertCount - 1) * 4];
+        indices = new int[(xVertCount - 1) * (yVertCount - 1) * 4];
         for (int y = 0; y < yVertCount - 1; y++)
         {
             for (int x = 0; x < xVertCount - 1; x++)
@@ -177,19 +191,20 @@ public abstract class GeneratePlane : MonoBehaviour
 
 
         Vector3 position = transform.position; //world position of planet
-        DispatchNoise(ref vertices, position);
+        DispatchNoise(vertices, position); //there's no ref here, optimization opportunity?
         //await Task.Run( () => DispatchNoise(ref vertices, position)); //change the vertices, then set them
         ////////////////////////////////////////////
 
-        m.vertices = vertices;
+        /*m.vertices = vertices;
         m.normals = normals;
         m.uv = uvs;
         m.SetIndices(indices, MeshTopology.Quads, 0);
         m.RecalculateBounds();
 
         mf.sharedMesh.SetTriangles(mf.sharedMesh.GetTriangles(0), 0);
-
+        */
         this.gameObject.AddComponent<MeshCollider>();
+        //this.gameObject.isStatic = true;
 
 
         m.RecalculateNormals();
@@ -212,7 +227,35 @@ public abstract class GeneratePlane : MonoBehaviour
         /////////////////////////////////////////////////////////////////////
     }
 
-    protected abstract void DispatchNoise(ref Vector3[] vertices, Vector3 origin);
+    protected void OnCompleteReadback(AsyncGPUReadbackRequest request)
+    {
+        NativeArray<Vector3> _vertices;
+        _vertices = request.GetData<Vector3>();
+        verts.Release();
+        worldVerts.Release();
+
+        _vertices.CopyTo(vertices);
+        m.vertices = vertices;
+        m.normals = normals;
+        m.uv = uvs;
+        m.SetIndices(indices, MeshTopology.Quads, 0);
+        m.RecalculateBounds();
+        m.RecalculateNormals();
+
+        //mf.sharedMesh.SetTriangles(mf.sharedMesh.GetTriangles(0), 0);
+        if (generateFoliage) GenerateFoliage(ref vertices, transform.position);
+
+        if (patch.LODlevel > 0)
+        {
+            parent.GetComponent<MeshRenderer>().enabled = false; //not good practice, should be done through the PatchLOD tree
+            parent.GetComponent<MeshCollider>().enabled = false; //however, the PatchLOD tree is messed up rn so this is a workaround.
+        }
+
+
+        return;
+    }
+
+    protected abstract void DispatchNoise(Vector3[] vertices, Vector3 origin);
 
     protected abstract void GenerateFoliage(ref Vector3[] vertices, Vector3 origin);
 
@@ -223,6 +266,7 @@ public abstract class GeneratePlane : MonoBehaviour
     private void Update()
     {
         if(generateFoliage) DispatchFoliage();
+        
     }
     /*float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)
     {
@@ -254,12 +298,11 @@ public abstract class GeneratePlane : MonoBehaviour
         float xVert = patch.vertices.x;
         float yVert = patch.vertices.y;
 
-        //FOR SOME REASON THE OFFSET IS NOT BEING SET
         Vector2 offset = new Vector2(-0.5f, -0.5f) + patch.LODOffset; //to center all side meshes. Multiply by LODoffset to give correct quadrant
         Vector2 step = new Vector2(1f / (xVert - 1), 1f / (yVert - 1)); //determines the distance or "step" amount between vertices
         step *= LODstep; //make smaller steps if higher lod
 
-        Vector2 p = offset + new Vector2( (xVert/2) * step.x, (yVert/2) * step.y);
+        Vector2 p = offset + new Vector2( (xVert/2) * step.x, (yVert/2) * step.y); //finds center position of patch
 
         Vector3 vec = ((patch.uAxis * p.x) + (patch.vAxis * p.y) + (patch.height * 0.5f));
         vec = vec.normalized * patch.radius;

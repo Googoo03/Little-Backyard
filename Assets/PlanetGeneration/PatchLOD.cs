@@ -66,8 +66,8 @@ public class PatchLOD {
 
     public void nextLOD() {
 
-        patch.transform.GetComponent<MeshRenderer>().enabled = false;
-        patch.transform.GetComponent<MeshCollider>().enabled = false;
+        //patch.transform.GetComponent<MeshRenderer>().enabled = false;
+        //patch.transform.GetComponent<MeshCollider>().enabled = false;
 
         //PatchConfig patchConfigChild = new PatchConfig("NorthWest", patchConfig.uAxis, patchConfig.vAxis, patchConfig.LODlevel + 1);
         string[] names = {"NorthWest", "NorthEast", "SouthWest","SouthEast" };
@@ -77,7 +77,6 @@ public class PatchLOD {
         {
             GameObject patchChild = new GameObject(names[i] + "_Level_" + patchConfig.LODlevel + 1);
 
-            //patchChild.AddComponent<GeneratePlane>();
             addMeshGenerationScript(patchChild);
 
             patchChild.transform.parent = patch.transform;
@@ -113,19 +112,8 @@ public class PatchLOD {
 
 
             //have patchConfig child inherit everything from parent
-            //addFlatShader(patchChild);
             patchChild.GetComponent<GeneratePlane>().generateFoliage = (patchConfigChild.LODlevel == patchConfigChild.maxLOD); //sets foliage flag if it is at the lowest level
             patchChild.GetComponent<GeneratePlane>().patch = patchConfigChild;
-            /*
-            patchChild.transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -LODOffset * (1 << patchConfigChild.LODlevel) );
-            patchChild.transform.GetComponent<Renderer>().material.SetVector("_Tile", new Vector4(1 << patchConfigChild.LODlevel, 1 << patchConfigChild.LODlevel, 0, 0));
-
-            float textureTiling = (1 << patchConfigChild.maxLOD) / (1 << patchConfigChild.LODlevel);
-            patchChild.transform.GetComponent<Renderer>().material.SetVector("_Tiling", new Vector4(textureTiling, textureTiling, 0, 0));
-
-
-            patchChild.transform.GetComponent<Renderer>().material.SetVector("_Offset", new Vector4(patchConfigChild.textureOffset.x,patchConfigChild.textureOffset.y, 0, 0));
-            */
 
             AddChild(patchChild);
         }
@@ -217,25 +205,25 @@ public class PatchLOD {
 
     }
 
-    public void LODbyDistance(PatchLOD node, GameObject player) //used for finding the leaf nodes and then using nextLOD to actually generate
+    public void LODbyDistance(PatchLOD node, Vector3 playerPos) //used for finding the leaf nodes and then using nextLOD to actually generate
     {
         if (node.childNode.Count > 0)
         {
             for (int i = 0; i < node.childNode.Count; ++i)
             { //traverses DFS 
-                LODbyDistance(node.childNode[i],player);
+                LODbyDistance(node.childNode[i],playerPos);
 
             }
         }
         else
         {
             //need to take into account that all patches have the same location, but are offset differently
-            distance = Vector3.Distance(node.position, player.transform.position);
+            distance = Vector3.Distance(node.position, playerPos);
 
             if (distance < (node.patchConfig.distanceThreshold) &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD)
             {
                 node.nextLOD();
-            }else if (distance > (1.5f*node.patchConfig.distanceThreshold)+node.patchConfig.radius) //if distance between player and patch is too large
+            }else if (node.parent != null && distance > (2*node.parent.patchConfig.distanceThreshold)) //if distance between player and patch is too large
                                                                         //then undo the LOD
             {
                 node.prevLOD(node.parent);

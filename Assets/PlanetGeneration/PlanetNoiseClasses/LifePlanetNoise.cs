@@ -1,9 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Simplex;
 using System;
 using Poisson;
+using Unity.Collections;
+using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
 
 
@@ -36,7 +40,7 @@ public class LifePlanetNoise : GeneratePlane
         oceanMulitplier = 0.1f;
         landMultiplier = 0.15f;
 
-        octaves = 20;
+        octaves = 6;
         scale = 3f;
         lacunarity = 2;
         persistance = 0.5f;
@@ -128,7 +132,7 @@ public class LifePlanetNoise : GeneratePlane
         Graphics.DrawMeshInstanced(grass_mesh, 0, grass_mat, grass_m);
     }
 
-    protected override void DispatchNoise(ref Vector3[] vertices, Vector3 origin) {
+    protected override void DispatchNoise(Vector3[] vertices, Vector3 origin) {
         
         simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
         Vector3[] verticesWorldSpace = new Vector3[vertices.Length];
@@ -154,9 +158,9 @@ public class LifePlanetNoise : GeneratePlane
 
         setComputeNoiseVariables(ref simplex);
         simplex.SetBool("absValue", false);
-        
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+        
 
         simplex.SetFloat("seed", 100);
         simplex.SetFloat("mountainStrength", 5f);
@@ -166,16 +170,29 @@ public class LifePlanetNoise : GeneratePlane
         simplex.SetBool("absValue", false);
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
-        
-        
-        verts.GetData(vertices);
+
+        //var req = await Task.Run(() => AsyncGPUReadback.Request(verts));
+        //await Task.Run(() => verts.GetData(vertices));
 
 
-        verts.Release();
-        worldVerts.Release();
+        //verts.GetData(vertices);
+        AsyncGPUReadback.Request(verts, OnCompleteReadback);
+        //vertices = StartCoroutine(getVertData(verts));// getVertData(verts);
+
+        //AsyncGPUReadbackRequest.GetData();
+
+        
         
         
     }
+
+
+    
+    /*IEnumerator getVertData(ComputeBuffer verts) {
+        Vector3[] vertices = { };
+        verts.GetData(vertices);
+        yield return vertices;
+    }*/
 
     public override float NoiseValue(Vector3 pos, float scale) { return 0; }
 }

@@ -190,11 +190,11 @@ public class Sphere : MonoBehaviour
         }
     }
 
-    public void checkPatchDistances(GameObject player)
+    public void checkPatchDistances(Vector3 playerPos)
     {
         for (int i = 0; i < LOD.Count; ++i)
         {
-            LOD[i].LODbyDistance(LOD[i], player);
+            LOD[i].LODbyDistance(LOD[i], playerPos);
         }
     }
 
