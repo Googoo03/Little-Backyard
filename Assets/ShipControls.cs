@@ -5,13 +5,13 @@ using UnityEngine;
 
 public class ShipControls : MonoBehaviour
 {
-	public float speed;
-	public float mouseSensitivityX;
-	public float mouseSensitivityY;
+    public float speed;
+    public float mouseSensitivityX;
+    public float mouseSensitivityY;
     public float rollSensitivity;
 
-    [SerializeField]public GameObject nearbyPlanet;
-    [SerializeField]private GameObject shipModel;
+    [SerializeField] public GameObject nearbyPlanet;
+    [SerializeField] private GameObject shipModel;
     private Vector3 shipOriginalRotation;
 
     public SolarSystemQuadTree planetQuadTree;
@@ -19,8 +19,8 @@ public class ShipControls : MonoBehaviour
     public Quaternion targetRotation;
     public Quaternion lastOrientation;
 
-    
-    [SerializeField]private float rollInput;
+
+    [SerializeField] private float rollInput;
     [SerializeField] private float pitchInput;
     [SerializeField] private float yawInput;
 
@@ -34,34 +34,45 @@ public class ShipControls : MonoBehaviour
 
     public float forward;
 
-    [SerializeField]private bool tiltShipPlanet = false;
-    [SerializeField]private float distanceToNearestPlanet;
-    [SerializeField]private float initialDistanceThreshold;
+    [SerializeField] private bool tiltShipPlanet = false;
+
+    //LANDING PROTOCOL
+    [SerializeField] private bool landed = false;
+    [SerializeField] private bool takeoff = false;
+    [SerializeField] private Rigidbody _rigidbody;
+
+    [SerializeField] private float distanceToNearestPlanet;
+    [SerializeField] private float initialDistanceThreshold;
     [SerializeField] private float atmosphereDistance;
     [SerializeField] private float pullUpDistance;
     //private float pullUpDistance = 1.1f; //should be grabbed from the planet when it's said and done
 
     public float angle;
-    private Vector3 horizonDirection = new Vector3(1,1,1);
+    private Vector3 horizonDirection = new Vector3(1, 1, 1);
 
     bool inAtmosphere; //would it be smart to initialize to false?
 
 
-    
-	// Use this for initialization
-	void Start () {
+
+    // Use this for initialization
+    void Start() {
+        _rigidbody = GetComponent<Rigidbody>();
         targetRotation = new Quaternion();
         shipOriginalRotation = shipModel.transform.localEulerAngles;
-	}
-	
-	// Update is called once per frame
-	void Update ()
-	{
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
 
 
 
 
         MovementProtocol();
+        if (landed) ApplyGravity(false);
+        if (takeoff) { ApplyGravity(true); takeoff = false; }
+
+        if(!landed) MitigateForces();
 
         traverseQuadTree(planetQuadTree);
 
@@ -70,8 +81,8 @@ public class ShipControls : MonoBehaviour
 
         LODCheckDistance();
 
-        
-        
+
+
         //ISSUE IS THAT THE SPEED KNOCKS IT OUT OF RANGE. SOMEHOW THERE SHOULD BE A BUFFER ZONE
         //if within emergency pullup range, turn on tilt.
         //if out of atmosphere range, turn off tilt 
@@ -79,7 +90,7 @@ public class ShipControls : MonoBehaviour
         {
             tiltShipPlanet = true;
         }
-        else if(!isInAtmosphere()){
+        else if (!isInAtmosphere()) {
             tiltShipPlanet = false;
         }
 
@@ -89,6 +100,23 @@ public class ShipControls : MonoBehaviour
             tiltTowardsPlanet();
         }
 
+    }
+
+    private void ApplyGravity(bool negative) {
+
+        int takeoffStrength = 20;
+        Vector3 toPlanet = (nearbyPlanet.transform.position - transform.position).normalized;
+        toPlanet = negative ? -toPlanet : toPlanet;
+        toPlanet *= takeoff ? takeoffStrength : 1;
+        if (_rigidbody != null)
+        {
+            _rigidbody.AddForce(toPlanet);
+        }
+        return;
+    }
+
+    private void MitigateForces(){
+        if(_rigidbody.velocity.magnitude != 0) _rigidbody.AddForce(-_rigidbody.velocity.normalized);
     }
 
     private float EaseInOutCubic(float x) {
@@ -108,10 +136,11 @@ public class ShipControls : MonoBehaviour
         if (isInAtmosphere()) SpeedCalibration();
 
         setKeyInputs();
-        
+
+        if (landed) return;//dont apply any trasforms if the ship has landed
 
         smoothKey(ref rollInput, rollSensitivity, rollChange);
-        smoothKey(ref pitchInput,mouseSensitivityY, pitchChange);
+        smoothKey(ref pitchInput, mouseSensitivityY, pitchChange);
         smoothKey(ref yawInput, mouseSensitivityX, yawChange);
 
 
@@ -120,20 +149,17 @@ public class ShipControls : MonoBehaviour
         roll = Quaternion.AngleAxis(-rollInput, transform.forward);
 
         //set offset rotation of ship_model
-        shipModel.transform.localRotation = Quaternion.Euler(shipOriginalRotation) * Quaternion.Euler(new Vector3(10*sigmoidFunction(-pitchInput), 10 * sigmoidFunction(rollInput), 10 * sigmoidFunction(yawInput)));
+        shipModel.transform.localRotation = Quaternion.Euler(shipOriginalRotation) * Quaternion.Euler(new Vector3(10*sigmoidFunction(-pitchInput), 10 * sigmoidFunction(rollInput)+(10 * sigmoidFunction(yawInput)), 10 * sigmoidFunction(yawInput)));
 
         targetRotation = yaw * pitch * roll * targetRotation;
         lastOrientation = yaw*pitch*roll*lastOrientation;//perhaps delete later.
-        float strength = Mathf.Min(0.5f * Time.deltaTime, 1);
 
         //transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation,strength);
         transform.rotation = targetRotation;
-        
+
         /////Moving forward
-        
+
         ///////////////////////
-        Rigidbody rigidbody = this.GetComponent<Rigidbody>();
-        rigidbody.AddTorque(roll.eulerAngles);
 
         transform.position += transform.forward * (forward * speed) * Time.deltaTime;
 
@@ -145,7 +171,15 @@ public class ShipControls : MonoBehaviour
         yawChange = Input.GetAxis("Mouse X") * mouseSensitivityX;
         pitchChange = Input.GetAxis("Mouse Y") * mouseSensitivityY;
         rollChange = -InputAxis(KeyCode.Q, KeyCode.E) * rollSensitivity;
+
+        if (tiltShipPlanet && Input.GetButtonUp("Jump"))
+        {
+            landed = !landed; // if near a planet, land if the spacebar is pressed
+            takeoff = !landed; //turn on takeoff only if we switch from landed to not landed
+        }
     }
+
+
 
     private void smoothKey(ref float axis, float sensitivity, float axisChange) {
         if (axisChange == 0)
@@ -214,25 +248,35 @@ public class ShipControls : MonoBehaviour
         //HERE
         ///
 
+        tiltHorizon();
+
+
+    }
+
+    private void tiltHorizon() {
+        Vector3 toPlanetCenter = nearbyPlanet.transform.position - transform.position; //compute vector to the planet center
+        float dotProduct; //find the dot product between horizonDirection and the vector to the planet
+
+        // applies the rotation if and only if the player is looking towards the horizon or below
+        dotProduct = Vector3.Dot(transform.forward, toPlanetCenter);
         float rotationSpeed = 1.0f;
         dotProduct = Vector3.Dot(horizonDirection, toPlanetCenter);
-        if (Mathf.Abs(dotProduct) >.00001f) //if the calculation is off, which happens only when its moving
+        if (Mathf.Abs(dotProduct) > .00001f) //if the calculation is off, which happens only when its moving
         {
             Vector3 newHorizonDirection = Vector3.Cross(transform.right, toPlanetCenter).normalized; //create new vector pointing towards the horizon
             if (Vector3.Dot(transform.forward, newHorizonDirection) < 0) //reorient the new vector if needed
             {
                 horizonDirection = -newHorizonDirection;
             }
-            else {
+            else
+            {
                 horizonDirection = newHorizonDirection;
             }
             lastOrientation = Quaternion.LookRotation(horizonDirection, -toPlanetCenter);
         }
-        
+
         Quaternion combinedRotation = Quaternion.Slerp(transform.rotation, lastOrientation, Time.deltaTime * rotationSpeed); //makes it smooth
         transform.rotation = combinedRotation;
-
-
     }
 
 

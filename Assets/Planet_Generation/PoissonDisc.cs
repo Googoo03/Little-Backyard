@@ -186,5 +186,101 @@ namespace Poisson
             return;
         }
 
+        public void generatePoissonDisc3DSphere(ref List<Vector3> points, int k, int num, int radius, int resolution) //takes in a reference vector field
+        { // doesn't take in a reference vector field
+            int max_theta = resolution;
+            int max_phi = resolution;
+            //start with empty list, grow as needed
+            bool[] hashgrid = new bool[max_theta*max_phi];
+
+
+
+            int index = 0; //current index of reference point
+            int bool_index; //index of new point in bool list
+            int points_placed = 0;
+
+            float rand_theta;
+            float rand_phi;
+
+            float theta;
+            float phi;
+
+            float x, y, z;
+            float index_theta, index_phi;
+            float next_theta, next_phi;
+
+            bool found = false;
+
+            theta = 0;
+            phi = 0;
+
+            next_theta = theta; next_phi = phi;
+
+            index_theta = next_theta; index_phi = next_phi;
+
+
+            ////CALCULATE ON PHI THETA PLANE, MAP TO SPHERE
+
+            /////CALCULATE FIRST POINT FROM CENTER BUT DONT ADD CENTER/////////////////
+            theta = ((float)PRNG() / 256.0f) * _2PI; //0 - 2pi float
+            phi = ((float)PRNG() / 256.0f) * _2PI;
+
+
+            //figure out new point x,y position
+            x = Mathf.Sin(phi) * Mathf.Cos(theta);
+            y = Mathf.Sin(phi) * Mathf.Sin(theta);
+            z = Mathf.Cos(phi);
+            ///////////////////////////////////
+
+            bool_index = ((int)Mathf.Max((phi / (_2PI / resolution)) - 1, 0) * resolution) + (int)(theta / (_2PI / resolution));
+            points.Add(new Vector3(x,y,z));
+            hashgrid[bool_index] = true;
+
+
+            while (index < points.Count && points_placed < num)
+            { //while we havent placed enough points and havent reached the end of our array
+                found = false;
+                for (int i = 0; i < k; i++)
+                {
+                    //generate new random number from 0 to 2pi
+                    rand_theta = ((int)PRNG() / resolution);
+                    rand_phi = ((int)PRNG() / resolution);
+
+                    //calculate new theta, phi position
+                    theta = ((float)PRNG() / 256.0f) * _2PI; //0 - 2pi float
+                    phi = ((float)PRNG() / 256.0f) * _2PI;
+
+
+
+                    //figure out new point x,y,z position
+                    x = Mathf.Sin(phi) * Mathf.Cos(theta);
+                    y = Mathf.Sin(phi) * Mathf.Sin(theta);
+                    z = Mathf.Cos(phi);
+
+                    //check if its valid, if so, add it, if not, skip it
+                    bool_index = ((int)Mathf.Max(( (phi-1) / (_2PI / resolution)), 0) * resolution) + (int)(theta / (_2PI / resolution));
+
+                    ///ADD DISTANCE THRESHOLD LATER
+                    if (!found)
+                    {
+                        next_theta = theta; next_phi = phi;
+                        found = true;
+                    }
+                    hashgrid[bool_index] = true;
+
+                    Vector3 newpoint = new Vector3(x, y, z);
+                    points.Add(newpoint);
+                    points_placed++;
+
+                    //find out what hash grid it belongs to. If it's already true, then skip, otherwise set it true and add it to points
+
+                }
+                index++;
+                index_theta = next_theta;
+                index_phi = next_phi;
+            }
+            return;
+        }
+
     }
 }

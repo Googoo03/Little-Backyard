@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: d3b979d2e9f56e34980e6a5043db1b5e, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
+  m_IndirectSpecularColor: {r: 0.6230415, g: 0.6228864, b: 0.6230415, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -316,6 +316,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerCamera: {fileID: 0}
   mat: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
+  sunHalo: {fileID: 2100000, guid: 7364f74ec0245734a82bfc99fb795b4a, type: 2}
   planetPositions:
   - {x: 24.790777, y: 300, z: 22.872778}
   - {x: 24.790777, y: 300, z: 22.872778}
@@ -534,11 +535,63 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1697110497}
+    - targetCorrespondingSourceObject: {fileID: 1081970301040300, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1697110498}
     - targetCorrespondingSourceObject: {fileID: 4156666392651312756, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 573247466}
   m_SourcePrefab: {fileID: 100100000, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
+--- !u!1 &1335826494
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1335826495}
+  - component: {fileID: 1335826496}
+  m_Layer: 0
+  m_Name: Skybox_Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1335826495
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1335826494}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 23.891209, y: 300.8605, z: 17.47381}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1335826496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1335826494}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b34c149476c0ca24b9eb706443f1a5ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mesh_plane: {fileID: 0}
+  star_mat: {fileID: 0}
+  seed: 0
+  scaleFactor: 0
 --- !u!1 &1697110495 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1081970301040300, guid: e7624d12d32d3426ea30613788c3244f,
@@ -570,8 +623,24 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!114 &1697110498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1697110495}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b34c149476c0ca24b9eb706443f1a5ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mesh_plane: {fileID: 0}
+  star_mat: {fileID: 2100000, guid: 6b892802f2250f94f8b85006f1fd0e34, type: 2}
+  seed: 0
+  scaleFactor: 12
 --- !u!850595691 &1950401255
 LightingSettings:
   m_ObjectHideFlags: 0
@@ -802,3 +871,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 160406701}
   - {fileID: 2133464793}
+  - {fileID: 1335826495}

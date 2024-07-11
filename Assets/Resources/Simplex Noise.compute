@@ -9,6 +9,7 @@ RWStructuredBuffer<float3> vertexBuffer;
 RWStructuredBuffer<float3> vertexWorldBuffer;
 
 int startSeed = 0;
+int resolution;
 int seed;
 int octaves;
 float persistance;
@@ -291,7 +292,7 @@ float easeInOutQuint(float x)
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
-    int index = (id.x + (id.y * 15)+id.z);
+    int index = (id.x + (id.y * resolution)+id.z);
     float3 vertexPos = vertexWorldBuffer[index];
 
     if (seed != 0)

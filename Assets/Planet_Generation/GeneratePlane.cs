@@ -68,7 +68,7 @@ public abstract class GeneratePlane : MonoBehaviour
         hash.Append(pos.x);
         hash.Append(pos.y);
         hash.Append(pos.z);
-
+        
         return hash.GetHashCode();
     }
 
@@ -82,6 +82,8 @@ public abstract class GeneratePlane : MonoBehaviour
 
         shader.SetBuffer(shaderHandle, "vertexWorldBuffer", worldVerts);
 
+        shader.SetInt("resolution", 15); //should this be dynamic
+
         shader.SetFloat("octaves", octaves);
         shader.SetFloat("persistance", persistance);
         shader.SetFloat("lacunarity", lacunarity);
@@ -94,11 +96,12 @@ public abstract class GeneratePlane : MonoBehaviour
 
     private void Start() //this may need to be removed
     {
-        //simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
         parent = transform.parent.gameObject;
         Generate(patch);
     }
-
+    ~GeneratePlane() {
+        texture.Release();
+    }
 
     public void Generate(PatchConfig planePatch)
     {
@@ -141,10 +144,6 @@ public abstract class GeneratePlane : MonoBehaviour
         vertices = new Vector3[xVertCount * yVertCount];
         normals = new Vector3[vertices.Length];
         uvs = new Vector2[vertices.Length];
-
-        //Texture2D tex = new Texture2D(xVertCount, yVertCount);
-
-        //float maxHeightReached = 1;
 
         //GET NECESSARY VALUES FOR NOISE FROM PARENT PLANET
         seed = planePatch.planetObject.GetComponent<Sphere>().getSeed();
@@ -192,20 +191,6 @@ public abstract class GeneratePlane : MonoBehaviour
 
         Vector3 position = transform.position; //world position of planet
         DispatchNoise(vertices, position); //there's no ref here, optimization opportunity?
-        //await Task.Run( () => DispatchNoise(ref vertices, position)); //change the vertices, then set them
-        ////////////////////////////////////////////
-
-        /*m.vertices = vertices;
-        m.normals = normals;
-        m.uv = uvs;
-        m.SetIndices(indices, MeshTopology.Quads, 0);
-        m.RecalculateBounds();
-
-        mf.sharedMesh.SetTriangles(mf.sharedMesh.GetTriangles(0), 0);
-        */
-        this.gameObject.AddComponent<MeshCollider>();
-        //this.gameObject.isStatic = true;
-
 
         m.RecalculateNormals();
 
@@ -245,6 +230,8 @@ public abstract class GeneratePlane : MonoBehaviour
         //mf.sharedMesh.SetTriangles(mf.sharedMesh.GetTriangles(0), 0);
         if (generateFoliage) GenerateFoliage(ref vertices, transform.position);
 
+        this.gameObject.AddComponent<MeshCollider>();
+
         if (patch.LODlevel > 0)
         {
             parent.GetComponent<MeshRenderer>().enabled = false; //not good practice, should be done through the PatchLOD tree
@@ -268,29 +255,6 @@ public abstract class GeneratePlane : MonoBehaviour
         if(generateFoliage) DispatchFoliage();
         
     }
-    /*float OctaveNoise(Vector3 vec,ref float range, ref float noiseHeight, int seed, float scale, int octaves, float lacunarity, float persistance)
-    {
-
-        frequency = 1;
-        amplitude = 1;
-
-        for (int g = 0; g < octaves; g++)
-        {
-            
-            //THIS LINE HERE WILL CHANGE TO ACCOMODATE ADDITIONAL ALGORITHMS
-
-
-            //WHAT IF WE WANT OCTAVES FOR ONE ALGORITHM AND NOT FOR ANOTHER??
-            float perlinValue = NoiseValue(vec, scale);
-
-            noiseHeight += perlinValue * amplitude;
-
-            amplitude *= persistance;
-            frequency *= lacunarity;
-            range += amplitude / 4;
-        }
-        return noiseHeight;
-    }*/
 
     public Vector3 getPosition() { //returns the middle vertex position. Is used to
                                                                         //measure distance for LOD

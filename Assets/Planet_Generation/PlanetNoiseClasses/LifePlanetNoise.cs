@@ -7,7 +7,6 @@ using Simplex;
 using System;
 using Poisson;
 using Unity.Collections;
-using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
 
 
@@ -59,7 +58,8 @@ public class LifePlanetNoise : GeneratePlane
         return 1 - Mathf.Sqrt(1 - Mathf.Pow(x, 2));
     }
 
-
+    ~LifePlanetNoise() {
+    }
     protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight) { }
 
 
@@ -185,14 +185,6 @@ public class LifePlanetNoise : GeneratePlane
         
         
     }
-
-
-    
-    /*IEnumerator getVertData(ComputeBuffer verts) {
-        Vector3[] vertices = { };
-        verts.GetData(vertices);
-        yield return vertices;
-    }*/
 
     public override float NoiseValue(Vector3 pos, float scale) { return 0; }
 }
