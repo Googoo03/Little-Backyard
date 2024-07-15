@@ -54,6 +54,9 @@ Shader "Custom/Sun_Halo_IE"
 
                 float3 viewVector = mul(unity_CameraInvProjection, float4((o.screenPos.xy/o.screenPos.w) * 2 - 1, 0, -1));
                 o.viewVector = mul(unity_CameraToWorld, float4(viewVector,0));
+
+                
+
                 return o;
             }
 
@@ -92,6 +95,7 @@ Shader "Custom/Sun_Halo_IE"
 
                 float depthTextureSample = SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, i.screenPos);
                 float terrainLevel = LinearEyeDepth(depthTextureSample);
+                float3 intersectionPoint;
 
                 if(d >= 0){
                     t1 = QuadraticSolve(a,b,c,false);
@@ -103,7 +107,7 @@ Shader "Custom/Sun_Halo_IE"
                     if(t1 > 0 && t2 > 0){
                         t3 = min(t1,t2);
                     }else { t3 = t1 >= 0 ? t1 : t2;}
-                    float3 intersectionPoint = _WorldSpaceCameraPos + (t3*viewDirection);
+                    intersectionPoint = _WorldSpaceCameraPos + (t3*viewDirection);
                     //atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
                     //atmosphere_depth = clamp(terrainLevel - intersection_atmosphere_scalar,0,_AtmosphereHeight);
 
@@ -123,12 +127,17 @@ Shader "Custom/Sun_Halo_IE"
                     atmosphere_depth = length(end_point-start_point);
                     atmosphereAlpha *= lerp(0,1,atmosphere_depth/_HaloRadius);
 
+
+
+                    //atmosphereAlpha *= 
                 }
                 }
 
+                
+
                 fixed4 col;
                 col = lerp( fixed4(haloColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) );
-                
+                //col *= 2-dot(i.worldNormal,viewDirection);
                 return col;
             }
             ENDCG

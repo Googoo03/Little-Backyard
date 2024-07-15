@@ -164,7 +164,7 @@ public class LifePlanetNoise : GeneratePlane
 
         simplex.SetFloat("seed", 100);
         simplex.SetFloat("mountainStrength", 5f);
-        simplex.SetFloat("persistance", 0.8f);
+        simplex.SetFloat("persistance", 0.95f);
         simplex.SetFloat("lacunarity", 0.25f);
         simplex.SetInt("octaves", 3);
         simplex.SetBool("absValue", false);

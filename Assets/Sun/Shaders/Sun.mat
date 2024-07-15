@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Sun_Halo
-  m_Shader: {fileID: 4800000, guid: 4ac8711fc26b1f042ae56459abd64ca5, type: 3}
+  m_Name: Sun
+  m_Shader: {fileID: 4800000, guid: d24c60d12fe51b448b6af7c4ff0f9636, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -44,7 +44,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: cf8b293b959ef61458dae801cd61dc29, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -63,13 +63,11 @@ Material:
     m_Floats:
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _Density: 0.11
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _HaloRadius: 1.82
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
@@ -81,7 +79,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _ColorA: {r: 0.16942143, g: 1, b: 0, a: 1}
+    - _ColorB: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _HaloColor: {r: 1, g: 0.07972028, b: 0.035294116, a: 1}
-    - _SunPos: {r: 5, g: 300, b: 5, a: 0}
   m_BuildTextureStacks: []
