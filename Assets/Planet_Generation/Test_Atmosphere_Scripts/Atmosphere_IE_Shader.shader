@@ -12,6 +12,7 @@ Shader "Custom/Atmosphere_IE"
         _PlanetPos ("Planet Position", Vector) = (0,0,0,0)
         _SunPos ("Sun Position", Vector) = (0,0,0,0)
         _Color ("Atmosphere Color", Color) = (1,1,1,1)
+        _Color2 ("Sunset Color", Color) = (1,1,1,1)
         _Radius ("Planet Radius", float) = 5
         _AtmosphereHeight ("Atmosphere Height", float) = 0.5
         _Density ("Atmosphere Density", float) = 1
@@ -43,6 +44,7 @@ Shader "Custom/Atmosphere_IE"
                 float2 uv : TEXCOORD0;
                 float4 screenPos : TEXCOORD1;
                 float3 viewVector : TEXCOORD2;
+                float3 camRelativeWorldPos : TEXCOORD3;
                 float3 worldNormal : TEXCOORD4;
                 float4 vertex : SV_POSITION;
             };
@@ -64,6 +66,8 @@ Shader "Custom/Atmosphere_IE"
 
                 float3 viewVector = mul(unity_CameraInvProjection, float4((o.screenPos.xy/o.screenPos.w) * 2 - 1, 0, -1));
                 o.viewVector = mul(unity_CameraToWorld, float4(viewVector,0));
+                o.camRelativeWorldPos = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)).xyz - _WorldSpaceCameraPos;
+                
 
                 return o;
             }
@@ -76,6 +80,7 @@ Shader "Custom/Atmosphere_IE"
             float _AtmosphereHeight;
             float _Density;
             float4 _Color;
+            float4 _Color2;
 
             float distanceToPlanet;
 
@@ -103,22 +108,9 @@ Shader "Custom/Atmosphere_IE"
                 //set vector from camera to planet and get magnitude of said vector
                 float3 cameraToPlanetVector =  _PlanetPos - _WorldSpaceCameraPos;
                 float cameraDistanceToPlanet = length(cameraToPlanetVector);
-
-                //find the orgonal projection of the view vector onto the camera to planet vector
-                float3 orthogonalToPlanet = orthogonalProjection(cameraToPlanetVector, viewDirection,cameraDistanceToPlanet);
-                float distanceToPlanet = 0;
                 
 
-                //find distance from camera, max being the atmosphere
-                float angleView_W2 = atan(cameraDistanceToPlanet / distanceToPlanet); //finds angle connecting the viewVector to W2
-                float sin_angleView_W2 = sin(angleView_W2);
-                float _C = asin( (sin_angleView_W2 * distanceToPlanet) / (_Radius + _AtmosphereHeight) );
-                float _A = 180 - _C - angleView_W2;
-                float intersection_atmosphere_scalar = ((_Radius + _AtmosphereHeight) * (sin(_A)) / sin_angleView_W2);
-
-                
-
-                float depthTextureSample = SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, i.screenPos);
+                float depthTextureSample = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
                 float terrainLevel = LinearEyeDepth(depthTextureSample);
 
                 
@@ -126,7 +118,7 @@ Shader "Custom/Atmosphere_IE"
                 
 
                 fixed4 noColor = tex2D(_MainTex, i.uv);
-                fixed4 atmosphereColor = _Color;
+               
                 float atmosphereAlpha = 1;
 
                 
@@ -144,6 +136,8 @@ Shader "Custom/Atmosphere_IE"
                 
                 float dotProduct = 0;
                 float atmosphere_depth = 0;
+
+                fixed4 col;
 
                 if(d >= 0){
                     t1 = QuadraticSolve(a,b,c,false);
@@ -182,35 +176,42 @@ Shader "Custom/Atmosphere_IE"
                         //atmosphereAlpha *= max(0,dotProduct);
                         
                     }
+
+                    float3 viewPlane = i.camRelativeWorldPos.xyz / dot(i.camRelativeWorldPos.xyz, unity_WorldToCamera._m20_m21_m22);
+ 
+                    // calculate the world position
+                    // multiply the view plane by the linear depth to get the camera relative world space position
+                    // add the world space camera position to get the world space position from the depth texture
+                    float3 terrainworldPos = viewPlane * terrainLevel + _WorldSpaceCameraPos;
+
                     end_point = t2 > (terrainLevel) ? _WorldSpaceCameraPos+(terrainLevel*viewDirection) : _WorldSpaceCameraPos+(t2*viewDirection);
+
+                    
                     
                     float3 normalVector = normalize(end_point -  _PlanetPos); 
                     float3 lightVector = normalize(_SunPos -  _PlanetPos);
                     dotProduct = dot(lightVector,normalVector);
 
-                    //atmosphereAlpha *= sqrt(dot(intersectionPoint-_WorldSpaceCameraPos, intersectionPoint-_WorldSpaceCameraPos));
                     atmosphere_depth = length(end_point-start_point);
-                    atmosphereAlpha *= min(1,saturate(atmosphere_depth));
+                    atmosphere_depth = atmosphere_depth*atmosphere_depth;
+
+                     fixed4 atmosphereColor = lerp(_Color,_Color2,max(0,dot(lightVector,viewDirection) * saturate(atmosphere_depth) ));
                     atmosphereAlpha *= max(0,dotProduct);
+
+                    col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-saturate(atmosphere_depth) * _Density*atmosphereAlpha) );
+                    //col *= max(0,dotProduct);
+                    //atmosphereAlpha *= sqrt(dot(intersectionPoint-_WorldSpaceCameraPos, intersectionPoint-_WorldSpaceCameraPos));
+                    
+                    //atmosphereAlpha *= min(1,atmosphere_depth);
+                    //atmosphereAlpha *= max(0,dotProduct);
                     //how much atmosphere you're looking through
                     //atmosphereAlpha = max(0,atmosphereAlpha);;
                     }
                     
+                }else{
+                    col = noColor;
                 }
-                
-                //USE BILLBOARD TECHNIQUE FOR MULTIPLE ATMOSPHERES??? SWITCH THE _PlanetPos WHENEVER A NEW CLOSEST PLANET IS ASSIGNED
-
-
-                /////////////////////////////////////////////////
-                
-                fixed4 col;
-                col = (distanceToPlanet < (_Radius + _AtmosphereHeight + .001)) ? lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) ) : noColor;
-                
-                /*fixed4 color;
-
-                for(int j = 0; j < numPlanets; ++j){
-                    color = compute(i, planetPositions[j].xyz);
-                }*/
+               
 
                 return col;
             }

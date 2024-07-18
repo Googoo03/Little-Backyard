@@ -39,7 +39,7 @@ public class LifePlanetNoise : GeneratePlane
         oceanMulitplier = 0.1f;
         landMultiplier = 0.15f;
 
-        octaves = 6;
+        octaves = 5;
         scale = 3f;
         lacunarity = 2;
         persistance = 0.5f;

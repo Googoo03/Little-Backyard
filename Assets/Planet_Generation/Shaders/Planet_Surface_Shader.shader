@@ -19,6 +19,8 @@ Shader "Custom/Planet_Surface_Shader"
 
         _L1 ("Level1", float) = 0.1 //these correspond to the boundary level between each texture
         _L2 ("Level2", float) = 0.5
+
+        _Levels ("Cell Segments", int) = 2
     }
     SubShader
     {
@@ -69,6 +71,7 @@ Shader "Custom/Planet_Surface_Shader"
         float _CliffThreshold;
 
         float3 vertLocalPos;
+        int _Levels;
 
 
 
@@ -91,6 +94,7 @@ Shader "Custom/Planet_Surface_Shader"
 
             o.normal = vertexData.normal;
             o.vertPos = vertexData.vertex;
+            o.worldNormal = WorldNormalVector (IN, o.normal);
         }
 
 
@@ -143,16 +147,23 @@ Shader "Custom/Planet_Surface_Shader"
             fixed4 normalAlbedo = fixed4(blend( c1, blendOpacity,c2,1-blendOpacity),0);
 
             float3 toSunVector = normalize(_SunPos - IN.worldPos);
-            float3 toPlanetVector = normalize(IN.vertPos);
+            float3 toPlanetVector = normalize(IN.worldPos - _PlanetPos);
             float mask = max(0,dot(toSunVector,toPlanetVector));
 
             o.Albedo = blend(normalAlbedo, 1-cliffOpacity, cliff, cliffOpacity);
             float dotProduct = dot(IN.normal,toSunVector)*mask;
 
-            o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.01 ? .25 : 1;
-            o.Albedo *= dot(IN.normal,toSunVector)*mask <= 0.1 ? .5 : 1;
-            o.Albedo *= dot(IN.normal,toSunVector)*mask >= 0.7 ? 1.5 : 1;
+            float step = 1.0 / _Levels;
+            int level = (dot(IN.worldNormal,toSunVector)) / (step);
+            //darkness is equal to the current value
 
+
+            //int range = dot(IN.worldNormal,toSunVector)*mask
+            /*o.Albedo *= dot(IN.worldNormal,toSunVector) <= 0.01 ? .25 : 1;
+            o.Albedo *= dot(IN.worldNormal,toSunVector) <= 0.1 ? .5 : 1;
+            o.Albedo *= dot(IN.worldNormal,toSunVector) >= 0.7 ? 1.5 : 1;
+            */
+            o.Albedo *= (float)level / _Levels;
 
             o.Alpha = c1.a;
             /////////////////////

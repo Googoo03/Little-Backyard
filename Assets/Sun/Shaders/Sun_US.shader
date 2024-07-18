@@ -5,6 +5,7 @@ Shader "Custom/Sun_US"
         _MainTex ("Texture", 2D) = "white" {}
         _ColorA ("Color_A", Color) = (1,1,1,1)
         _ColorB ("Color_B", Color) = (1,1,1,1)
+        _Threshold ("Threshold", int) = 1.0
     }
     SubShader
     {
@@ -40,6 +41,7 @@ Shader "Custom/Sun_US"
             float4 _ColorB;
             sampler2D _MainTex;
             float4 _MainTex_ST;
+            float _Threshold;
 
             v2f vert (appdata_base v)
             {
@@ -61,7 +63,12 @@ Shader "Custom/Sun_US"
             fixed4 frag (v2f i) : SV_Target
             {
                 // sample the texture
-                fixed4 col = lerp(_ColorA,_ColorB,tex2D(_MainTex,i.uv).r);
+                _MainTex_ST.z += unity_DeltaTime;
+                float2 texture_offset = float2(_Time.xx);
+                int noiseValue = (tex2D(_MainTex,i.uv+texture_offset).r * 100) / _Threshold;
+                float noiseV = .1 * noiseValue;
+                fixed4 col = lerp(_ColorA,_ColorB,noiseV);
+                col.xyz *= unity_DeltaTime.z*100;
 
                 return col;
             }

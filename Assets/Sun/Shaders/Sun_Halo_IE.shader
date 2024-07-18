@@ -3,6 +3,7 @@ Shader "Custom/Sun_Halo_IE"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _NoiseTex ("Texture", 2D) = "white" {}
         _HaloColor ("Halo Color", Color) = (1,1,1,1)
         _HaloRadius ("Radius", float) = 1
         _Density ("Density", float) = 1
@@ -66,6 +67,7 @@ Shader "Custom/Sun_Halo_IE"
 
 
             sampler2D _MainTex;
+            sampler2D _NoiseTex;
             float _HaloRadius;
             float _Density;
             float3 _SunPos;
@@ -97,6 +99,8 @@ Shader "Custom/Sun_Halo_IE"
                 float terrainLevel = LinearEyeDepth(depthTextureSample);
                 float3 intersectionPoint;
 
+                fixed4 col;
+
                 if(d >= 0){
                     t1 = QuadraticSolve(a,b,c,false);
                     t2 = QuadraticSolve(a,b,c,true);
@@ -126,17 +130,19 @@ Shader "Custom/Sun_Halo_IE"
 
                     atmosphere_depth = length(end_point-start_point);
                     atmosphereAlpha *= lerp(0,1,atmosphere_depth/_HaloRadius);
+                    haloColor *= atmosphere_depth;
 
-
-
+                    col = lerp( fixed4(haloColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density ) );
+                    
                     //atmosphereAlpha *= 
                 }
+                }else{
+                    col = noColor;    
                 }
 
                 
 
-                fixed4 col;
-                col = lerp( fixed4(haloColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density * atmosphereAlpha) );
+                
                 //col *= 2-dot(i.worldNormal,viewDirection);
                 return col;
             }
