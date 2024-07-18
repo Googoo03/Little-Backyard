@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Atmosphere_IE
-  m_Shader: {fileID: 4800000, guid: 8a4f88cfff744de4f972adf80051cbe5, type: 3}
+  m_Name: Planet_Rings
+  m_Shader: {fileID: 4800000, guid: 0b84830131917da40a193479db1efde7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -61,10 +61,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AtmosphereHeight: 0.47
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _Density: 4.06
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
@@ -74,16 +72,16 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Radius: 4.92
+    - _Radius: 5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _Width: 10
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0, g: 1, b: 0.9648354, a: 1}
-    - _Color2: {r: 1, g: 0.61535674, b: 0.19433957, a: 1}
+    - _Color: {r: 0.8490566, g: 0.556545, b: 0.22267704, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _PlaneNormal: {r: 1, g: 1, b: 1, a: 1}
     - _PlanetPos: {r: 50.748672, g: 300, b: 32.413563, a: 0}
-    - _SunPos: {r: 5, g: 300, b: 5, a: 0}
   m_BuildTextureStacks: []

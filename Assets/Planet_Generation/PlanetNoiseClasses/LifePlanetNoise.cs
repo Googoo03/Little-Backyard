@@ -92,7 +92,7 @@ public class LifePlanetNoise : GeneratePlane
         poissonSampling.generatePoissonDisc(ref rock_positions, ref vertices, rock_k, xVertCount * yVertCount, xVertCount, yVertCount, rock_radius);
 
         poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount * yVertCount / 2] + new Vector3(2, 0, 0)));
-        poissonSampling.generatePoissonDisc(ref grass_positions, ref vertices, 10, xVertCount * yVertCount, xVertCount, yVertCount, 2);
+        poissonSampling.generatePoissonDisc(ref grass_positions, ref vertices, 32, xVertCount * yVertCount, xVertCount, yVertCount, 2);
 
         for (int i = 0; i < tree_positions.Count; ++i) { //add the tree positions and subsequent rotations to the matrix buffer
             
@@ -116,7 +116,7 @@ public class LifePlanetNoise : GeneratePlane
         { //add the tree positions and subsequent rotations to the matrix buffer
 
             Vector3 lookVec = grass_positions[i];
-            if (lookVec.magnitude < radius+0.15f || lookVec.magnitude > radius + 0.2f) continue; //corresponds to level1 in the shader. These need to communicate with one another
+            if (lookVec.magnitude < radius+0.15f/* || lookVec.magnitude > radius + 0.2f*/) continue; //corresponds to level1 in the shader. These need to communicate with one another
             Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0, 0, 90);
             Vector3 sca = Vector3.one * .01f;
             grass_m.Add(Matrix4x4.TRS(grass_positions[i] + origin, rot, sca)); //transform rotation scale
