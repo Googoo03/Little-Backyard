@@ -10,9 +10,8 @@ public class CameraDepthInitializer : MonoBehaviour
     [SerializeField] private Material mat;
     [SerializeField] private Material planetRings;
     [SerializeField] private Material sunHalo;
-    [SerializeField] protected List<Vector3> planetPositions;
     //[SerializeField] private int planetCount = 3;
-    
+
 
     void Start()
     {
@@ -34,6 +33,9 @@ public class CameraDepthInitializer : MonoBehaviour
             mat.SetVector("_PlanetPos", planet.transform.position); //sets new planet position for atmosphere shader when adequately close.
             planetRings.SetVector("_PlanetPos", planet.transform.position);
         }
+
+        //planetRings.SetVectorArray("_planetPositions", planetPositions);
+        //planetRings.GetVectorArray("_planetPositions", getplanetPos);
 
         RenderTexture intermediate = new RenderTexture(source.width, source.height, 0, source.format)
         {

@@ -18,7 +18,7 @@ public class Skybox_Generator : MonoBehaviour
     {
         mesh_plane = (Resources.Load<GameObject>("Skybox/Star").GetComponent<MeshFilter>().sharedMesh);
         
-        poisson.generatePoissonDisc3DSphere(ref points, 5, 100, 1, 16);
+        poisson.generatePoissonDisc3DSphere(ref points, 15, 300, 1, 64);
         for (int i = 0; i < points.Count; ++i) {
 
             Vector3 lookVec = points[i];

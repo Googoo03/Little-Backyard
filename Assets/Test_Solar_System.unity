@@ -319,9 +319,9 @@ MonoBehaviour:
   planetRings: {fileID: 2100000, guid: 70acc38ebb9f787459fb5e85da6bfadb, type: 2}
   sunHalo: {fileID: 2100000, guid: 7364f74ec0245734a82bfc99fb795b4a, type: 2}
   planetPositions:
-  - {x: 24.790777, y: 300, z: 22.872778}
-  - {x: 24.790777, y: 300, z: 22.872778}
-  - {x: 24.790777, y: 300, z: 22.872778}
+  - {x: 24.790777, y: 300, z: 22.872778, w: 1.8394324e+25}
+  - {x: 24.790777, y: 300, z: 22.872778, w: 3.8384346e+12}
+  - {x: 24.790777, y: 300, z: 22.872778, w: 6.17e-43}
 --- !u!1001 &903820971
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -8,6 +8,7 @@ Shader "Custom/Planet_Rings"
         _PlanetPos ("Planet Position", Vector) = (1,1,1,1)
         _Radius ("Ring Radius", float) = 1
         _Width ("Ring Width", float) = 1
+        _Height ("Ring Height", float) = 1
     }
     SubShader
     {
@@ -66,6 +67,7 @@ Shader "Custom/Planet_Rings"
             float3 _PlanetPos;
             float _Radius;
             float _Width;
+            float _Height;
 
 
             fixed4 frag (v2f i) : SV_Target
@@ -82,14 +84,67 @@ Shader "Custom/Planet_Rings"
 
                 fixed4 col = tex2D(_MainTex, i.uv); //no Color
 
+                ////////END CAPS
+                float t1 = dot(_PlanetPos - _WorldSpaceCameraPos, _PlaneNormal) / dot(viewDirection,_PlaneNormal);
+                float t2 = dot(_PlanetPos+(_PlaneNormal*_Height) - _WorldSpaceCameraPos, _PlaneNormal) / dot(viewDirection,_PlaneNormal);
+                float t3 = t1 < t2 ? t1 : t2;
+                if(terrainLevel < t3) t3 = -1;
+                float distance = length((viewDirection*t3+_WorldSpaceCameraPos) - _PlanetPos);
+                /////////////////
+                if(t3>0 && distance < _Width && distance > _Radius){
+                    col = _Color;
+                    return col;
+                }
 
-                float t = dot(_PlanetPos - _WorldSpaceCameraPos, _PlaneNormal) / dot(viewDirection,_PlaneNormal);
-                if(terrainLevel < t) t = -1;
-                float distance = length((viewDirection*t+_WorldSpaceCameraPos) - _PlanetPos);
+                ///////CIRCULAR REGION
+                float3 an = cross(viewDirection,_PlaneNormal);
+                float3 b = _PlanetPos - _WorldSpaceCameraPos;
+                float c = dot(b,an);
+                
 
+                float discriminant = (dot(an,an)*(_Width*_Width)) - (dot(_PlaneNormal,_PlaneNormal)*(c*c));
+                float t;
 
+                if(discriminant >= 0){
+                    float d1 = (dot(an,cross(b,_PlaneNormal)) + sqrt(discriminant)) / dot(an,an);
+                    float d2 = (dot(an,cross(b,_PlaneNormal)) - sqrt(discriminant)) / dot(an,an);
+                    float d3;
+                    if(d1 > 0 && d2 > 0){
+                        d3 = min(d1,d2);
+                    }else { d3 = d1 >= 0 ? d1 : d2;}
+                    
 
-                if(t>0 && distance < _Width && distance > _Radius) col = _Color;
+                    t= dot(_PlaneNormal,(viewDirection*d3)-(b));
+                    if(terrainLevel < d3) t = -1;
+                    
+                    if(t>0 && d3 > 0 && t < _Height){
+                        col = _Color;
+                        return col;
+                    }
+                }
+
+                discriminant = (dot(an,an)*(_Radius*_Radius)) - (dot(_PlaneNormal,_PlaneNormal)*(c*c));
+                
+
+                if(discriminant >= 0){
+                    float d1 = (dot(an,cross(b,_PlaneNormal)) + sqrt(discriminant)) / dot(an,an);
+                    float d2 = (dot(an,cross(b,_PlaneNormal)) - sqrt(discriminant)) / dot(an,an);
+                    float d3;
+                    if(d1 > 0 && d2 > 0){
+                        d3 = max(d1,d2);
+                    }else { d3 = d1 >= 0 ? d1 : d2;}
+                    
+
+                    t= dot(_PlaneNormal,(viewDirection*d3)-(b));
+                    if(terrainLevel < d3) t = -1;
+                    
+                    if(t>0 && d3 > 0 && t < _Height) col = _Color*0.5;
+                }
+
+                ///////////////////////
+
+                
+                
 
                 return col;
             }
