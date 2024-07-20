@@ -82,17 +82,29 @@ Shader "Custom/Planet_Rings"
 
 
 
-                fixed4 col = tex2D(_MainTex, i.uv); //no Color
+                fixed4 col = tex2D(_MainTex, i.uv);
+                fixed4 noCol = tex2D(_MainTex, i.uv); //no color
 
                 ////////END CAPS
                 float t1 = dot(_PlanetPos - _WorldSpaceCameraPos, _PlaneNormal) / dot(viewDirection,_PlaneNormal);
                 float t2 = dot(_PlanetPos+(_PlaneNormal*_Height) - _WorldSpaceCameraPos, _PlaneNormal) / dot(viewDirection,_PlaneNormal);
-                float t3 = t1 < t2 ? t1 : t2;
+                float t3;
+                if(t1 > 0 && t2 > 0){
+                        t3 = min(t1,t2);
+                    }else { t3 = t1 >= 0 ? t1 : t2;}
                 if(terrainLevel < t3) t3 = -1;
                 float distance = length((viewDirection*t3+_WorldSpaceCameraPos) - _PlanetPos);
                 /////////////////
+                
+                float t4 = (t3 == t1) ? t2 : t1;
+                float3 up = (viewDirection*t3+_WorldSpaceCameraPos);
+                float3 down = t4 > 0 ? (viewDirection*t4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                    
+                col = (t3 > 0 && distance < _Width && distance > _Radius) ? lerp(noCol,_Color,length(up-down)) : noCol;
+                return col;
+                
                 if(t3>0 && distance < _Width && distance > _Radius){
-                    col = _Color;
+                    //col = _Color;
                     return col;
                 }
 
@@ -104,6 +116,7 @@ Shader "Custom/Planet_Rings"
 
                 float discriminant = (dot(an,an)*(_Width*_Width)) - (dot(_PlaneNormal,_PlaneNormal)*(c*c));
                 float t;
+                float te;
 
                 if(discriminant >= 0){
                     float d1 = (dot(an,cross(b,_PlaneNormal)) + sqrt(discriminant)) / dot(an,an);
@@ -127,22 +140,30 @@ Shader "Custom/Planet_Rings"
                 
 
                 if(discriminant >= 0){
-                    float d1 = (dot(an,cross(b,_PlaneNormal)) + sqrt(discriminant)) / dot(an,an);
-                    float d2 = (dot(an,cross(b,_PlaneNormal)) - sqrt(discriminant)) / dot(an,an);
-                    float d3;
-                    if(d1 > 0 && d2 > 0){
-                        d3 = max(d1,d2);
-                    }else { d3 = d1 >= 0 ? d1 : d2;}
+                    float e1 = (dot(an,cross(b,_PlaneNormal)) + sqrt(discriminant)) / dot(an,an);
+                    float e2 = (dot(an,cross(b,_PlaneNormal)) - sqrt(discriminant)) / dot(an,an);
+                    float e3;
+                    if(e1 > 0 && e2 > 0){
+                        e3 = max(e1,e2);
+                    }else { e3 = e1 >= 0 ? e1 : e2;}
                     
 
-                    t= dot(_PlaneNormal,(viewDirection*d3)-(b));
-                    if(terrainLevel < d3) t = -1;
+                    te= dot(_PlaneNormal,(viewDirection*e3)-(b));
+                    if(terrainLevel < e3) t = -1;
                     
-                    if(t>0 && d3 > 0 && t < _Height) col = _Color*0.5;
+                    if(te>0 && e3 > 0 && te < _Height){
+                        col = lerp(_Color, noCol,max(0,abs(te-(_Height/2) ) / (_Height/2) ) );
+                        col = _Color;
+                    }
                 }
-
+                if(t>0 && te > 0 && te < _Height && t < _Height){
+                    float3 outintersection = (viewDirection * t) + _WorldSpaceCameraPos;
+                    float3 innerintersection = (viewDirection * te) + _WorldSpaceCameraPos;
+                        //col = lerp(noCol, _Color, length(outintersection-innerintersection) );
+                        //col = _Color;
+                }
                 ///////////////////////
-
+                //col = lerp(_Color, noCol, saturate(length(t-te)) );
                 
                 
 
