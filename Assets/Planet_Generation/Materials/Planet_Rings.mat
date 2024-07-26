@@ -69,7 +69,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _Height: 0.41
+    - _Height: 0.08
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
@@ -79,10 +79,10 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _Width: 7.98
+    - _Width: 8.3
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.9169811, g: 0.06747586, b: 0.06747586, a: 1}
+    - _Color: {r: 1, g: 0.68964195, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _PlaneNormal: {r: 1.06, g: -2.44, b: 2.48, a: 0}
     - _PlanetPos: {r: -18.345585, g: 300, b: -7.887775, a: 0}

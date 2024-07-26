@@ -22,6 +22,7 @@ Shader "Custom/Planet_Rings"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+            #define FLT_MAX 3.402823466e+38
 
             struct appdata
             {
@@ -85,30 +86,61 @@ Shader "Custom/Planet_Rings"
                 fixed4 col = tex2D(_MainTex, i.uv);
                 fixed4 noCol = tex2D(_MainTex, i.uv); //no color
 
+                int intersectionCombination = 0;
+
                 ////////END CAPS
                 float t1 = dot(_PlanetPos - _WorldSpaceCameraPos, _PlaneNormal) / dot(viewDirection,_PlaneNormal);
                 float t2 = dot(_PlanetPos+(_PlaneNormal*_Height) - _WorldSpaceCameraPos, _PlaneNormal) / dot(viewDirection,_PlaneNormal);
-                float t3;
+
+                float t3; //closest intersection
+                float t4; //farthest intersection
+
                 if(t1 > 0 && t2 > 0){
                         t3 = min(t1,t2);
-                    }else { t3 = t1 >= 0 ? t1 : t2;}
+                }else { 
+                    t3 = t1 >= 0 ? t1 : t2;
+                }
+                t4 = (t3 == t1) ? t2 : t1;
+
                 if(terrainLevel < t3) t3 = -1;
-                float distance = length((viewDirection*t3+_WorldSpaceCameraPos) - _PlanetPos);
+                if(terrainLevel < t4) t4 = -1;
+
+                
                 /////////////////
                 
-                float t4 = (t3 == t1) ? t2 : t1;
-                float3 up = (viewDirection*t3+_WorldSpaceCameraPos);
-                float3 down = t4 > 0 ? (viewDirection*t4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                float3 up = float3(FLT_MAX,FLT_MAX,FLT_MAX);
+                float3 down = float3(FLT_MAX,FLT_MAX,FLT_MAX);
+
+                //float3 up = (viewDirection*t3+_WorldSpaceCameraPos);
+                //float3 down = t4 > 0 ? (viewDirection*t4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+
+                float distance = t3 > 0 ? length((viewDirection*t3+_WorldSpaceCameraPos) - _PlanetPos) : -1;
+                float distancet2 = t4 > 0 ? length((viewDirection*t4+_WorldSpaceCameraPos) - _PlanetPos+(_PlaneNormal*_Height)) : -1;
                     
-                col = (t3 > 0 && distance < _Width && distance > _Radius) ? lerp(noCol,_Color,length(up-down)) : noCol;
-                return col;
-                
-                if(t3>0 && distance < _Width && distance > _Radius){
-                    //col = _Color;
-                    return col;
+                //NEED TO CONSIDER
+                bool meetsDistance = (distance < _Width && distance > _Radius) || (distancet2 < _Width && distancet2 > _Radius);
+
+                //IF A PLANE IS INTERSECTED AND WITHIN RANGE, THEN SET UP AND DOWN ACCORDINGLY.
+                if( (distance < _Width && distance > _Radius)  && up.x == FLT_MAX){
+                    up = (viewDirection*t3+_WorldSpaceCameraPos);
                 }
+                if( (distancet2 < _Width && distancet2 > _Radius) && down.x == FLT_MAX){
+                    down = t4 > 0 ? (viewDirection*t4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                }
+                ///////////////////////////////////////////////////////////////////////////////
+                
+                /*if((t3 > 0 && t4 > 0)){
+                    col = meetsDistance ? lerp(noCol,_Color,length(down-up)) : noCol;
+                    //return col;
+                }else if((t3 > 0 || t4 > 0) &&  meetsDistance){
+                    col = ( (t3 > 0 || t4 > 0) && meetsDistance) ? lerp(noCol,_Color,length(down-up)) : noCol;
+                    //return col;
+                }*/
+                
+                //return col;
 
                 ///////CIRCULAR REGION
+
                 float3 an = cross(viewDirection,_PlaneNormal);
                 float3 b = _PlanetPos - _WorldSpaceCameraPos;
                 float c = dot(b,an);
@@ -118,53 +150,112 @@ Shader "Custom/Planet_Rings"
                 float t;
                 float te;
 
+
+                float d3;
+                float d4;
                 if(discriminant >= 0){
                     float d1 = (dot(an,cross(b,_PlaneNormal)) + sqrt(discriminant)) / dot(an,an);
                     float d2 = (dot(an,cross(b,_PlaneNormal)) - sqrt(discriminant)) / dot(an,an);
-                    float d3;
+                    
                     if(d1 > 0 && d2 > 0){
                         d3 = min(d1,d2);
                     }else { d3 = d1 >= 0 ? d1 : d2;}
-                    
+                    d4 = (d3 == d1) ? d2 : d1;
 
                     t= dot(_PlaneNormal,(viewDirection*d3)-(b));
                     if(terrainLevel < d3) t = -1;
+                    //if(terrainLevel < d4) t4 = -1;
                     
-                    if(t>0 && d3 > 0 && t < _Height){
-                        col = _Color;
-                        return col;
+
+                    if(t>0 && t < _Height && d3 > 0 && up.x == FLT_MAX){
+                        up = (viewDirection*d3+_WorldSpaceCameraPos);
+                    }else if(t>0 && t < _Height && down.x == FLT_MAX){
+                        down = d3 > 0 ? (viewDirection*d3+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
                     }
+
+                    if(t>0 && t < _Height && d4 > 0 && up.x == FLT_MAX){
+                        up = (viewDirection*d4+_WorldSpaceCameraPos);
+                    }else if(t>0 && t < _Height && down.x == FLT_MAX){
+                        down = d4 > 0 ? (viewDirection*d4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                    }
+
+                    /*if(t>0 && d3 > 0 && t < _Height){
+                        col = _Color;
+                        //return col;
+                    }*/
                 }
 
+                //INNER CIRCULAR REGION 
                 discriminant = (dot(an,an)*(_Radius*_Radius)) - (dot(_PlaneNormal,_PlaneNormal)*(c*c));
                 
-
+                float e3;
+                float e4;
                 if(discriminant >= 0){
                     float e1 = (dot(an,cross(b,_PlaneNormal)) + sqrt(discriminant)) / dot(an,an);
                     float e2 = (dot(an,cross(b,_PlaneNormal)) - sqrt(discriminant)) / dot(an,an);
-                    float e3;
-                    if(e1 > 0 && e2 > 0){
-                        e3 = max(e1,e2);
-                    }else { e3 = e1 >= 0 ? e1 : e2;}
                     
+                    if(e1 > 0 && e2 > 0){
+                        e3 = min(e1,e2);
+                    }else { e3 = e1 >= 0 ? e1 : e2;}
+                    e4 = (e3 == e1) ? e2 : e1;
 
                     te= dot(_PlaneNormal,(viewDirection*e3)-(b));
-                    if(terrainLevel < e3) t = -1;
-                    
-                    if(te>0 && e3 > 0 && te < _Height){
-                        col = lerp(_Color, noCol,max(0,abs(te-(_Height/2) ) / (_Height/2) ) );
-                        col = _Color;
+                    if(terrainLevel < e3) te = -1;
+
+                    if(te>0 && te < _Height && e3 > 0 && up.x == FLT_MAX){
+                        up = (viewDirection*e3+_WorldSpaceCameraPos);
+                    }else if(te>0 && te < _Height && down.x == FLT_MAX){
+                        down = e3 > 0 ? (viewDirection*e3+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
                     }
+
+                    /*if(te>0 && te < _Height && up.x == FLT_MAX){
+                        up = (viewDirection*e4+_WorldSpaceCameraPos);
+                    }else if(te>0 && te < _Height && down.x == FLT_MAX){
+                        down = e4 > 0 ? (viewDirection*e4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                    }*/
                 }
-                if(t>0 && te > 0 && te < _Height && t < _Height){
-                    float3 outintersection = (viewDirection * t) + _WorldSpaceCameraPos;
-                    float3 innerintersection = (viewDirection * te) + _WorldSpaceCameraPos;
-                        //col = lerp(noCol, _Color, length(outintersection-innerintersection) );
-                        //col = _Color;
-                }
+
                 ///////////////////////
-                //col = lerp(_Color, noCol, saturate(length(t-te)) );
-                
+
+
+
+                //gotta assign 2 consecutive points based on the intersectionCombination value. Then, take the length between and assign a value.
+                /*switch (intersectionCombination){
+                    case 6:
+                        up = (viewDirection*d3+_WorldSpaceCameraPos);
+                        down = t4 > 0 ? (viewDirection*t4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                        
+                        break;
+                    case 12:
+                        up = (viewDirection*t3+_WorldSpaceCameraPos);
+                        down = t4 > 0 ? (viewDirection*t4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                        col = fixed4(1,1,1,1);
+                        return col;
+                        break;
+                    case 3:
+                        up = (viewDirection*te+_WorldSpaceCameraPos);
+                        down = d3 > 0 ? (viewDirection*d3+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                        break;
+                    case 9:
+                        up = (viewDirection*d3+_WorldSpaceCameraPos);
+                        down = te > 0 ? (viewDirection*te+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                        break;
+                    case 5:
+                        up = (viewDirection*te+_WorldSpaceCameraPos);
+                        down = t4 > 0 ? (viewDirection*t4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                        break;
+                    case 10:
+                        up = (viewDirection*t3+_WorldSpaceCameraPos);
+                        down = d3 > 0 ? (viewDirection*d3+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
+                        break;
+                    default:
+                        //col = _Color;
+                        //return col;
+                        break;
+                }*/
+                if(down.x == FLT_MAX) down = _WorldSpaceCameraPos;
+                bool withinBounds = up.x != FLT_MAX && down.x != FLT_MAX;
+                col = withinBounds ? lerp(noCol,_Color,saturate(length(down-up))) : noCol;
                 
 
                 return col;
