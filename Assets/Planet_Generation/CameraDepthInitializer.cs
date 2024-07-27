@@ -32,6 +32,7 @@ public class CameraDepthInitializer : MonoBehaviour
         {
             mat.SetVector("_PlanetPos", planet.transform.position); //sets new planet position for atmosphere shader when adequately close.
             planetRings.SetVector("_PlanetPos", planet.transform.position);
+            //planet.GetComponent<Sphere>().SetRingShader();
         }
 
         //planetRings.SetVectorArray("_planetPositions", planetPositions);

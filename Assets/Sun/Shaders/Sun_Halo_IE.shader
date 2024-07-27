@@ -8,6 +8,9 @@ Shader "Custom/Sun_Halo_IE"
         _HaloRadius ("Radius", float) = 1
         _Density ("Density", float) = 1
         _SunPos ("Sun Position", Vector) = (0,0,0,0)
+
+        _OrbitRad ("Orbit Radius", float) = 1
+        _SolarSystemNormal ("Solar System Normal", Vector) = (1,1,1,1)
     }
     SubShader
     {
@@ -73,6 +76,11 @@ Shader "Custom/Sun_Halo_IE"
             float3 _SunPos;
             float4 _HaloColor;
 
+            //HUD RING PARAMETERS
+            float _OrbitRad;
+            float3 _SolarSystemNormal;
+            /////////////////////
+
             fixed4 frag (v2f i) : SV_Target
             {
                 float3 viewDirection = normalize(i.viewVector);
@@ -100,6 +108,21 @@ Shader "Custom/Sun_Halo_IE"
                 float3 intersectionPoint;
 
                 fixed4 col;
+
+                //HUD RINGS AROUND SOLAR SYSTEM
+                _SolarSystemNormal = normalize(_SolarSystemNormal);
+
+                float t_plane = dot(_SunPos - _WorldSpaceCameraPos, _SolarSystemNormal) / dot(viewDirection,_SolarSystemNormal);
+                if(t_plane > 0 && terrainLevel > t_plane){
+                    
+                    float3 plane_intersection = viewDirection*t_plane + _WorldSpaceCameraPos;
+                    int dist_marker = (int)(length(plane_intersection-_SunPos) / _OrbitRad);
+                    float ratio = (length(plane_intersection-_SunPos) / _OrbitRad) - dist_marker;
+
+                    //noColor *= dist_marker;
+                    noColor = (ratio > 1-(0.1/_OrbitRad*t_plane*.1) && dist_marker < 5) ? lerp(noColor,fixed4(1,1,1,1),0.3) : noColor;
+                }
+                //////////////
 
                 if(d >= 0){
                     t1 = QuadraticSolve(a,b,c,false);

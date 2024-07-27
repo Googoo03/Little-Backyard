@@ -87,7 +87,7 @@ public class HotPlanetNoise : GeneratePlane
 
     protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) { }
 
-    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
+    /*protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
         //EACH PLANET TYPE NEEDS TO HAVE INDEPENDENT TUNED PARAMETERS
 
@@ -114,7 +114,8 @@ public class HotPlanetNoise : GeneratePlane
                 //tex.SetPixel(x, y, color);
             }
         }
-    }
+    }*/
+
     public override float NoiseValue(Vector3 pos, float scale)
     {
         return 0;

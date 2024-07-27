@@ -68,11 +68,18 @@ public class Sphere : MonoBehaviour
     [SerializeField] private float radius;
     [SerializeField] private float atmosphereHeight;
 
-    [SerializeField] private int seed;
+    [SerializeField] private UInt64 seed;
     [SerializeField] private float scale;
     [SerializeField] private int octaves;
     [SerializeField] private float persistance;
     [SerializeField] private float lacunarity;
+
+    [SerializeField] private bool hasRings;
+    [SerializeField] private Material ringShader;
+    [SerializeField] private Vector3 ringNormal;
+    [SerializeField] private Color ringColor = new Color(0,0,0);
+    [SerializeField] private float ringRadius;
+    [SerializeField] private float ringWidth;
 
     public float oceanFloor;
     public float oceanMultiplier;
@@ -82,7 +89,6 @@ public class Sphere : MonoBehaviour
     public Texture2D regionReference;
 
     public Color[] regions; //turn this into a 2D array and access directly?
-    float[] heights = {0.5f, 0.7f, 0.8f, 0.9f };
 
     private int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
     public float pscale;
@@ -120,15 +126,20 @@ public class Sphere : MonoBehaviour
     {
         LOD = new List<PatchLOD>() { };
 
+        //Get ring shader
+
         //create seed using a hash
         var hash = new Hash128();
         hash.Append(transform.position.x);
         hash.Append(transform.position.y);
         hash.Append(transform.position.z);
 
-        seed = hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
+        seed = (UInt64)hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
         ////////////////////////////////////
-
+        
+        //
+        //hasRings = seed % 3 == 0; //rings will only appear if the seed is a multiple of 3. Is there a more sophistocated way of doing this? Sure.
+        hasRings = true; //for testing purposes only
 
         //MAKE A NEW WAY OF GENERATING TYPE??? UGLY TO READ??
         //planetType = Mathf.FloorToInt((Perlin3d(px + seed, py + seed, pz + seed)*1000) % 6);
@@ -141,8 +152,6 @@ public class Sphere : MonoBehaviour
 
 
         //set the ocean size
-        //Color atmosphereColor = regionReference.GetPixel(4, planetType);
-        //transform.GetChild(0).GetComponent<Renderer>().material.SetColor("_Atmosphere_Color", atmosphereColor);
         transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor)*2;
         ////////////////////////////
 
@@ -162,6 +171,9 @@ public class Sphere : MonoBehaviour
         //create a list of points for worleyNoise
         generateWorleyPoints(25);
 
+        //Spawn Ring with correct orientation. Store orientation?
+        if (hasRings) GenerateRings();
+
         //generate the patches when finished configuring
         GeneratePatches();
     }
@@ -176,6 +188,35 @@ public class Sphere : MonoBehaviour
             
             worleyPoints.Add(point);
         }
+    }
+
+    private void GenerateRings() {
+        ringNormal = new Vector3((seed >> 4) % 360, (seed >> 8) % 360, (seed >> 12) % 360).normalized;
+        ringColor = new Color((seed >> 3) % 256, (seed >> 6) % 256,(seed >> 9) % 256, (seed >> 12) % 256);
+        ringColor /= 256.0f;
+        ringRadius = (radius+1) + (1 * (seed % 10));
+        ringWidth = ringRadius + (1 * (seed % 4));
+        GameObject rings = transform.GetChild(1).gameObject;
+        rings.SetActive(true);
+        rings.transform.up = ringNormal;
+        rings.transform.localScale = Vector3.one*ringRadius;
+
+        //NEEDS TO BE CHANGED WITH SOMETHING MORE ELEGANT LATER
+        rings.transform.GetChild(0).GetComponent<Renderer>().material.color = ringColor;
+        rings.transform.GetChild(1).GetComponent<Renderer>().material.color = ringColor;
+        //SetRingShader();
+        return;
+    }
+
+    public void SetRingShader() {
+
+        ringShader.SetColor("_Color", ringColor);
+        ringShader.SetVector("_PlanetPos", transform.position);
+        ringShader.SetVector("_PlaneNormal", ringNormal);
+        ringShader.SetFloat("_Radius", ringRadius);
+        ringShader.SetFloat("_Width", ringWidth);
+        ringShader.color = ringColor;
+        return;
     }
 
     public ref List<Vector3> getWorleyPoints() {
@@ -280,11 +321,11 @@ public class Sphere : MonoBehaviour
     {
         return landMultiplier;
     }
-    public float getHeightArrayValue(int index)
+    /*public float getHeightArrayValue(int index)
     {
         //for safety you should throw an exception here if out of range;
         return heights[index];
-    }
+    }*/
 
     public Color getRegionColor(int index)
     {
@@ -311,7 +352,7 @@ public class Sphere : MonoBehaviour
         return persistance;
     }
 
-    public int getSeed() {
+    public UInt64 getSeed() {
         return seed;
     }
     public float getScale() {

@@ -6,6 +6,7 @@ using Simplex;
 using Worley;
 using UnityEngine.Rendering;
 using Unity.Collections;
+using System;
 
 
 public abstract class GeneratePlane : MonoBehaviour
@@ -20,7 +21,7 @@ public abstract class GeneratePlane : MonoBehaviour
     protected int octaves;
     protected float lacunarity;
     protected float persistance;
-    protected int seed;
+    protected UInt64 seed;
     [SerializeField] protected float scale;
 
     protected float oceanFloor;
@@ -248,7 +249,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
     protected abstract void DispatchFoliage();
 
-    protected abstract void createPatchTexture(ref Material mat, int x, int y, float currentHeight);
+    
 
     private void Update()
     {

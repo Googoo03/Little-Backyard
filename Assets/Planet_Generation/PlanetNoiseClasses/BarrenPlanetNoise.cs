@@ -19,10 +19,10 @@ public class BarrenPlanetNoise : GeneratePlane
         persistance = 0.5f;
         changeHeight = true;
     }
-    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
+    /*protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
         mat.SetColor("_Land", new Color(currentHeight,currentHeight,currentHeight,1));
-    }
+    }*/
 
     protected override void DispatchFoliage() { }
 

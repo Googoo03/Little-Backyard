@@ -24,7 +24,7 @@ public class IcePlanetNoise : GeneratePlane
         changeHeight = true;
     }
 
-    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
+    /*protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
         int regionLength = patch.planetObject.GetComponent<Sphere>().getRegionLength();
         for (int r = 0; r < regionLength - 1; r++)
@@ -45,7 +45,7 @@ public class IcePlanetNoise : GeneratePlane
                 //tex.SetPixel(x, y, color);
             }
         }
-    }
+    }*/
 
     protected override void DispatchFoliage() { }
 

@@ -283,14 +283,19 @@ public class ShipControls : MonoBehaviour
     private void traverseQuadTree(SolarSystemQuadTree node) {
         
         if (node.getPlanetCount() == 1) { //return if 1 planet. I.E no extra children
-            nearbyPlanet = node.getPlanet(0);
-            initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold(); //for LOD loading
-            atmosphereDistance = nearbyPlanet.GetComponent<Sphere>().getAtmosphereDistance(); //self explanatory
-            pullUpDistance = nearbyPlanet.GetComponent<Sphere>().getRadius() * 1.1f;
+            if (nearbyPlanet != node.getPlanet(0))
+            {
+                nearbyPlanet = node.getPlanet(0);
+                initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold(); //for LOD loading
+                atmosphereDistance = nearbyPlanet.GetComponent<Sphere>().getAtmosphereDistance(); //self explanatory
+                pullUpDistance = nearbyPlanet.GetComponent<Sphere>().getRadius() * 1.1f;
+                nearbyPlanet.transform.GetChild(1).gameObject.SetActive(false);
+                nearbyPlanet.GetComponent<Sphere>().SetRingShader();
+            }
         }
         if (node.getPlanetCount() == 0)
         { //return if 1 planet. I.E no extra children
-            
+            if(nearbyPlanet) nearbyPlanet.transform.GetChild(1).gameObject.SetActive(true);
             nearbyPlanet = null;
         }
         if (node.getChildCount() == 0) return; //return if no children

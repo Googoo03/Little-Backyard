@@ -25,7 +25,7 @@ public class DesertPlanetNoise : GeneratePlane
         persistance = 0.5f;
         changeHeight = true;
     }
-    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
+    /*protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
         //EACH PLANET TYPE NEEDS TO HAVE INDEPENDENT TUNED PARAMETERS
 
@@ -51,7 +51,7 @@ public class DesertPlanetNoise : GeneratePlane
                 //tex.SetPixel(x, y, color);
             }
         }
-    }
+    }*/
 
     protected override void DispatchFoliage() { }
 

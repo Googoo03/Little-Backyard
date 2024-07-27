@@ -318,10 +318,6 @@ MonoBehaviour:
   mat: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
   planetRings: {fileID: 2100000, guid: 70acc38ebb9f787459fb5e85da6bfadb, type: 2}
   sunHalo: {fileID: 2100000, guid: 7364f74ec0245734a82bfc99fb795b4a, type: 2}
-  planetPositions:
-  - {x: 24.790777, y: 300, z: 22.872778, w: 1.8394324e+25}
-  - {x: 24.790777, y: 300, z: 22.872778, w: 3.8384346e+12}
-  - {x: 24.790777, y: 300, z: 22.872778, w: 6.17e-43}
 --- !u!1001 &903820971
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -761,21 +757,6 @@ PrefabInstance:
     - target: {fileID: 4020168595206606, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
-        type: 3}
-      propertyPath: radius
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 2848743650586428118, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
-        type: 3}
-      propertyPath: Deep_Color.a
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2848743650586428118, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
-        type: 3}
-      propertyPath: Shallow_Color.a
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 114009840963039382, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}

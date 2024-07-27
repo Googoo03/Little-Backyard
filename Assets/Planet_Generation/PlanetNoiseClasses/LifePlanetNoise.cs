@@ -60,7 +60,7 @@ public class LifePlanetNoise : GeneratePlane
 
     ~LifePlanetNoise() {
     }
-    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight) { }
+    //protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight) { }
 
 
     protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) {

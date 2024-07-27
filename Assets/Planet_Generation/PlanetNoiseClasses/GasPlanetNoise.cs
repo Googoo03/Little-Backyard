@@ -21,7 +21,7 @@ public class GasPlanetNoise : GeneratePlane
         persistance = 0.9f;
         changeHeight = false;
     }
-    protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
+    /*protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
     {
         int regionLength = patch.planetObject.GetComponent<Sphere>().getRegionLength();
         for (int r = 0; r < regionLength - 1; r++)
@@ -42,7 +42,7 @@ public class GasPlanetNoise : GeneratePlane
                 //tex.SetPixel(x, y, color);
             }
         }
-    }
+    }*/
 
     protected override void DispatchFoliage() { }
 

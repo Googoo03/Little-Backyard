@@ -52,7 +52,7 @@ Shader "Custom/Planet_Surface_Shader"
 
             float3 w_normal;
 
-            float3 viewDir;
+            float3 viewVector;
             float3 worldNormal;
             INTERNAL_DATA
         };
@@ -95,6 +95,13 @@ Shader "Custom/Planet_Surface_Shader"
             o.normal = vertexData.normal;
             o.vertPos = vertexData.vertex;
             o.worldNormal = WorldNormalVector (IN, o.normal);
+
+            float4 oVertex = UnityObjectToClipPos(vertexData.vertex);
+
+            float4 screenPos = ComputeScreenPos(oVertex);
+
+            float3 viewVector = mul(unity_CameraInvProjection, float4((screenPos.xy/screenPos.w) * 2 - 1, 0, -1));
+            o.viewVector = mul(unity_CameraToWorld, float4(viewVector,0));
         }
 
 
@@ -121,6 +128,7 @@ Shader "Custom/Planet_Surface_Shader"
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
             fixed4 red = tex2D (_HeightMap, IN.uv_HeightMap);
+            float3 viewDirection = normalize(IN.viewVector);
 
             //GET THE 2 SURFACE TEXTURE ALONG WITH CLIFF OVERRIDE TEXTURE
             int index = (red.r > _L1) + (red.r > _L2); //gets the index according to the height level
@@ -142,6 +150,13 @@ Shader "Custom/Planet_Surface_Shader"
             float blendOpacity = abs((    (red.r - texBounds[index]) - (texBounds[indexPlusOne] - texBounds[index]) )) / abs(texBounds[indexPlusOne] - texBounds[index] + .000001);
             blendOpacity = easeInOutCubic(blendOpacity);
             /////////////////////////////////
+
+            //BLACK OUTLINE
+            if(abs(dot(IN.worldNormal,viewDirection))< 0.05){
+                o.Albedo = fixed4(0,0,0,0);
+                return;
+            }
+            /////
 
             //APPLY SURFACE COLOR
             fixed4 normalAlbedo = fixed4(blend( c1, blendOpacity,c2,1-blendOpacity),0);
