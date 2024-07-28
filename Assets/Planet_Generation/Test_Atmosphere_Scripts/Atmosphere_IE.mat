@@ -84,6 +84,6 @@ Material:
     - _Color: {r: 0, g: 1, b: 0.9648354, a: 1}
     - _Color2: {r: 1, g: 0.61535674, b: 0.19433957, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _PlanetPos: {r: 5, g: 300, b: 5, a: 0}
+    - _PlanetPos: {r: 3.9378603, g: 300, b: 84.99295, a: 0}
     - _SunPos: {r: 5, g: 300, b: 5, a: 0}
   m_BuildTextureStacks: []

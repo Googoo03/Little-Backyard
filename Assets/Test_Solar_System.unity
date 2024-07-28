@@ -296,6 +296,7 @@ MonoBehaviour:
   RegionRadius: 80
   RegionHeight: 80
   solarsystemSpacing: 1
+  Sun_Halo: {fileID: 2100000, guid: 7364f74ec0245734a82bfc99fb795b4a, type: 2}
 --- !u!1 &573247462 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4156666392651312756, guid: e7624d12d32d3426ea30613788c3244f,

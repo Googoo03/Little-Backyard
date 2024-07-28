@@ -25,6 +25,8 @@ public class SolarSystemGeneration : MonoBehaviour {
 
     public SolarSystemQuadTree quadTree; //doesnt show up for some reason, but is still there
 
+    [SerializeField] private Material Sun_Halo;
+
     // Use this for initialization
     void Start () {
         Vector2 quadTreeBounds = new Vector2(transform.position.x - RegionRadius-10, transform.position.z - RegionHeight-10);
@@ -35,6 +37,8 @@ public class SolarSystemGeneration : MonoBehaviour {
 
         transform.GetChild(0).GetComponent<ShipControls>().planetQuadTree = quadTree; //this needs to change
         transform.GetChild(0).GetComponent<ShipControls>().planets = planets;
+        Sun_Halo.SetInt("_PlanetCount", planetCount);
+        Sun_Halo.SetFloat("_OrbitRad", RegionRadius / planetCount);
     }
 
     // Update is called once per frame

@@ -11,6 +11,7 @@ Shader "Custom/Sun_Halo_IE"
 
         _OrbitRad ("Orbit Radius", float) = 1
         _SolarSystemNormal ("Solar System Normal", Vector) = (1,1,1,1)
+        _PlanetCount ("Planet Count", int) = 1
     }
     SubShader
     {
@@ -79,6 +80,7 @@ Shader "Custom/Sun_Halo_IE"
             //HUD RING PARAMETERS
             float _OrbitRad;
             float3 _SolarSystemNormal;
+            int _PlanetCount;
             /////////////////////
 
             fixed4 frag (v2f i) : SV_Target
@@ -120,7 +122,7 @@ Shader "Custom/Sun_Halo_IE"
                     float ratio = (length(plane_intersection-_SunPos) / _OrbitRad) - dist_marker;
 
                     //noColor *= dist_marker;
-                    noColor = (ratio > 1-(0.1/_OrbitRad*t_plane*.1) && dist_marker < 5) ? lerp(noColor,fixed4(1,1,1,1),0.3) : noColor;
+                    noColor = (ratio > 1-(0.1/_OrbitRad*t_plane*.1) && dist_marker < _PlanetCount) ? lerp(noColor,fixed4(1,1,1,1),0.3) : noColor;
                 }
                 //////////////
 
