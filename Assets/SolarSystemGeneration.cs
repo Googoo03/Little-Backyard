@@ -16,7 +16,7 @@ public class SolarSystemGeneration : MonoBehaviour {
 
     [SerializeField] private int planetCount;
 
-    [SerializeField]private int RegionWidth;
+    [SerializeField]private int RegionRadius;
     [SerializeField]private int RegionHeight;
 
     List<GameObject> planets = new List<GameObject> { };
@@ -27,13 +27,14 @@ public class SolarSystemGeneration : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
-        Vector2 quadTreeBounds = new Vector2(transform.position.x - RegionWidth-10, transform.position.z - RegionHeight-10);
+        Vector2 quadTreeBounds = new Vector2(transform.position.x - RegionRadius-10, transform.position.z - RegionHeight-10);
         List<GameObject> empty = new List<GameObject>();
-        quadTree = new SolarSystemQuadTree(quadTreeBounds, RegionWidth * 2, empty, null);
+        quadTree = new SolarSystemQuadTree(quadTreeBounds, RegionRadius * 2, empty, null);
         GenerateSolarSystem();
-        GenerateQuadTree();
+        //GenerateQuadTree();
 
-        transform.GetChild(0).GetComponent<ShipControls>().planetQuadTree = quadTree;
+        transform.GetChild(0).GetComponent<ShipControls>().planetQuadTree = quadTree; //this needs to change
+        transform.GetChild(0).GetComponent<ShipControls>().planets = planets;
     }
 
     // Update is called once per frame
@@ -57,7 +58,7 @@ public class SolarSystemGeneration : MonoBehaviour {
             if (hashCode % density == 0){
                 float cosineVal = Mathf.Cos( (hashCode % 360)); //the 500 is so its within 2pi range 
                 float sineVal = Mathf.Sin( (hashCode % 360));
-                float fracX = ( (x+1) / (float)planetCount) * RegionWidth; //each planet is a set fraction distance away from the sun.
+                float fracX = ( (x+1) / (float)planetCount) * RegionRadius; //each planet is a set fraction distance away from the sun.
 
                 Vector3 position = new Vector3(transform.position.x + (fracX * cosineVal), transform.position.y, transform.position.z + (fracX * sineVal));
                 GameObject newPlanet = Instantiate(planet, position, Quaternion.identity);

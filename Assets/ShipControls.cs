@@ -15,6 +15,7 @@ public class ShipControls : MonoBehaviour
     private Vector3 shipOriginalRotation;
 
     public SolarSystemQuadTree planetQuadTree;
+    public List<GameObject> planets = new List<GameObject> { };
 
     public Quaternion targetRotation;
     public Quaternion lastOrientation;
@@ -74,7 +75,9 @@ public class ShipControls : MonoBehaviour
 
         if(!landed) MitigateForces();
 
-        traverseQuadTree(planetQuadTree);
+        //traverseQuadTree(planetQuadTree);
+        findNearestPlanet();
+
 
         //sets the distance each frame
         distanceToNearestPlanet = (nearbyPlanet != null) ? Vector3.Distance(this.transform.position, nearbyPlanet.transform.position) : float.MaxValue;
@@ -278,7 +281,26 @@ public class ShipControls : MonoBehaviour
         Quaternion combinedRotation = Quaternion.Slerp(transform.rotation, lastOrientation, Time.deltaTime * rotationSpeed); //makes it smooth
         transform.rotation = combinedRotation;
     }
+    private void findNearestPlanet() {
+        float minDistance = float.MaxValue;
+        float dist;
+        GameObject closestPlanet = null;
+        for (int i = 0;i < planets.Count;i++)
+        {
+            dist = Vector3.Distance(transform.position, planets[i].transform.position);
+            closestPlanet = dist < minDistance ? planets[i] : closestPlanet;
+            minDistance = dist < minDistance ? dist : minDistance;
+        }
 
+        if (nearbyPlanet) nearbyPlanet.transform.GetChild(1).gameObject.SetActive(true);
+        nearbyPlanet = closestPlanet;
+
+        initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold(); //for LOD loading
+        atmosphereDistance = nearbyPlanet.GetComponent<Sphere>().getAtmosphereDistance(); //self explanatory
+        pullUpDistance = nearbyPlanet.GetComponent<Sphere>().getRadius() * 1.1f;
+        nearbyPlanet.transform.GetChild(1).gameObject.SetActive(false);
+        nearbyPlanet.GetComponent<Sphere>().SetRingShader();
+    }
 
     private void traverseQuadTree(SolarSystemQuadTree node) {
         
