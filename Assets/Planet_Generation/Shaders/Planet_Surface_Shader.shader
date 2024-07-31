@@ -7,6 +7,7 @@ Shader "Custom/Planet_Surface_Shader"
         _TexArray("Texture Array", 2DArray) = "" {}
 
         _Tiling("TextureTiling", Vector) = (1,1,0,0)
+        _PlanetType("Planet Type", int) = 2
 
         _Tile ("VertexTiling", Vector) = (1,1,0,0)
         _Offset ("VertexOffset", Vector) = (0,0,0,0)
@@ -72,6 +73,7 @@ Shader "Custom/Planet_Surface_Shader"
 
         float3 vertLocalPos;
         int _Levels;
+        int _PlanetType;
 
 
 
@@ -131,8 +133,9 @@ Shader "Custom/Planet_Surface_Shader"
             float3 viewDirection = normalize(IN.viewVector);
 
             //GET THE 2 SURFACE TEXTURE ALONG WITH CLIFF OVERRIDE TEXTURE
-            int index = (red.r > _L1) + (red.r > _L2); //gets the index according to the height level
-            int indexPlusOne = index+1;//gets the next texture
+            int level_index = (red.r > _L1) + (red.r > _L2); //used for blending between colors
+            int index = (level_index*6)+_PlanetType; //gets the index according to the height level
+            int indexPlusOne = index+(1*6);//gets the next texture
 
             ////////////////////////////////
             float texBounds[] = {0,_L1,_L2}; //this is for testing, this should be removed with a more dynamic version later.
@@ -140,14 +143,14 @@ Shader "Custom/Planet_Surface_Shader"
 
             fixed4 c1 = UNITY_SAMPLE_TEX2DARRAY(_TexArray, float3(IN.uv_HeightMap * _Tiling.xy, index));
             fixed4 c2 = UNITY_SAMPLE_TEX2DARRAY(_TexArray, float3(IN.uv_HeightMap * _Tiling.xy, indexPlusOne));
-            fixed4 cliff = UNITY_SAMPLE_TEX2DARRAY(_TexArray, float3(IN.uv_HeightMap * _Tiling.xy, 3)); //sample index 0. There should be a designated index for cliffs.
+            fixed4 cliff = UNITY_SAMPLE_TEX2DARRAY(_TexArray, float3(IN.uv_HeightMap * _Tiling.xy, (3*6) + _PlanetType)); //sample index 0. There should be a designated index for cliffs.
             ///////////////////////////////////////////////////////////////
 
 
             //CALCULATE ALL SURFACE OPACITIES
             float cliffOpacity = CliffOpacity(IN);
 
-            float blendOpacity = abs((    (red.r - texBounds[index]) - (texBounds[indexPlusOne] - texBounds[index]) )) / abs(texBounds[indexPlusOne] - texBounds[index] + .000001);
+            float blendOpacity = abs((    (red.r - texBounds[level_index]) - (texBounds[level_index+1] - texBounds[level_index]) )) / abs(texBounds[level_index+1] - texBounds[level_index] + .000001);
             blendOpacity = easeInOutCubic(blendOpacity);
             /////////////////////////////////
 

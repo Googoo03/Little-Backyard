@@ -11,7 +11,7 @@ public class CameraDepthInitializer : MonoBehaviour
     [SerializeField] private Material planetRings;
     [SerializeField] private Material sunHalo;
     //[SerializeField] private int planetCount = 3;
-
+    [SerializeField] private GameObject planet;
 
     void Start()
     {
@@ -27,10 +27,11 @@ public class CameraDepthInitializer : MonoBehaviour
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
 
-        GameObject planet = transform.parent.GetComponent<ShipControls>().nearbyPlanet;
+        //GameObject planet = transform.parent.GetComponent<ShipControls>().nearbyPlanet;
         if (planet != null)
         {
             mat.SetVector("_PlanetPos", planet.transform.position); //sets new planet position for atmosphere shader when adequately close.
+            mat.SetFloat("_Radius", planet.GetComponent<Sphere>().getRadius());
             planetRings.SetVector("_PlanetPos", planet.transform.position);
             //planet.GetComponent<Sphere>().SetRingShader();
         }

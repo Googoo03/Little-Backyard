@@ -25,7 +25,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1878399322141872}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -7.6, y: -0.023696018, z: 9.9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -67,11 +67,6 @@ MonoBehaviour:
   oceanMultiplier: 0.01
   landMultiplier: 0.07
   regionReference: {fileID: 2800000, guid: abeea500f365f944ea3ff3832837474d, type: 3}
-  regions:
-  - {r: 1, g: 0.82038534, b: 0.43382353, a: 0}
-  - {r: 0.9044118, g: 0.66390795, b: 0.14630188, a: 0}
-  - {r: 0.71323526, g: 0.5999567, b: 0.4300389, a: 0}
-  - {r: 0.5808823, g: 0.5808823, b: 0.5808823, a: 0}
   pscale: 0.01
   worleyPoints: []
   nextLOD: 0
@@ -178,7 +173,7 @@ SphereCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}

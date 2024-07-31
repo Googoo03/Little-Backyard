@@ -88,7 +88,7 @@ public class Sphere : MonoBehaviour
 
     public Texture2D regionReference;
 
-    public Color[] regions; //turn this into a 2D array and access directly?
+    //public Color[] regions; //turn this into a 2D array and access directly?
 
     private int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
     public float pscale;
@@ -146,8 +146,9 @@ public class Sphere : MonoBehaviour
         //planetType = Random.Range(0,6);
 
         //set the planet type and name
-        //planetType = UnityEngine.Random.Range(0,5);
-        planetType = 2;
+        planetType = UnityEngine.Random.Range(0,5);
+        planetType = planetType > 2 ? 2 : 4;
+        planetType = 4;
         transform.name = "Planet" + planetType.ToString();
 
 
@@ -327,7 +328,7 @@ public class Sphere : MonoBehaviour
         return heights[index];
     }*/
 
-    public Color getRegionColor(int index)
+    /*public Color getRegionColor(int index)
     {
         return regions[index];
     }
@@ -335,7 +336,7 @@ public class Sphere : MonoBehaviour
     public int getRegionLength()
     {
         return regions.Length;
-    }
+    }*/
 
     public int getOctaves()
     {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Simplex;
 using Worley;
+using UnityEngine.Rendering;
 
 public class DesertPlanetNoise : GeneratePlane
 {
@@ -16,9 +17,9 @@ public class DesertPlanetNoise : GeneratePlane
         //set up noise parameters. surely theres a better way to do this
         oceanFloor = 0;
         oceanMulitplier = .1f;
-        landMultiplier = .5f;
+        landMultiplier = .3f;
 
-        octaves = 12;
+        octaves = 5;
         scale = 5f;
         //worleyScale = 4;
         lacunarity = 2;
@@ -67,29 +68,29 @@ public class DesertPlanetNoise : GeneratePlane
 
         for (int i = 0; i < vertices.Length; ++i)
         {
-            Vector3 pos = vertices[i];
-            float nx = transform.TransformPoint(pos).x;
-            float ny = transform.TransformPoint(pos).y;
-            float nz = transform.TransformPoint(pos).z;
+            Vector3 pos = origin + vertices[i]; //world space
 
-            float xx = ((nx - xVertCount) / scale);
-            float yy = ((ny - yVertCount) / scale);
-            float zz = ((nz - xVertCount) / scale);
+            float xx = ((pos.x - xVertCount) / scale);
+            float yy = ((pos.y - yVertCount) / scale);
+            float zz = ((pos.z - xVertCount) / scale);
 
             simplexVerts[i] = new Vector3(xx, yy, zz);
-            worleyVerts[i] = new Vector3(nx, ny, nz);
+            worleyVerts[i] = pos;
         }
 
         //SIMPLEX NOISE
         verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
-        verts.SetData(simplexVerts);
+        verts.SetData(vertices);
+
+        worldVerts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+        worldVerts.SetData(simplexVerts);
 
         setComputeNoiseVariables(ref simplex);
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         ////////////////
 
-        verts.SetData(worleyVerts);
-        setComputeNoiseVariables(ref worley);
+        //verts.SetData(worleyVerts);
+        //setComputeNoiseVariables(ref worley);
 
         //initialize points vector array
         List<Vector3> points = new List<Vector3>();
@@ -108,10 +109,13 @@ public class DesertPlanetNoise : GeneratePlane
         worley.SetBool("mode", true); //set to mulitply mode
         //worley.SetFloat("scale", 4.0f);
         //worley.SetInt("octaves", 1);
-        worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
-        
-        verts.Release();
+        //worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         listPoints.Release();
+
+        AsyncGPUReadback.Request(verts, OnCompleteReadback);
+
+        //verts.Release();
+        
     }
 
     public override float NoiseValue(Vector3 pos, float scale)

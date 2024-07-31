@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ShipControls : MonoBehaviour
+public class ShipControls : Controllable_Entity
 {
     public float speed;
     public float mouseSensitivityX;
@@ -42,6 +42,9 @@ public class ShipControls : MonoBehaviour
     [SerializeField] private bool takeoff = false;
     [SerializeField] private Rigidbody _rigidbody;
 
+    //EVENT MANAGER
+    [SerializeField] private Event_Manager_Script event_manager;
+
     [SerializeField] private float distanceToNearestPlanet;
     [SerializeField] private float initialDistanceThreshold;
     [SerializeField] private float atmosphereDistance;
@@ -60,6 +63,7 @@ public class ShipControls : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody>();
         targetRotation = new Quaternion();
         shipOriginalRotation = shipModel.transform.localEulerAngles;
+
     }
 
     // Update is called once per frame
@@ -67,10 +71,14 @@ public class ShipControls : MonoBehaviour
     {
 
 
-
+        if (!canMove) return;
 
         MovementProtocol();
-        if (landed) ApplyGravity(false);
+        if (landed)
+        {
+            ApplyGravity(false);
+            CheckExit();
+        }
         if (takeoff) { ApplyGravity(true); takeoff = false; }
 
         if(!landed) MitigateForces();
@@ -105,6 +113,9 @@ public class ShipControls : MonoBehaviour
 
     }
 
+    private void CheckExit() {
+        if (Input.GetKeyDown(KeyCode.E) && canMove) event_manager.set_exitShip(true);
+    }
     private void ApplyGravity(bool negative) {
 
         int takeoffStrength = 20;
@@ -130,7 +141,7 @@ public class ShipControls : MonoBehaviour
         float d = (distanceToNearestPlanet - pullUpDistance) / pullUpDistance;
         speed *= Mathf.Max(EaseInOutCubic(d), .1f); //the 1.1 will be changed to "pullup distance" and the .1 is the minimum speed;
     }
-    private void MovementProtocol() {
+    protected override void MovementProtocol() {
         
         targetRotation = transform.rotation;
         

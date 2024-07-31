@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Simplex;
 using Worley;
+using UnityEngine.Rendering;
 
 public class HotPlanetNoise : GeneratePlane
 {
@@ -14,11 +15,11 @@ public class HotPlanetNoise : GeneratePlane
     public HotPlanetNoise()
     {
         //set up noise parameters. surely theres a better way to do this
-        oceanFloor = 0f;
-        oceanMulitplier = 0.2f;
+        oceanFloor = 0.1f;
+        oceanMulitplier = 0.05f;
         landMultiplier = 0.2f;
 
-        octaves = 4;
+        octaves = 7;
         scale = 3f;
         lacunarity = 2;
         persistance = 0.5f;
@@ -32,30 +33,32 @@ public class HotPlanetNoise : GeneratePlane
         Vector3[] simplexVerts = new Vector3[vertices.Length];
         Vector3[] worleyVerts = new Vector3[vertices.Length];
 
+        Vector3[] verticesWorldSpace = new Vector3[vertices.Length];
+
+        //////CONVERTS RELATIVE VERTEX POINTS INTO WORLD SPACE POSITIONS
         for (int i = 0; i < vertices.Length; ++i)
         {
-            Vector3 pos = vertices[i];
-            float nx = transform.TransformPoint(pos).x;
-            float ny = transform.TransformPoint(pos).y;
-            float nz = transform.TransformPoint(pos).z;
+            Vector3 pos = origin + vertices[i]; //world space
 
-            float xx = ((nx - xVertCount) / scale);
-            float yy = ((ny - yVertCount) / scale);
-            float zz = ((nz - xVertCount) / scale);
+            float xx = ((pos.x - xVertCount) / scale);
+            float yy = ((pos.y - yVertCount) / scale);
+            float zz = ((pos.z - xVertCount) / scale);
 
-            simplexVerts[i] = new Vector3(xx, yy, zz);
-            worleyVerts[i] = new Vector3(nx, ny, nz);
+            verticesWorldSpace[i] = new Vector3(xx, yy, zz);
         }
 
         //SIMPLEX NOISE
         verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
-        verts.SetData(simplexVerts);
+        verts.SetData(vertices);
+
+        worldVerts = new ComputeBuffer(verticesWorldSpace.Length, sizeof(float) * 3);
+        worldVerts.SetData(verticesWorldSpace);
 
         setComputeNoiseVariables(ref simplex);
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         ////////////////
 
-        verts.SetData(worleyVerts);
+        //verts.SetData(worleyVerts);
 
 
         oceanFloor = 0.3f;
@@ -78,9 +81,10 @@ public class HotPlanetNoise : GeneratePlane
         worley.SetBool("volcano_crater", true);
         worley.SetFloat("edgeThreshold", 0.9f);
         worley.SetBool("mode", false); //set to add mode
-        worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+        //worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+        AsyncGPUReadback.Request(verts, OnCompleteReadback);
 
-        verts.Release();
+        //verts.Release();
     }
 
     protected override void DispatchFoliage() { }

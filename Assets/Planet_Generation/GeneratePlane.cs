@@ -123,7 +123,7 @@ public abstract class GeneratePlane : MonoBehaviour
         planetMaterial.SetFloat("_DisplacementStrength", 0.1f);
 
         float TypePlanet = (float)planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
-        planetMaterial.SetFloat("_PlanetType", TypePlanet + .99f); //I guess pixel sampling is 1-indexed?
+        planetMaterial.SetFloat("_PlanetType", TypePlanet); //I guess pixel sampling is 1-indexed?
 
 
         rend.sharedMaterial = planetMaterial;
