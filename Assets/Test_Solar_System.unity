@@ -362,9 +362,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8917118438352458586, guid: e763a0a9c5c45494b870bd1b8ee32927,
         type: 3}
+      propertyPath: reach
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8917118438352458586, guid: e763a0a9c5c45494b870bd1b8ee32927,
+        type: 3}
       propertyPath: speed
       value: 0.25
       objectReference: {fileID: 0}
+    - target: {fileID: 8917118438352458586, guid: e763a0a9c5c45494b870bd1b8ee32927,
+        type: 3}
+      propertyPath: event_manager
+      value: 
+      objectReference: {fileID: 1260474179}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -520,6 +530,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 160406701}
     m_Modifications:
+    - target: {fileID: 1081970301040300, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
+      propertyPath: m_TagString
+      value: Vehicle
+      objectReference: {fileID: 0}
     - target: {fileID: 4538936456122420, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -590,7 +604,7 @@ PrefabInstance:
     - target: {fileID: 65189819531829198, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
       propertyPath: m_Size.y
-      value: 0.01
+      value: 0.005
       objectReference: {fileID: 0}
     - target: {fileID: 65189819531829198, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
@@ -650,7 +664,7 @@ PrefabInstance:
     - target: {fileID: 4124095710423020485, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 4124095710423020485, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
@@ -660,7 +674,7 @@ PrefabInstance:
     - target: {fileID: 4124095710423020485, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.0254
+      value: -0.02228
       objectReference: {fileID: 0}
     - target: {fileID: 4124095710423020485, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
@@ -788,7 +802,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6f242a6aed95b14fbf0422346b486f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  exitShip: 0
+  enterShip: 0
   player: {fileID: 249311380}
+  playerInteract: {fileID: 0}
   ship: {fileID: 1697110495}
   playerCamera: {fileID: 573247469}
 --- !u!1 &1697110495 stripped

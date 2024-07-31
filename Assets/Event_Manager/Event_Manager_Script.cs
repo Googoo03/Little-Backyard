@@ -5,12 +5,14 @@ using UnityEngine;
 public class Event_Manager_Script : MonoBehaviour
 {
     // Start is called before the first frame update
-    private bool exitShip;
-    private bool enterShip;
+    [SerializeField] private bool exitShip;
+    [SerializeField] private bool enterShip;
 
     private bool lerpCameraPosition;
 
     [SerializeField] private GameObject player;
+    [SerializeField] private GameObject playerInteract;
+
     [SerializeField] private GameObject ship;
     [SerializeField] private Camera playerCamera; //used for both the player and vehicles
 
@@ -32,6 +34,7 @@ public class Event_Manager_Script : MonoBehaviour
     void Update()
     {
         if(exitShip) exitShipProtocol();
+        if(enterShip) enterShipProtocol();
         if(lerpCameraPosition) lerpCameraToFromShip();
     }
 
@@ -39,6 +42,7 @@ public class Event_Manager_Script : MonoBehaviour
     private void exitShipProtocol() {
         //place player at ship location, above it
         player.transform.position = ship.transform.position + (ship.transform.up * .05f); //the 2 is arbitrary
+        player.transform.rotation = ship.transform.rotation;
         lerpCameraPosition = true;
         //activate player
         player.GetComponent<Player_Movement>().setNearbyPlanet(ship.GetComponent<ShipControls>().nearbyPlanet);
@@ -46,8 +50,18 @@ public class Event_Manager_Script : MonoBehaviour
         player.SetActive(true);
     }
 
+    private void enterShipProtocol()
+    {
+        lerpCameraPosition = true;
+        
+        //playerCamera.transform.parent = playerInteract.transform;
+
+        //player.GetComponent<Controllable_Entity>().setCanMove(false);
+        
+    }
+
     private void lerpCameraToFromShip() {
-        Transform destination = exitShip ? player.transform : ship.transform;
+        Transform destination = exitShip ? player.transform : playerInteract.transform;
         Vector3 offset = destination.GetComponent<Controllable_Entity>().getOffset();
         float scale = destination.transform.lossyScale.x;
 
@@ -57,14 +71,20 @@ public class Event_Manager_Script : MonoBehaviour
         {
             //if not close enough, lerp
             playerCamera.transform.position = Vector3.Lerp(playerCamera.transform.position, destination.position + (offsetRespecttoRotation), 3*Time.deltaTime);
+            playerCamera.transform.rotation = Quaternion.Lerp(playerCamera.transform.rotation, destination.rotation, 10 * Time.deltaTime);
         }
         else {
             //if close enough, set parent to the destination, turn off lerp.
             playerCamera.transform.parent.GetComponent<Controllable_Entity>().setCanMove(false);
+
+            destination.GetComponent<Controllable_Entity>().setCanMove(true);
             playerCamera.transform.parent = destination;
             playerCamera.transform.localPosition = offset;
+
             destination.GetComponent<Controllable_Entity>().setCamera(playerCamera);
             lerpCameraPosition=false;
+
+            if(destination != player.transform) player.SetActive(false);
 
             //reset needed variables. These should be mutually exclusive?
             exitShip = exitShip ? false : exitShip;
@@ -80,4 +100,6 @@ public class Event_Manager_Script : MonoBehaviour
 
     public void set_exitShip(bool exit) {exitShip = exit;}
     public void set_enterShip(bool enter) { enterShip = enter;}
+
+    public void set_PlayerInteract(GameObject obj) {playerInteract = obj;}
 }

@@ -10,12 +10,18 @@ public abstract class Controllable_Entity : MonoBehaviour
     protected bool canMove;
     [SerializeField] protected Camera _camera;
     [SerializeField] protected Vector3 camera_offset;
+    [SerializeField] protected float reach; //for interaction
+
+    //EVENT MANAGER
+    [SerializeField] protected Event_Manager_Script event_manager;
     void Start()
     {
         
     }
 
     protected abstract void MovementProtocol();
+
+    protected abstract void InteractionCheck();
 
     public void setCanMove(bool move) { canMove = move; }
 

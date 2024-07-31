@@ -19,6 +19,8 @@ public class Player_Movement : Controllable_Entity
 
     [SerializeField] private float speed;
 
+    [SerializeField] private RaycastHit hit;
+
     public Quaternion targetRotation;
 
     public float forward;
@@ -33,11 +35,48 @@ public class Player_Movement : Controllable_Entity
     // Update is called once per frame
     void Update()
     {
-        if(canMove) MovementProtocol();
+        if (!canMove) return;
+        MovementProtocol();
+        InteractionCheck();
+        InteractInput();
         ApplyGravity(false);
     }
 
     public void setNearbyPlanet(GameObject planet) {nearbyPlanet = planet;}
+
+    private void InteractInput() {
+        if (Input.GetKeyDown(KeyCode.E) && canMove) objectInteraction();
+    }
+
+    protected override void InteractionCheck() {
+        int layerMask = 1;
+        if (!_camera) return;
+
+        if (Physics.Raycast(_camera.transform.position, _camera.transform.forward, out hit, reach, layerMask))
+        {
+            Debug.DrawRay(_camera.transform.position, _camera.transform.forward * hit.distance, Color.green);
+            //set interaction object to hit transform
+            //objectInteraction();
+        }
+        else {
+            Debug.DrawRay(_camera.transform.position, _camera.transform.forward * reach, Color.red);
+        }
+    }
+
+    //DETERMINES WHAT TO DO BASED ON THE OBJECT THE PLAYER INTERACTS WITH
+    private void objectInteraction() {
+        Debug.Log(hit.transform);
+        if (!hit.transform) return;
+        switch (hit.transform.tag) {
+            case ("Vehicle"):
+                event_manager.set_PlayerInteract(hit.transform.gameObject);
+                event_manager.set_enterShip(true);
+                return;
+            default:
+                event_manager.set_PlayerInteract(null);
+                return;
+        }
+    }
 
     protected override void MovementProtocol()
     {

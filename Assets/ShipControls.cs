@@ -42,9 +42,6 @@ public class ShipControls : Controllable_Entity
     [SerializeField] private bool takeoff = false;
     [SerializeField] private Rigidbody _rigidbody;
 
-    //EVENT MANAGER
-    [SerializeField] private Event_Manager_Script event_manager;
-
     [SerializeField] private float distanceToNearestPlanet;
     [SerializeField] private float initialDistanceThreshold;
     [SerializeField] private float atmosphereDistance;
@@ -61,6 +58,7 @@ public class ShipControls : Controllable_Entity
     // Use this for initialization
     void Start() {
         _rigidbody = GetComponent<Rigidbody>();
+        camera_offset = new Vector3(0, .0057f, -0.02228f);
         targetRotation = new Quaternion();
         shipOriginalRotation = shipModel.transform.localEulerAngles;
 
@@ -69,11 +67,6 @@ public class ShipControls : Controllable_Entity
     // Update is called once per frame
     void Update()
     {
-
-
-        if (!canMove) return;
-
-        MovementProtocol();
         if (landed)
         {
             ApplyGravity(false);
@@ -81,7 +74,7 @@ public class ShipControls : Controllable_Entity
         }
         if (takeoff) { ApplyGravity(true); takeoff = false; }
 
-        if(!landed) MitigateForces();
+        if (!landed) MitigateForces();
 
         //traverseQuadTree(planetQuadTree);
         findNearestPlanet();
@@ -91,6 +84,11 @@ public class ShipControls : Controllable_Entity
         distanceToNearestPlanet = (nearbyPlanet != null) ? Vector3.Distance(this.transform.position, nearbyPlanet.transform.position) : float.MaxValue;
 
         LODCheckDistance();
+
+        if (!canMove) return;
+
+        MovementProtocol();
+        
 
 
 
@@ -141,6 +139,9 @@ public class ShipControls : Controllable_Entity
         float d = (distanceToNearestPlanet - pullUpDistance) / pullUpDistance;
         speed *= Mathf.Max(EaseInOutCubic(d), .1f); //the 1.1 will be changed to "pullup distance" and the .1 is the minimum speed;
     }
+
+    protected override void InteractionCheck() { }
+
     protected override void MovementProtocol() {
         
         targetRotation = transform.rotation;
