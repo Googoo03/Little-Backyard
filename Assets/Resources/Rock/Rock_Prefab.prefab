@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3379524544753344603}
   - component: {fileID: 4127218923260018766}
   m_Layer: 0
-  m_Name: Rock
+  m_Name: Rock_Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

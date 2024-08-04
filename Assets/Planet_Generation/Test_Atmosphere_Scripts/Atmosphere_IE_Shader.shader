@@ -1,8 +1,4 @@
-// Upgrade NOTE: commented out 'float3 _WorldSpaceCameraPos', a built-in variable
 
-// Upgrade NOTE: commented out 'float3 _WorldSpaceCameraPos', a built-in variable
-
-// Upgrade NOTE: commented out 'float3 _WorldSpaceCameraPos', a built-in variable
 
 Shader "Custom/Atmosphere_IE"
 {
@@ -145,67 +141,47 @@ Shader "Custom/Atmosphere_IE"
 
                     if(t1 >= 0 || t2 >=0){
 
-                    float t3;// = t1 >= 0 ? t1 : t2;
-                    if(t1 > 0 && t2 > 0){
-                        t3 = min(t1,t2);
-                    }else { t3 = t1 >= 0 ? t1 : t2;}
-                    float3 intersectionPoint = _WorldSpaceCameraPos + (t3*viewDirection);
-                    distanceToPlanet = length(intersectionPoint-_PlanetPos);
-                    //atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
-                    //atmosphere_depth = clamp(terrainLevel - intersection_atmosphere_scalar,0,_AtmosphereHeight);
+                        float t3;// = t1 >= 0 ? t1 : t2;
+                        if(t1 > 0 && t2 > 0){
+                            t3 = min(t1,t2);
+                        }else { t3 = t1 >= 0 ? t1 : t2;}
+                        float3 intersectionPoint = _WorldSpaceCameraPos + (t3*viewDirection);
+                        distanceToPlanet = length(intersectionPoint-_PlanetPos);
+                        //atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
+                        //atmosphere_depth = clamp(terrainLevel - intersection_atmosphere_scalar,0,_AtmosphereHeight);
 
                     
                     
-                    float3 start_point;
-                    float3 end_point;
+                        float3 start_point;
+                        float3 end_point;
 
-                    if(terrainLevel < t3){
-                        //throw out   
-                        return noColor;
-                    }
+                        //throw out if outside the circle and terrain is in front
+                        if(terrainLevel < t3 && t1>0 && t2>0) return noColor;
 
-                    if(t3 == t1){ //if its measuring with the closest intersection
-                        //start_point = t3 > terrainLevel ? _WorldSpaceCameraPos : intersectionPoint;
-                        start_point = intersectionPoint;
+                        start_point = t3 == t1 ? intersectionPoint : _WorldSpaceCameraPos;
 
-                    }else if(t3 == t2) {
-                        //
-                        start_point = _WorldSpaceCameraPos;
-
-                        //atmosphereAlpha *= length(intersectionPoint-_WorldSpaceCameraPos);
-                        //atmosphereAlpha *= max(0,dotProduct);
-                        
-                    }
-
-                    float3 viewPlane = i.camRelativeWorldPos.xyz / dot(i.camRelativeWorldPos.xyz, unity_WorldToCamera._m20_m21_m22);
+                        float3 viewPlane = i.camRelativeWorldPos.xyz / dot(i.camRelativeWorldPos.xyz, unity_WorldToCamera._m20_m21_m22);
  
-                    // calculate the world position
-                    // multiply the view plane by the linear depth to get the camera relative world space position
-                    // add the world space camera position to get the world space position from the depth texture
-                    float3 terrainworldPos = viewPlane * terrainLevel + _WorldSpaceCameraPos;
+                        // calculate the world position
+                        // multiply the view plane by the linear depth to get the camera relative world space position
+                        // add the world space camera position to get the world space position from the depth texture
+                        float3 terrainworldPos = viewPlane * terrainLevel + _WorldSpaceCameraPos;
 
-                    end_point = t2 > (terrainLevel) ? _WorldSpaceCameraPos+(terrainLevel*viewDirection) : _WorldSpaceCameraPos+(t2*viewDirection);
+                        end_point = t2 > (terrainLevel) ? _WorldSpaceCameraPos+(terrainLevel*viewDirection) : _WorldSpaceCameraPos+(t2*viewDirection);
 
                     
                     
-                    float3 normalVector = normalize(end_point -  _PlanetPos); 
-                    float3 lightVector = normalize(_SunPos -  _PlanetPos);
-                    dotProduct = dot(lightVector,normalVector);
+                        float3 normalVector = normalize(end_point -  _PlanetPos); 
+                        float3 lightVector = normalize(_SunPos -  _PlanetPos);
+                        dotProduct = dot(lightVector,normalVector);
 
-                    atmosphere_depth = length(end_point-start_point);
-                    atmosphere_depth = atmosphere_depth*atmosphere_depth;
+                        atmosphere_depth = length(end_point-start_point);
+                        atmosphere_depth = atmosphere_depth*atmosphere_depth;
 
-                     fixed4 atmosphereColor = lerp(_Color,_Color2,max(0,dot(lightVector,viewDirection) * saturate(atmosphere_depth) ));
-                    atmosphereAlpha *= max(0,dotProduct);
+                         fixed4 atmosphereColor = lerp(_Color,_Color2,max(0,dot(lightVector,viewDirection) * saturate(atmosphere_depth) ));
+                        atmosphereAlpha *= max(0,dotProduct);
 
-                    col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-saturate(atmosphere_depth) * _Density*atmosphereAlpha) );
-                    //col *= max(0,dotProduct);
-                    //atmosphereAlpha *= sqrt(dot(intersectionPoint-_WorldSpaceCameraPos, intersectionPoint-_WorldSpaceCameraPos));
-                    
-                    //atmosphereAlpha *= min(1,atmosphere_depth);
-                    //atmosphereAlpha *= max(0,dotProduct);
-                    //how much atmosphere you're looking through
-                    //atmosphereAlpha = max(0,atmosphereAlpha);;
+                        col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density*atmosphereAlpha) );
                     }
                     
                 }else{
@@ -219,3 +195,4 @@ Shader "Custom/Atmosphere_IE"
         }
     }
 }
+

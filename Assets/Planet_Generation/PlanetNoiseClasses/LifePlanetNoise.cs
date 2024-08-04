@@ -65,13 +65,13 @@ public class LifePlanetNoise : GeneratePlane
 
     protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) {
         //POISSON DISC DISTRIBUTION OF TREE MESHES. SETS TEH MATRICES FOR POSITION, ROTATION, AND SCALE.
-        tree_mesh = (Resources.Load<GameObject>("Tree/Tree").GetComponent<MeshFilter>().sharedMesh);
+        tree_mesh = (Resources.Load<GameObject>("Tree/Tree_Prefab").GetComponent<MeshFilter>().sharedMesh);
         tree_mat = (Material)(Resources.Load("Tree/Tree_Mat"));
 
-        rock_mesh = (Resources.Load<GameObject>("Rock/Rock").GetComponent<MeshFilter>().sharedMesh);
+        rock_mesh = (Resources.Load<GameObject>("Rock/Rock_Prefab").GetComponent<MeshFilter>().sharedMesh);
         rock_mat = (Material)(Resources.Load("Rock/Rock_Mat"));
 
-        grass_mesh = (Resources.Load<GameObject>("Grass/Grass").GetComponent<MeshFilter>().sharedMesh);
+        grass_mesh = (Resources.Load<GameObject>("Grass/Grass_Prefab").GetComponent<MeshFilter>().sharedMesh);
         grass_mat = (Material)(Resources.Load("Grass/Grass_Mat"));
 
 
