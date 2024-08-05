@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 using worley_3d;
 
 public class ThreeD_Texture_Manager : MonoBehaviour
@@ -8,12 +9,17 @@ public class ThreeD_Texture_Manager : MonoBehaviour
 
     [SerializeField] private List<Vector3> worleyPoints = new List<Vector3>();
     [SerializeField] private Worley3D worley3D;
+    public FloatParameter frequency;
+    public FloatParameter lacunarity;
+    public FloatParameter persistence;
+    public IntParameter octaves;
+    public FloatParameter amplitude;
     // Start is called before the first frame update
     void Start()
     {
 
         //generateWorleyPoints(25);
-        worley3D = new Worley3D(ref worleyPoints, transform.position, 16,8);
+        worley3D = new Worley3D(ref worleyPoints, transform.position, 32,(float)frequency,(float)persistence,(int)octaves,(float)lacunarity,(float)amplitude);
         worley3D.CreateTexture3D();
     }
 

@@ -168,6 +168,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   worleyPoints: []
+  frequency:
+    m_OverrideState: 0
+    m_Value: 4
+  lacunarity:
+    m_OverrideState: 0
+    m_Value: 2
+  persistence:
+    m_OverrideState: 0
+    m_Value: 0.95
+  octaves:
+    m_OverrideState: 0
+    m_Value: 3
+  amplitude:
+    m_OverrideState: 0
+    m_Value: 2
 --- !u!1 &662956041
 GameObject:
   m_ObjectHideFlags: 0
