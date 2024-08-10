@@ -27,6 +27,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _CloudTex:
+        m_Texture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
+        m_Scale: {x: 5.22, y: 42.98}
+        m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -61,8 +65,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AtmosphereHeight: 0.69
+    - _AtmosphereHeight: 0.33
     - _BumpScale: 1
+    - _CloudDensity: 3.95
     - _Cutoff: 0.5
     - _Density: 0.68
     - _DetailNormalMapScale: 1
@@ -74,16 +79,19 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Radius: 5
+    - _Radius: 5.39
+    - _Samples: 5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
+    - _Threshold: 1.64
+    - _ThresholdG: 0.73
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.06469908, g: 0.8792453, b: 0.8594222, a: 1}
+    - _Color: {r: 0.06274507, g: 0.855165, b: 0.8784314, a: 1}
     - _Color2: {r: 1, g: 0.61535674, b: 0.19433957, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _PlanetPos: {r: -15.71112, g: 300, b: 21.797638, a: 0}
+    - _PlanetPos: {r: -15.71112, g: 300, b: 21.79764, a: 0}
     - _SunPos: {r: 5, g: 300, b: 5, a: 0}
   m_BuildTextureStacks: []

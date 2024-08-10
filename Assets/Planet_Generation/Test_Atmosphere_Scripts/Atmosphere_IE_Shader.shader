@@ -5,6 +5,13 @@ Shader "Custom/Atmosphere_IE"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _CloudTex ("Cloud Texture", 3D) = "white"{}
+
+        _Threshold ("Cloud Threshold", float) = 1
+        _ThresholdG ("Cloud Threshold G", float) = 1
+        _CloudDensity ("Cloud Density Coeff",float) = 1
+        _CloudFalloff ("CLoud Falloff Coeff",float) = 1
+
         _PlanetPos ("Planet Position", Vector) = (0,0,0,0)
         _SunPos ("Sun Position", Vector) = (0,0,0,0)
         _Color ("Atmosphere Color", Color) = (1,1,1,1)
@@ -12,6 +19,7 @@ Shader "Custom/Atmosphere_IE"
         _Radius ("Planet Radius", float) = 5
         _AtmosphereHeight ("Atmosphere Height", float) = 0.5
         _Density ("Atmosphere Density", float) = 1
+        _Samples ("Number of Samples", int) = 1
     }
     SubShader
     {
@@ -70,6 +78,7 @@ Shader "Custom/Atmosphere_IE"
 
 
             sampler2D _MainTex;
+            
             float3 _PlanetPos;
             float3 _SunPos;
             float _Radius;
@@ -79,6 +88,15 @@ Shader "Custom/Atmosphere_IE"
             float4 _Color2;
 
             float distanceToPlanet;
+
+            //CLOUD PARAMETERS
+            float _Threshold;
+            float _ThresholdG;
+            float _Samples;
+            sampler3D _CloudTex;
+            float4 _CloudTex_ST;
+            float _CloudDensity;
+            float _CloudFalloff;
 
             RWStructuredBuffer<float3> planetPositions;
             float numPlanets;
@@ -109,11 +127,21 @@ Shader "Custom/Atmosphere_IE"
                 float depthTextureSample = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
                 float terrainLevel = LinearEyeDepth(depthTextureSample);
 
-                
+                 //CALCULATES WORLD POSITION AS OPPOSED TO DEPTH
+                 const float3 ray_direction = normalize(viewDirection);
+
+                float3 world_ray = normalize(UnityObjectToWorldDir(viewDirection));
+
+                float3 cam_forward_world = mul((float3x3)unity_CameraToWorld, float3(0,0,1));
+                float ray_depth_world = dot(cam_forward_world, ray_direction);
+
+                float3 terrainPosition = (ray_direction / ray_depth_world) * terrainLevel +  _WorldSpaceCameraPos;
+                ///////////////////////////////////////////////
 
                 
 
                 fixed4 noColor = tex2D(_MainTex, i.uv);
+                
                
                 float atmosphereAlpha = 1;
 
@@ -145,6 +173,8 @@ Shader "Custom/Atmosphere_IE"
                         if(t1 > 0 && t2 > 0){
                             t3 = min(t1,t2);
                         }else { t3 = t1 >= 0 ? t1 : t2;}
+                        float t4 = t3 == t1 ? t2 : t1;
+
                         float3 intersectionPoint = _WorldSpaceCameraPos + (t3*viewDirection);
                         distanceToPlanet = length(intersectionPoint-_PlanetPos);
                         //atmosphereAlpha *= 1 - saturate((distanceToPlanet - _Radius) / _AtmosphereHeight);
@@ -167,9 +197,9 @@ Shader "Custom/Atmosphere_IE"
                         // add the world space camera position to get the world space position from the depth texture
                         float3 terrainworldPos = viewPlane * terrainLevel + _WorldSpaceCameraPos;
 
-                        end_point = t2 > (terrainLevel) ? _WorldSpaceCameraPos+(terrainLevel*viewDirection) : _WorldSpaceCameraPos+(t2*viewDirection);
+                        end_point = t2 > (terrainLevel) ? terrainPosition : _WorldSpaceCameraPos+(t2*viewDirection);
 
-                    
+                        
                     
                         float3 normalVector = normalize(end_point -  _PlanetPos); 
                         float3 lightVector = normalize(_SunPos -  _PlanetPos);
@@ -179,9 +209,60 @@ Shader "Custom/Atmosphere_IE"
                         atmosphere_depth = atmosphere_depth*atmosphere_depth;
 
                          fixed4 atmosphereColor = lerp(_Color,_Color2,max(0,dot(lightVector,viewDirection) * saturate(atmosphere_depth) ));
+                         
                         atmosphereAlpha *= max(0,dotProduct);
+                        //atmosphereAlpha /= cloudColor.b;
+
 
                         col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density*atmosphereAlpha) );
+
+                        //Calculate cloudcolor
+                        _CloudTex_ST.x += _Time.x / 10.0;
+
+                        fixed4 cloudColor = float4(0,0,0,0);
+                        float tCloud = 5.0;
+                        float3 intersectionLine;
+                        fixed4 cloudSample;
+                        
+                        int iterator = 0;
+                        bool returnCond = false;
+                        //float cloudNormal = 1;
+                        float density = 0.0;
+                        
+
+                        for(;tCloud > 0.0; tCloud -= 1.0/50.0){
+                            //FIX THE NORMALIZE LOCATION. RIGHT NOW TCLOUD DOESNT DO ANYTHING
+                            iterator++;
+                            intersectionLine = normalize(end_point-start_point)*tCloud + start_point;
+                            
+                            float3 uvCoords = (intersectionLine-_PlanetPos) / r;
+                            float atmosphereLength = length(uvCoords-float3(0,0,0));
+                            cloudSample = atmosphereLength < (1.0) && atmosphereLength > (_Radius/r) && length(terrainPosition-_WorldSpaceCameraPos)> length(intersectionLine-_WorldSpaceCameraPos) ? tex3D(_CloudTex,uvCoords+_CloudTex_ST) : fixed4(0,0,0,0);
+                            
+                            cloudColor = cloudSample;
+                            returnCond = (cloudSample.r + cloudSample.g > _Threshold) ? true : returnCond;
+
+                            //changes cloud opacity based on the height its at
+                            float densityModifier = min(length(intersectionLine-_PlanetPos)-_Radius,r-length(intersectionLine-_PlanetPos))*_CloudFalloff;
+                            //compute gradient, then calculate normal?
+                            //cloudNormal = (cloudSample.r + cloudSample.g > _Threshold) ? dot(normalize(intersectionLine-_SunPos),normalize(intersectionLine-_PlanetPos)) : cloudNormal;
+                            density += (cloudSample.r + cloudSample.g > _Threshold) ? (cloudSample.r + cloudSample.g)*densityModifier : 0;
+                        }
+
+                        cloudColor /= iterator;
+                        density /= iterator* (1.0/_CloudDensity);
+                        
+                        if(returnCond){
+                                //col = fixed4(1,1,1,1);
+                                col = lerp(fixed4(1,1,1,1),col,exp(-density));//fixed4(1,1,1,1);
+                        }
+                        
+                        //cloudColor /= 100.0;
+                        //Change to cloud if meets condition
+                        //if(end_point != terrainworldPos)
+                        //if(length(intersectionPoint-start_point) > length(terrainPosition-start_point)) return col;
+                        //col = cloudColor.r > _Threshold || cloudColor.g > _ThresholdG ? lerp(col,fixed4(1,1,1,1),cloudColor.b) : col;
+                        
                     }
                     
                 }else{
