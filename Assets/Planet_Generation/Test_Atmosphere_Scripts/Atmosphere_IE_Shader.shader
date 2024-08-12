@@ -186,7 +186,7 @@ Shader "Custom/Atmosphere_IE"
                         float3 end_point;
 
                         //throw out if outside the circle and terrain is in front
-                        if(terrainLevel < t3 && t1>0 && t2>0) return noColor;
+                        if(length(terrainPosition-_WorldSpaceCameraPos) < t3 && t1>0 && t2>0) return noColor;
 
                         start_point = t3 == t1 ? intersectionPoint : _WorldSpaceCameraPos;
 

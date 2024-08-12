@@ -67,7 +67,8 @@ Material:
     m_Floats:
     - _AtmosphereHeight: 0.33
     - _BumpScale: 1
-    - _CloudDensity: 3.95
+    - _CloudDensity: 62.36
+    - _CloudFalloff: 0.66
     - _Cutoff: 0.5
     - _Density: 0.68
     - _DetailNormalMapScale: 1
