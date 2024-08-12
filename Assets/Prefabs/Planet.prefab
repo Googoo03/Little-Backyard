@@ -63,6 +63,7 @@ MonoBehaviour:
   ringColor: {r: 0, g: 0, b: 0, a: 0}
   ringRadius: 6
   ringWidth: 0
+  atmoShader: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
   oceanFloor: 0.1
   oceanMultiplier: 0.01
   landMultiplier: 0.07

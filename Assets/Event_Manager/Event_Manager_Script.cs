@@ -4,7 +4,13 @@ using UnityEngine;
 
 public class Event_Manager_Script : MonoBehaviour
 {
-    // Start is called before the first frame update
+    //THIS OBJECT IS THE MIDDLE MAN FOR ALL INTERACTIONS BETWEEN THE PLAYER AND THE ENVIRONMENT
+
+    //SOLAR SYSTEM EVENTS
+    List<GameObject> planets = new List<GameObject> { };
+    [SerializeField] private bool updatePlanetList;
+
+    //VEHICLE EVENTS
     [SerializeField] private bool exitShip;
     [SerializeField] private bool enterShip;
 
@@ -36,6 +42,12 @@ public class Event_Manager_Script : MonoBehaviour
         if(exitShip) exitShipProtocol();
         if(enterShip) enterShipProtocol();
         if(lerpCameraPosition) lerpCameraToFromShip();
+        if (updatePlanetList) updateShipPlanetList();
+    }
+
+    private void updateShipPlanetList() {
+        ship.GetComponent<ShipControls>().planets = planets;
+        updatePlanetList = false;
     }
 
     //SHOULD THERE BE STATE MACHINES FOR EACH OBJECT?
@@ -96,6 +108,11 @@ public class Event_Manager_Script : MonoBehaviour
     private void disableObject(GameObject obj) { //IM ASSUMING THAT THIS IS FINE WITH NO REFERENCE
         obj.SetActive(false);
         obj.transform.position = Vector3.zero;
+    }
+
+    public void set_planetList(bool update, ref List<GameObject> list) {
+        planets = list;
+        updatePlanetList = update;
     }
 
     public void set_exitShip(bool exit) {exitShip = exit;}

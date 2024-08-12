@@ -81,6 +81,8 @@ public class Sphere : MonoBehaviour
     [SerializeField] private float ringRadius;
     [SerializeField] private float ringWidth;
 
+    [SerializeField] private Material atmoShader;
+
     public float oceanFloor;
     public float oceanMultiplier;
 
@@ -217,6 +219,13 @@ public class Sphere : MonoBehaviour
         ringShader.SetFloat("_Radius", ringRadius);
         ringShader.SetFloat("_Width", ringWidth);
         ringShader.color = ringColor;
+        return;
+    }
+
+    public void SetAtmoShader() {
+        atmoShader.SetVector("_PlanetPos", transform.position);
+        atmoShader.SetFloat("_Radius", radius+0.2f);
+        //no setting atmosphere height as of yet
         return;
     }
 

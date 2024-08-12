@@ -80,7 +80,7 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Radius: 5.39
+    - _Radius: 5.2
     - _Samples: 5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -93,6 +93,6 @@ Material:
     - _Color: {r: 0.06274507, g: 0.855165, b: 0.8784314, a: 1}
     - _Color2: {r: 1, g: 0.61535674, b: 0.19433957, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _PlanetPos: {r: -15.71112, g: 300, b: 21.79764, a: 0}
+    - _PlanetPos: {r: -15.71112, g: 300, b: 21.797638, a: 0}
     - _SunPos: {r: 5, g: 300, b: 5, a: 0}
   m_BuildTextureStacks: []

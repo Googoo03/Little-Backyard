@@ -273,8 +273,7 @@ Transform:
   m_LocalPosition: {x: 5, y: 300, z: 5}
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 1
-  m_Children:
-  - {fileID: 118629830}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &160406702
@@ -290,6 +289,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   planet: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
+  Event_Manager: {fileID: 1260474177}
   seed: 3496877
   density: 1
   planetCount: 3
@@ -528,7 +528,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 160406701}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1081970301040300, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_TagString
@@ -540,27 +540,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4538936456122420, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_LocalScale.x
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4538936456122420, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_LocalScale.y
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4538936456122420, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_LocalScale.z
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4538936456122420, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.95655763
+      value: 7.869673
       objectReference: {fileID: 0}
     - target: {fileID: 4538936456122420, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.012939453
+      value: 300.03882
       objectReference: {fileID: 0}
     - target: {fileID: 4538936456122420, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.011783759
+      value: 4.9646487
       objectReference: {fileID: 0}
     - target: {fileID: 4538936456122420, guid: e7624d12d32d3426ea30613788c3244f, type: 3}
       propertyPath: m_LocalRotation.w
@@ -802,6 +802,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6f242a6aed95b14fbf0422346b486f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  updatePlanetList: 0
   exitShip: 0
   enterShip: 0
   player: {fileID: 249311380}
@@ -1096,6 +1097,7 @@ GameObject:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 903820971}
   - {fileID: 160406701}
   - {fileID: 2133464793}
   - {fileID: 2007177904}

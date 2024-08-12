@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 public class SolarSystemGeneration : MonoBehaviour {
 
     [SerializeField]private GameObject planet;
+    [SerializeField] private GameObject Event_Manager;
 
 
     [SerializeField]private float seed;
@@ -35,8 +36,8 @@ public class SolarSystemGeneration : MonoBehaviour {
         GenerateSolarSystem();
         //GenerateQuadTree();
 
-        transform.GetChild(0).GetComponent<ShipControls>().planetQuadTree = quadTree; //this needs to change
-        transform.GetChild(0).GetComponent<ShipControls>().planets = planets;
+        //transform.GetChild(0).GetComponent<ShipControls>().planetQuadTree = quadTree; //this needs to change
+        Event_Manager.GetComponent<Event_Manager_Script>().set_planetList(true, ref planets);
         Sun_Halo.SetInt("_PlanetCount", planetCount);
         Sun_Halo.SetFloat("_OrbitRad", RegionRadius / planetCount);
     }

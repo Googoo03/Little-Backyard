@@ -159,8 +159,8 @@ public class ShipControls : Controllable_Entity
         smoothKey(ref yawInput, mouseSensitivityX, yawChange);
 
 
-        yaw = Quaternion.AngleAxis(yawChange, transform.up);
-        pitch = Quaternion.AngleAxis(-pitchChange, transform.right);
+        yaw = Quaternion.AngleAxis(yawInput, transform.up);
+        pitch = Quaternion.AngleAxis(-pitchInput, transform.right);
         roll = Quaternion.AngleAxis(-rollInput, transform.forward);
 
         //set offset rotation of ship_model
@@ -297,6 +297,9 @@ public class ShipControls : Controllable_Entity
         float minDistance = float.MaxValue;
         float dist;
         GameObject closestPlanet = null;
+
+        if (planets.Count == 0) return; //dont do anything if the list is empty
+
         for (int i = 0;i < planets.Count;i++)
         {
             dist = Vector3.Distance(transform.position, planets[i].transform.position);
@@ -312,6 +315,7 @@ public class ShipControls : Controllable_Entity
         pullUpDistance = nearbyPlanet.GetComponent<Sphere>().getRadius() * 1.1f;
         nearbyPlanet.transform.GetChild(1).gameObject.SetActive(false);
         nearbyPlanet.GetComponent<Sphere>().SetRingShader();
+        nearbyPlanet.GetComponent<Sphere>().SetAtmoShader();
     }
 
     private void traverseQuadTree(SolarSystemQuadTree node) {
