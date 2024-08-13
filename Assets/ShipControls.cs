@@ -10,7 +10,7 @@ public class ShipControls : Controllable_Entity
     public float mouseSensitivityY;
     public float rollSensitivity;
 
-    [SerializeField] public GameObject nearbyPlanet;
+    //[SerializeField] public GameObject nearbyPlanet;
     [SerializeField] private GameObject shipModel;
     private Vector3 shipOriginalRotation;
 
@@ -210,12 +210,12 @@ public class ShipControls : Controllable_Entity
         }
     }
 
-    private void LODCheckDistance() { //measures the distance between the player and nearbyPlanet. If close enough
+    /*private void LODCheckDistance() { //measures the distance between the player and nearbyPlanet. If close enough
                                       //make new LOD      
             if (distanceToNearestPlanet < initialDistanceThreshold) {
                 nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(transform.position);
             }
-    }
+    }*/
 
     private float sigmoidFunction(float x) {
         return (1 / (1 + Mathf.Pow(2.78f, -5 * x))) - 0.5f;
@@ -293,6 +293,8 @@ public class ShipControls : Controllable_Entity
         Quaternion combinedRotation = Quaternion.Slerp(transform.rotation, lastOrientation, Time.deltaTime * rotationSpeed); //makes it smooth
         transform.rotation = combinedRotation;
     }
+
+    //SHOULD THIS BE INHERITED???
     private void findNearestPlanet() {
         float minDistance = float.MaxValue;
         float dist;

@@ -13,7 +13,7 @@ public class Player_Movement : Controllable_Entity
     [SerializeField] private float mouseSensitivityX;
     [SerializeField] private float mouseSensitivityY;
 
-    [SerializeField] private GameObject nearbyPlanet;
+    //[SerializeField] private GameObject nearbyPlanet;
 
     [SerializeField] private Rigidbody _rigidbody;
 
@@ -36,13 +36,14 @@ public class Player_Movement : Controllable_Entity
     void Update()
     {
         if (!canMove) return;
-        MovementProtocol();
-        InteractionCheck();
-        InteractInput();
-        ApplyGravity(false);
+        MovementProtocol(); //move
+        InteractionCheck(); //interact raycast
+        InteractInput(); //check if interact button pressed
+        ApplyGravity(false); //apply gravity to nearest planet
+        LODCheckDistance(); //update the planet LOD if needed
     }
 
-    public void setNearbyPlanet(GameObject planet) {nearbyPlanet = planet;}
+    //public void setNearbyPlanet(GameObject planet) {nearbyPlanet = planet;}
 
     private void InteractInput() {
         if (Input.GetKeyDown(KeyCode.E) && canMove) objectInteraction();

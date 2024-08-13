@@ -11,6 +11,7 @@ public abstract class Controllable_Entity : MonoBehaviour
     [SerializeField] protected Camera _camera;
     [SerializeField] protected Vector3 camera_offset;
     [SerializeField] protected float reach; //for interaction
+    [SerializeField] protected GameObject nearbyPlanet;
 
     //EVENT MANAGER
     [SerializeField] protected Event_Manager_Script event_manager;
@@ -28,4 +29,23 @@ public abstract class Controllable_Entity : MonoBehaviour
     public void setCamera(Camera cam) { _camera = cam; }
 
     public Vector3 getOffset() { return camera_offset; }
+
+    public GameObject getNearbyPlanet() { return nearbyPlanet; }
+
+    protected void LODCheckDistance()
+    { //measures the distance between the player and nearbyPlanet. If close enough
+      //make new LOD
+      //
+        if (!canMove || !nearbyPlanet) return; //if you are not in control, don't bother checking
+        float distanceToNearestPlanet = Vector3.Distance(transform.position, nearbyPlanet.transform.position);
+        float initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold();
+
+        if (distanceToNearestPlanet < initialDistanceThreshold)
+        {
+            nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(transform.position);
+        }
+    }
+
+
+    public void setNearbyPlanet(GameObject planet) { nearbyPlanet = planet; }
 }

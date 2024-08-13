@@ -29,17 +29,18 @@ public class Skybox_Generator : MonoBehaviour
     }
 
     private void updatePositions() {
+        Vector3 sca = Vector3.one * .01f;
         for (int i = 0; i < star_matrix.Count; ++i) {
             Vector3 lookVec = points[i];
             Quaternion rot = Quaternion.LookRotation(-lookVec);
-            Vector3 sca = Vector3.one * .01f;
-            star_matrix[i] = (Matrix4x4.TRS(points[i]*scaleFactor + transform.position, rot, sca*scaleFactor)); //transform rotation scale
+            
+            star_matrix[i] = Matrix4x4.TRS(points[i]*scaleFactor + transform.position, rot, sca*scaleFactor); //transform rotation scale
         }
     }
 
     private void Update()
     {
-        updatePositions();
-        Graphics.DrawMeshInstanced(mesh_plane, 0, star_mat, star_matrix);
+        //updatePositions();
+        //Graphics.DrawMeshInstanced(mesh_plane, 0, star_mat, star_matrix);
     }
 }

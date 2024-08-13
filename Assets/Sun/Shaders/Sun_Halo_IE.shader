@@ -3,7 +3,7 @@ Shader "Custom/Sun_Halo_IE"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _NoiseTex ("Texture", 2D) = "white" {}
+        _NoiseTex ("Texture", 3D) = "white" {}
         _HaloColor ("Halo Color", Color) = (1,1,1,1)
         _HaloRadius ("Radius", float) = 1
         _Density ("Density", float) = 1
@@ -12,6 +12,8 @@ Shader "Custom/Sun_Halo_IE"
         _OrbitRad ("Orbit Radius", float) = 1
         _SolarSystemNormal ("Solar System Normal", Vector) = (1,1,1,1)
         _PlanetCount ("Planet Count", int) = 1
+
+        _SunRayThreshold ("Sun Ray Threshold", float) = 1
     }
     SubShader
     {
@@ -71,11 +73,13 @@ Shader "Custom/Sun_Halo_IE"
 
 
             sampler2D _MainTex;
-            sampler2D _NoiseTex;
+            sampler3D _NoiseTex;
+            float4 _NoiseTex_ST;
             float _HaloRadius;
             float _Density;
             float3 _SunPos;
             float4 _HaloColor;
+            float _SunRayThreshold;
 
             //HUD RING PARAMETERS
             float _OrbitRad;
@@ -109,7 +113,20 @@ Shader "Custom/Sun_Halo_IE"
                 float terrainLevel = LinearEyeDepth(depthTextureSample);
                 float3 intersectionPoint;
 
+                //CALCULATES WORLD POSITION AS OPPOSED TO DEPTH
+                const float3 ray_direction = normalize(viewDirection);
+
+                float3 world_ray = normalize(UnityObjectToWorldDir(viewDirection));
+
+                float3 cam_forward_world = mul((float3x3)unity_CameraToWorld, float3(0,0,1));
+                float ray_depth_world = dot(cam_forward_world, ray_direction);
+
+                float3 terrainPosition = (ray_direction / ray_depth_world) * terrainLevel +  _WorldSpaceCameraPos;
+                ///////////////////////////////////////////////
+
                 fixed4 col;
+
+                _NoiseTex_ST.xy += float2(_Time.x,_Time.x);
 
                 //HUD RINGS AROUND SOLAR SYSTEM
                 _SolarSystemNormal = normalize(_SolarSystemNormal);
@@ -151,11 +168,15 @@ Shader "Custom/Sun_Halo_IE"
                     }
                     start_point = t3==t1 ? intersectionPoint : _WorldSpaceCameraPos;
 
-                    end_point = t2 > (terrainLevel) ? _WorldSpaceCameraPos+(terrainLevel*viewDirection) : _WorldSpaceCameraPos+(t2*viewDirection);
+                    end_point = t2 > (length(terrainPosition-_WorldSpaceCameraPos)) ? terrainPosition : _WorldSpaceCameraPos+(t2*viewDirection);
 
                     atmosphere_depth = length(end_point-start_point);
                     atmosphereAlpha *= lerp(0,1,atmosphere_depth/_HaloRadius);
-                    haloColor *= atmosphere_depth;
+
+                    float3 uvCoords = normalize(intersectionPoint-_SunPos);
+                    float sunRay = tex3D(_NoiseTex,uvCoords + _NoiseTex_ST).g;
+
+                    haloColor *= sunRay * atmosphere_depth;
 
                     col = lerp( fixed4(haloColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density ) );
                     

@@ -144,6 +144,7 @@ Shader "Custom/Atmosphere_IE"
                 
                
                 float atmosphereAlpha = 1;
+                
 
                 
 
@@ -160,6 +161,7 @@ Shader "Custom/Atmosphere_IE"
                 
                 float dotProduct = 0;
                 float atmosphere_depth = 0;
+                float distanceAlpha = 1.0/ (length(_WorldSpaceCameraPos-_PlanetPos) / r);
 
                 fixed4 col;
 
@@ -214,7 +216,7 @@ Shader "Custom/Atmosphere_IE"
                         //atmosphereAlpha /= cloudColor.b;
 
 
-                        col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density*atmosphereAlpha) );
+                        col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density*atmosphereAlpha*distanceAlpha) );
 
                         //Calculate cloudcolor
                         _CloudTex_ST.x += _Time.x / 10.0;
@@ -254,7 +256,7 @@ Shader "Custom/Atmosphere_IE"
                         
                         if(returnCond){
                                 //col = fixed4(1,1,1,1);
-                                col = lerp(fixed4(1,1,1,1),col,exp(-density));//fixed4(1,1,1,1);
+                                col = lerp(fixed4(1,1,1,1)*max(0.5,atmosphereAlpha),col,exp(-density*distanceAlpha));//fixed4(1,1,1,1);
                         }
                         
                         //cloudColor /= 100.0;

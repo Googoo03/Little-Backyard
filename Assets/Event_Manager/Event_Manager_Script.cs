@@ -57,19 +57,14 @@ public class Event_Manager_Script : MonoBehaviour
         player.transform.rotation = ship.transform.rotation;
         lerpCameraPosition = true;
         //activate player
-        player.GetComponent<Player_Movement>().setNearbyPlanet(ship.GetComponent<ShipControls>().nearbyPlanet);
+        player.GetComponent<Player_Movement>().setNearbyPlanet(ship.GetComponent<ShipControls>().getNearbyPlanet());
         player.GetComponent<Controllable_Entity>().setCanMove(true);
         player.SetActive(true);
     }
 
     private void enterShipProtocol()
     {
-        lerpCameraPosition = true;
-        
-        //playerCamera.transform.parent = playerInteract.transform;
-
-        //player.GetComponent<Controllable_Entity>().setCanMove(false);
-        
+        lerpCameraPosition = true;     
     }
 
     private void lerpCameraToFromShip() {
