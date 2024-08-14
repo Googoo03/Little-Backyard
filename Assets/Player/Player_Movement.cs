@@ -110,8 +110,13 @@ public class Player_Movement : Controllable_Entity
         _camera.transform.localEulerAngles = targetEuler;
 
         /////Moving forward
-        Vector3 forwardVec = Vector3.Cross(_camera.transform.right, transform.up);
+        Vector3 forwardVec = Vector3.Cross(_camera.transform.right,transform.up);
+        forwardVec = forwardVec.normalized;
         ///////////////////////
+        ///
+        Debug.DrawLine(transform.position, transform.position+_camera.transform.right, Color.cyan);
+        Debug.DrawLine(transform.position, transform.position+transform.up, Color.white);
+        Debug.DrawLine(transform.position, transform.position + forwardVec, Color.red);
 
         transform.position += forwardVec * (forward * speed) * Time.deltaTime;
 
@@ -122,7 +127,10 @@ public class Player_Movement : Controllable_Entity
 
         Vector3 toPlanet = (nearbyPlanet.transform.position - transform.position).normalized;
         toPlanet = negative ? -toPlanet : toPlanet;
-        transform.up = -toPlanet;
+        //transform.up = Vector3.Slerp(transform.up, -toPlanet, Time.deltaTime);
+
+        Quaternion targetRotation = Quaternion.FromToRotation(transform.up, -toPlanet) * transform.rotation;
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime);
 
         if (_rigidbody != null)
         {

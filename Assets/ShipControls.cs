@@ -51,7 +51,7 @@ public class ShipControls : Controllable_Entity
     public float angle;
     private Vector3 horizonDirection = new Vector3(1, 1, 1);
 
-    bool inAtmosphere; //would it be smart to initialize to false?
+    [SerializeField] private Vector2 FOV; //sets the camera FOV based on sprint
 
 
 
@@ -145,9 +145,15 @@ public class ShipControls : Controllable_Entity
     protected override void MovementProtocol() {
         
         targetRotation = transform.rotation;
-        
+
         //change ship speed when in atmosphere. Slows down closer it gets
-        speed = (Input.GetKey(KeyCode.LeftShift)) ? 1f : 0.25f;
+        bool sprint = (Input.GetKey(KeyCode.LeftShift));
+        speed = sprint ? 1f : 0.25f;
+
+        float _currentFOV = _camera.GetComponent<Camera>().fieldOfView;
+        float _newFOV = sprint ? FOV[1] : FOV[0];
+        _camera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(_currentFOV, _newFOV, Time.deltaTime);
+
         if (isInAtmosphere()) SpeedCalibration();
 
         setKeyInputs();

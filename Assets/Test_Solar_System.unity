@@ -623,6 +623,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
+      propertyPath: FOV.x
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      propertyPath: FOV.y
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
       propertyPath: shipModel
       value: 
       objectReference: {fileID: 6930203624713006138}
@@ -710,6 +720,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_ClearFlags
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 9044583953940408933, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      propertyPath: field of view
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 9044583953940408933, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}

@@ -34,6 +34,7 @@ public class Event_Manager_Script : MonoBehaviour
 
         //TEMPORARY, ENABLE SHIP AT START
         ship.GetComponent<Controllable_Entity>().setCanMove(true);
+        ship.GetComponent<Controllable_Entity>().setCamera(playerCamera);
     }
 
     // Update is called once per frame

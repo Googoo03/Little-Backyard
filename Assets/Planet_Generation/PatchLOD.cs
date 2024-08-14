@@ -219,11 +219,12 @@ public class PatchLOD {
         {
             //need to take into account that all patches have the same location, but are offset differently
             distance = Vector3.Distance(node.position, playerPos);
+            float dotProduct = Vector3.Dot((node.position - node.patchConfig.planetObject.transform.position).normalized, (playerPos- node.patchConfig.planetObject.transform.position).normalized);
 
-            if (distance < (node.patchConfig.distanceThreshold) &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD)
+            if (distance < (node.patchConfig.distanceThreshold) &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD && dotProduct > 0)
             {
                 node.nextLOD();
-            }else if (node.parent != null && distance > (2*node.parent.patchConfig.distanceThreshold)) //if distance between player and patch is too large
+            }else if (node.parent != null && distance > (2*node.parent.patchConfig.distanceThreshold) ) //if distance between player and patch is too large
                                                                         //then undo the LOD
             {
                 node.prevLOD(node.parent);

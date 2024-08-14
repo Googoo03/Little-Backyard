@@ -40,9 +40,11 @@ public abstract class Controllable_Entity : MonoBehaviour
         float distanceToNearestPlanet = Vector3.Distance(transform.position, nearbyPlanet.transform.position);
         float initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold();
 
+        nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(transform.position);
+
         if (distanceToNearestPlanet < initialDistanceThreshold)
         {
-            nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(transform.position);
+            
         }
     }
 
