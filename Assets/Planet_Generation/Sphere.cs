@@ -198,11 +198,11 @@ public class Sphere : MonoBehaviour
         ringColor = new Color((seed >> 3) % 256, (seed >> 6) % 256,(seed >> 9) % 256, (seed >> 12) % 256);
         ringColor /= 256.0f;
         ringRadius = (radius+1) + (1 * (seed % 10));
-        ringWidth = ringRadius + (1 * (seed % 4));
+        ringWidth = (ringRadius+1) + (1 * (seed % 4));
         GameObject rings = transform.GetChild(1).gameObject;
         rings.SetActive(true);
         rings.transform.up = ringNormal;
-        rings.transform.localScale = Vector3.one*ringRadius;
+        rings.transform.localScale = Vector3.one*ringWidth;
 
         //NEEDS TO BE CHANGED WITH SOMETHING MORE ELEGANT LATER
         rings.transform.GetChild(0).GetComponent<Renderer>().material.color = ringColor;
