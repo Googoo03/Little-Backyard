@@ -22,6 +22,10 @@ public class Event_Manager_Script : MonoBehaviour
     [SerializeField] private GameObject ship;
     [SerializeField] private Camera playerCamera; //used for both the player and vehicles
 
+    //TEMPORARY, DO NOT KEEP
+    [SerializeField] private GameObject sun;
+    ///
+
     void Start()
     {
         //INITIALIZE PARAMETERS
@@ -35,6 +39,8 @@ public class Event_Manager_Script : MonoBehaviour
         //TEMPORARY, ENABLE SHIP AT START
         ship.GetComponent<Controllable_Entity>().setCanMove(true);
         ship.GetComponent<Controllable_Entity>().setCamera(playerCamera);
+
+        sun.GetComponent<SolarSystemGeneration>().Initialize();
     }
 
     // Update is called once per frame
@@ -65,7 +71,8 @@ public class Event_Manager_Script : MonoBehaviour
 
     private void enterShipProtocol()
     {
-        lerpCameraPosition = true;     
+        lerpCameraPosition = true;
+        player.GetComponent<Controllable_Entity>().setCanMove(false);
     }
 
     private void lerpCameraToFromShip() {

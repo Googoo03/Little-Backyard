@@ -7,6 +7,7 @@ Shader "Custom/Atmosphere_IE"
         _MainTex ("Texture", 2D) = "white" {}
         _CloudTex ("Cloud Texture", 3D) = "white"{}
 
+        _CloudColor ("Cloud Color", Color) = (1,1,1,1)
         _Threshold ("Cloud Threshold", float) = 1
         _ThresholdG ("Cloud Threshold G", float) = 1
         _CloudDensity ("Cloud Density Coeff",float) = 1
@@ -97,6 +98,7 @@ Shader "Custom/Atmosphere_IE"
             float4 _CloudTex_ST;
             float _CloudDensity;
             float _CloudFalloff;
+            float4 _CloudColor;
 
             RWStructuredBuffer<float3> planetPositions;
             float numPlanets;
@@ -221,7 +223,7 @@ Shader "Custom/Atmosphere_IE"
                         //Calculate cloudcolor
                         _CloudTex_ST.x += _Time.x / 10.0;
 
-                        fixed4 cloudColor = float4(0,0,0,0);
+                        
                         float tCloud = 5.0;
                         float3 intersectionLine;
                         fixed4 cloudSample;
@@ -241,7 +243,7 @@ Shader "Custom/Atmosphere_IE"
                             float atmosphereLength = length(uvCoords-float3(0,0,0));
                             cloudSample = atmosphereLength < (1.0) && atmosphereLength > (_Radius/r) && length(terrainPosition-_WorldSpaceCameraPos)> length(intersectionLine-_WorldSpaceCameraPos) ? tex3D(_CloudTex,uvCoords+_CloudTex_ST) : fixed4(0,0,0,0);
                             
-                            cloudColor = cloudSample;
+                           
                             returnCond = (cloudSample.r + cloudSample.g > _Threshold) ? true : returnCond;
 
                             //changes cloud opacity based on the height its at
@@ -251,12 +253,12 @@ Shader "Custom/Atmosphere_IE"
                             density += (cloudSample.r + cloudSample.g > _Threshold) ? (cloudSample.r + cloudSample.g)*densityModifier : 0;
                         }
 
-                        cloudColor /= iterator;
+                        
                         density /= iterator* (1.0/_CloudDensity);
                         
                         if(returnCond){
                                 //col = fixed4(1,1,1,1);
-                                col = lerp(fixed4(1,1,1,1)*max(0.5,atmosphereAlpha),col,exp(-density*distanceAlpha));//fixed4(1,1,1,1);
+                                col = lerp(_CloudColor*max(0.2,atmosphereAlpha),col,exp(-density*distanceAlpha));//fixed4(1,1,1,1);
                         }
                         
                         //cloudColor /= 100.0;

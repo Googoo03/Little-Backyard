@@ -29,15 +29,16 @@ public class SolarSystemGeneration : MonoBehaviour {
     [SerializeField] private Material Sun_Halo;
 
     // Use this for initialization
-    void Start () {
-        Vector2 quadTreeBounds = new Vector2(transform.position.x - RegionRadius-10, transform.position.z - RegionHeight-10);
-        List<GameObject> empty = new List<GameObject>();
-        quadTree = new SolarSystemQuadTree(quadTreeBounds, RegionRadius * 2, empty, null);
-        GenerateSolarSystem();
-        //GenerateQuadTree();
+    public void Initialize () {
 
-        //transform.GetChild(0).GetComponent<ShipControls>().planetQuadTree = quadTree; //this needs to change
+        //Generates solar system
+        GenerateSolarSystem();
+
+
+        //Sets the event manager's planet list to said planets
         Event_Manager.GetComponent<Event_Manager_Script>().set_planetList(true, ref planets);
+
+        //Sets necessary shader variables for ring HUD
         Sun_Halo.SetInt("_PlanetCount", planetCount);
         Sun_Halo.SetFloat("_OrbitRad", RegionRadius / planetCount);
     }
@@ -61,6 +62,7 @@ public class SolarSystemGeneration : MonoBehaviour {
 
 
             if (hashCode % density == 0){
+                //ROTATE RANDOMLY ALONG CIRCULAR PATH
                 float cosineVal = Mathf.Cos( (hashCode % 360)); //the 500 is so its within 2pi range 
                 float sineVal = Mathf.Sin( (hashCode % 360));
                 float fracX = ( (x+1) / (float)planetCount) * RegionRadius; //each planet is a set fraction distance away from the sun.
@@ -69,11 +71,7 @@ public class SolarSystemGeneration : MonoBehaviour {
                 GameObject newPlanet = Instantiate(planet, position, Quaternion.identity);
                 planets.Add(newPlanet);
 
-                //ROTATE RANDOMLY ALONG CIRCULAR PATH
-
-                //add planets to root of quadtree
-                quadTree.addPlanet(newPlanet);
-                }
+            }
         }  
     }
 
