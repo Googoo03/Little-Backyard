@@ -106,6 +106,9 @@ public class GalacticManager : MonoBehaviour
                 Vector3 wrapDirection = Vector3.zero;
                 wrapDirection[Mathf.Abs(direction) - 1] = bound;
                 boxes[i].transform.position += wrapDirection;
+
+                //This lets the box generate new star positions when they wrap
+                boxes[i].GetComponent<GalacticBox>().setGenerate(true);
             }
         }
     }
