@@ -27,6 +27,10 @@ public class SolarSystemGeneration : MonoBehaviour {
     public SolarSystemQuadTree quadTree; //doesnt show up for some reason, but is still there
 
     [SerializeField] private Material Sun_Halo;
+    [SerializeField] private Color starColor;
+
+    //TESTING ONLY
+    [SerializeField] bool initialize = false;
 
     // Use this for initialization
     public void Initialize () {
@@ -41,6 +45,37 @@ public class SolarSystemGeneration : MonoBehaviour {
         //Sets necessary shader variables for ring HUD
         Sun_Halo.SetInt("_PlanetCount", planetCount);
         Sun_Halo.SetFloat("_OrbitRad", RegionRadius / planetCount);
+        Sun_Halo.SetColor("_HaloColor", starColor);
+    }
+
+
+
+    public void Update()
+    {
+        if (initialize)
+        {
+            Initialize();
+            initialize = false;
+        }
+    }
+
+    public void Start()
+    {
+
+        //Assign the star a color
+        var hashValue = new Hash128();
+        hashValue.Append(seed);
+        hashValue.Append(transform.position.x);
+        hashValue.Append(transform.position.y);
+        hashValue.Append(transform.position.z);
+        int hashCode = hashValue.GetHashCode();
+
+        
+        starColor = new Color((hashCode >> 3) % 256, (hashCode>> 6) % 256, (hashCode>> 9) % 256, (hashCode>> 12) % 256);
+        starColor/= 256.0f;
+
+        transform.GetComponent<Renderer>().material.SetColor("_ColorB",starColor);
+        ////////////////////////
     }
 
     // Update is called once per frame

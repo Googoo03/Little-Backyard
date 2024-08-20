@@ -48,6 +48,30 @@ namespace Poisson
             return true;
         }
 
+        //This assumes that the hashgrid is 3 dimensional
+        private bool meetsDistanceThreshold3D(int radius, ref bool[] hashgrid, int startIndex, int maxX, int maxY)
+        {
+            int halfradius = radius / 2;
+            for (int i = -halfradius; i < halfradius; ++i)
+            {
+                for (int j = -halfradius; j < halfradius; ++j)
+                {
+                    for (int k = -halfradius; k < halfradius; ++k)
+                    {
+                        //do bounds check for x and y and z, if outside, skip
+
+                        ////////////////////////
+                        int index = startIndex + (maxX*maxY*k)+(maxX * j) + i;
+                        if (index > (maxX * maxY * maxX) - 1 || index < 0) continue; //skip anything that is out of bounds
+
+                        if (hashgrid[index]) return false; //if you find anything in range, throw out
+
+                    }
+                }
+            }
+            return true;
+        }
+
         public void generatePoissonDisc(ref List<Vector3> points, int k, int num, int maxX, int maxY, int radius) { // doesn't take in a reference vector field
 
             //start with empty list, grow as needed
@@ -191,16 +215,13 @@ namespace Poisson
             int max_theta = resolution;
             int max_phi = resolution;
             //start with empty list, grow as needed
-            bool[] hashgrid = new bool[max_theta*max_phi];
+            bool[] hashgrid = new bool[resolution*resolution*resolution];
 
 
 
             int index = 0; //current index of reference point
             int bool_index; //index of new point in bool list
             int points_placed = 0;
-
-            float rand_theta;
-            float rand_phi;
 
             float theta;
             float phi;
@@ -231,8 +252,16 @@ namespace Poisson
             y = Mathf.Sin(phi) * Mathf.Sin(theta);
             z = Mathf.Cos(phi);
             ///////////////////////////////////
+            ///
 
-            bool_index = ((int)Mathf.Max((phi / (_2PI / resolution)) - 1, 0) * resolution) + (int)(theta / (_2PI / resolution));
+            //Find neighborhood of points to determine distance
+
+            //since x,y,z = -1 to 1 we need to shift so that x,y,z are in range 0 to resolution-1
+            int boolX = (int)((x + 1) * ((resolution - 1) * 0.5f));
+            int boolY = (int)((y + 1) * ((resolution - 1) * 0.5f));
+            int boolZ = (int)((z + 1) * ((resolution - 1) * 0.5f));
+            //x + y*WIDTH + Z*WIDTH*DEPTH
+            bool_index = boolX + (boolY*resolution) + (boolZ*resolution*resolution);
             points.Add(new Vector3(x,y,z));
             hashgrid[bool_index] = true;
 
@@ -243,8 +272,8 @@ namespace Poisson
                 for (int i = 0; i < k; i++)
                 {
                     //generate new random number from 0 to 2pi
-                    rand_theta = ((int)PRNG() / resolution);
-                    rand_phi = ((int)PRNG() / resolution);
+                    //rand_theta = ((int)PRNG() / resolution);
+                    //rand_phi = ((int)PRNG() / resolution);
 
                     //calculate new theta, phi position
                     theta = ((float)PRNG() / 256.0f) * _2PI; //0 - 2pi float
@@ -257,20 +286,28 @@ namespace Poisson
                     y = Mathf.Sin(phi) * Mathf.Sin(theta);
                     z = Mathf.Cos(phi);
 
+                    boolX = (int)((x + 1) * ((resolution - 1) * 0.5f));
+                    boolY = (int)((y + 1) * ((resolution - 1) * 0.5f));
+                    boolZ = (int)((z + 1) * ((resolution - 1) * 0.5f));
+
                     //check if its valid, if so, add it, if not, skip it
-                    bool_index = ((int)Mathf.Max(( (phi-1) / (_2PI / resolution)), 0) * resolution) + (int)(theta / (_2PI / resolution));
+                    bool_index = boolX + (boolY * resolution) + (boolZ * resolution * resolution);
 
                     ///ADD DISTANCE THRESHOLD LATER
-                    if (!found)
+                    ///
+                    if (meetsDistanceThreshold3D(radius, ref hashgrid, bool_index, max_phi, max_theta))
                     {
-                        next_theta = theta; next_phi = phi;
-                        found = true;
-                    }
-                    hashgrid[bool_index] = true;
+                        if (!found)
+                        {
+                            next_theta = theta; next_phi = phi;
+                            found = true;
+                        }
+                        hashgrid[bool_index] = true;
 
-                    Vector3 newpoint = new Vector3(x, y, z);
-                    points.Add(newpoint);
-                    points_placed++;
+                        Vector3 newpoint = new Vector3(x, y, z);
+                        points.Add(newpoint);
+                        points_placed++;
+                    }
 
                     //find out what hash grid it belongs to. If it's already true, then skip, otherwise set it true and add it to points
 

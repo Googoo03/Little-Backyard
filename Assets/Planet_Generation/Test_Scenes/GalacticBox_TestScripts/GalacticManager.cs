@@ -10,7 +10,7 @@ public class GalacticManager : MonoBehaviour
     [SerializeField] private GameObject galacticBox;
     [SerializeField] private float boxScale;
 
-    [SerializeField] private Camera _playerCamera;
+    [SerializeField] private GameObject _playerCamera;
     //[SerializeField] private int shiftDirection;
     //[SerializeField] private Vector3 _galacticOrigin;
     [SerializeField] private List<GameObject> boxes;
@@ -52,7 +52,8 @@ public class GalacticManager : MonoBehaviour
                     box.name = "Galactic_Box (" + i + "_" + j + "_" + k + ")";
                     GalacticBox boxScript = box.GetComponent<GalacticBox>();
                     boxScript.setSize(boxScale);
-                    boxScript.setColor(new Color(i / 3f, j / 3f, k / 3f, 0.5f));
+                    boxScript.setColor(new Color(i, j, k, 0.5f));
+                    boxScript.setGalacticPosition(new Vector3(i, j, k));
 
                     boxes.Add(box);
                 }
@@ -109,6 +110,10 @@ public class GalacticManager : MonoBehaviour
 
                 //This lets the box generate new star positions when they wrap
                 boxes[i].GetComponent<GalacticBox>().setGenerate(true);
+                Vector3 boxGalacticPosition = boxes[i].GetComponent<GalacticBox>().getGalacticPosition();
+                boxGalacticPosition += wrapDirection / (3f * boxScale);
+
+                boxes[i].GetComponent<GalacticBox>().setGalacticPosition(boxGalacticPosition);
             }
         }
     }

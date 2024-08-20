@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Poisson;
+using System;
 
 public class GalacticBox : MonoBehaviour
 {
@@ -11,7 +12,9 @@ public class GalacticBox : MonoBehaviour
     [SerializeField] private GameObject star;
     [SerializeField] private List<GameObject> stars;
     [SerializeField] private List<Vector3> starPositions;
-    private bool _generate;
+    [SerializeField] private Vector3 galacticPosition;
+    [SerializeField] private UInt64 seed;
+    private bool _generate = false;
 
     //for testing purposes
     [SerializeField] private Color _boundingBoxColor;
@@ -28,11 +31,17 @@ public class GalacticBox : MonoBehaviour
 
     public void setGenerate(bool gen) { _generate = gen; }
 
+    public void setGalacticPosition(Vector3 newpos) { galacticPosition = newpos; }
+
+    public Vector3 getGalacticPosition() { return galacticPosition; }
+
     private void Start()
     {
         ////Initializing Star Generation
         starGenerator = new PoissonDisc();
         starPositions = new List<Vector3>();
+        stars = new List<GameObject> ();
+        _generate = false;
 
         generateStarPositions();
 
@@ -51,8 +60,16 @@ public class GalacticBox : MonoBehaviour
     {
         if (_generate) { 
             generateStarPositions();
-            for (int i = 0; i < starPositions.Count; ++i) {
-                stars[i].transform.position = starPositions[i] * (_size / 2f) + transform.position;
+            for (int i = 0; i < stars.Count; ++i) {
+                if (i < starPositions.Count)
+                {
+                    stars[i].SetActive(true);
+                    stars[i].transform.position = starPositions[i] * (_size / 2f) + transform.position;
+                }
+                else {
+                    stars[i].SetActive(false);
+                }
+                
             }
         }
     }
@@ -61,10 +78,17 @@ public class GalacticBox : MonoBehaviour
         _generate = false;
         starPositions.Clear();
         //Reset seed. Needs to take into account the galactic seed, its galactic position, and anything else.
-        starGenerator.setSeedPRNG(Random.Range(0, 10000));
+        var hash = new Hash128();
+        hash.Append(galacticPosition.x);
+        hash.Append(galacticPosition.y);
+        hash.Append(galacticPosition.z);
+
+        seed = (UInt64)hash.GetHashCode();
+
+        starGenerator.setSeedPRNG((int)seed);
 
         //Generate new stars with the new seed
-        starGenerator.generatePoissonDisc3DSphere(ref starPositions, 5, 10, (int)(_size / 2f), 64);
+        starGenerator.generatePoissonDisc3DSphere(ref starPositions, 5, 40, 16, 64);
     }
 
 
