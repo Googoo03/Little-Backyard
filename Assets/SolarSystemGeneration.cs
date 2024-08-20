@@ -3,13 +3,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 
 public class SolarSystemGeneration : MonoBehaviour {
 
     [SerializeField]private GameObject planet;
-    [SerializeField] private GameObject Event_Manager;
+    [SerializeField] private Event_Manager_Script event_manager;
 
 
     [SerializeField]private float seed;
@@ -40,7 +41,8 @@ public class SolarSystemGeneration : MonoBehaviour {
 
 
         //Sets the event manager's planet list to said planets
-        Event_Manager.GetComponent<Event_Manager_Script>().set_planetList(true, ref planets);
+        Assert.IsTrue(event_manager);
+        event_manager.set_planetList(true, ref planets);
 
         //Sets necessary shader variables for ring HUD
         Sun_Halo.SetInt("_PlanetCount", planetCount);
@@ -78,7 +80,7 @@ public class SolarSystemGeneration : MonoBehaviour {
         ////////////////////////
     }
 
-    // Update is called once per frame
+    public void setEventManager(Event_Manager_Script e_m) { event_manager = e_m; }
 
     public void GenerateSolarSystem() {
         //List<GameObject> planets = new List<GameObject> { };

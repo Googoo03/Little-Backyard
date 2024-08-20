@@ -14,6 +14,7 @@ public class GalacticManager : MonoBehaviour
     //[SerializeField] private int shiftDirection;
     //[SerializeField] private Vector3 _galacticOrigin;
     [SerializeField] private List<GameObject> boxes;
+    [SerializeField] private Event_Manager_Script event_manager;
 
 
     void Start()
@@ -54,7 +55,7 @@ public class GalacticManager : MonoBehaviour
                     boxScript.setSize(boxScale);
                     boxScript.setColor(new Color(i, j, k, 0.5f));
                     boxScript.setGalacticPosition(new Vector3(i, j, k));
-
+                    boxScript.setEventManager(event_manager);
                     boxes.Add(box);
                 }
             }

@@ -9,6 +9,8 @@ public class GalacticBox : MonoBehaviour
     [SerializeField] private float _size;
     [SerializeField] private PoissonDisc starGenerator;
 
+    [SerializeField] private Event_Manager_Script event_manager;
+
     [SerializeField] private GameObject star;
     [SerializeField] private List<GameObject> stars;
     [SerializeField] private List<Vector3> starPositions;
@@ -24,6 +26,8 @@ public class GalacticBox : MonoBehaviour
         Gizmos.color = _boundingBoxColor;
         Gizmos.DrawCube(transform.position, Vector3.one * _size);
     }
+
+    public void setEventManager(Event_Manager_Script e_m) { event_manager = e_m; }
 
     public void setSize(float size) { _size = size; }
 
@@ -52,6 +56,7 @@ public class GalacticBox : MonoBehaviour
         for (int i = 0; i < starPositions.Count; ++i) { //this will be replaced with object pooling
             GameObject instantiatedStar = Instantiate(star, starPositions[i]*(_size/2f) + transform.position, Quaternion.identity);
             instantiatedStar.transform.parent = transform;
+            instantiatedStar.GetComponent<SolarSystemGeneration>().setEventManager(event_manager);
             stars.Add(instantiatedStar);
         }
     }

@@ -432,6 +432,11 @@ PrefabInstance:
       propertyPath: _playerCamera
       value: 
       objectReference: {fileID: 1697110495}
+    - target: {fileID: 1306090368451246968, guid: dce3f75a775f9c34ab91c237ba4ea1e2,
+        type: 3}
+      propertyPath: event_manager
+      value: 
+      objectReference: {fileID: 1260474179}
     - target: {fileID: 3180740635179815208, guid: dce3f75a775f9c34ab91c237ba4ea1e2,
         type: 3}
       propertyPath: m_Name
@@ -642,7 +647,12 @@ PrefabInstance:
         type: 3}
       propertyPath: Event_Manager
       value: 
-      objectReference: {fileID: 1260474177}
+      objectReference: {fileID: 1260474179}
+    - target: {fileID: 4800738646672415216, guid: 6382b0aa7770d5347a481be529d07b4e,
+        type: 3}
+      propertyPath: event_manager
+      value: 
+      objectReference: {fileID: 1260474179}
     - target: {fileID: 5106270707835546434, guid: 6382b0aa7770d5347a481be529d07b4e,
         type: 3}
       propertyPath: m_Name
