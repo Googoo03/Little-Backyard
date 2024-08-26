@@ -30,6 +30,9 @@ public class SolarSystemGeneration : MonoBehaviour {
     [SerializeField] private Material Sun_Halo;
     [SerializeField] private Color starColor;
 
+    [SerializeField] private Mesh sunLoaded; //icosohedron
+    [SerializeField] private Mesh sunUnloaded; //octahedron
+
     //TESTING ONLY
     [SerializeField] bool initialize = false;
 
@@ -39,6 +42,8 @@ public class SolarSystemGeneration : MonoBehaviour {
         //Generates solar system
         GenerateSolarSystem();
 
+        //Set the sun to an icosohedron mesh
+        transform.GetComponent<MeshFilter>().mesh = sunLoaded;
 
         //Sets the event manager's planet list to said planets
         Assert.IsTrue(event_manager);
@@ -62,7 +67,7 @@ public class SolarSystemGeneration : MonoBehaviour {
     }*/
     public void Uninitialize() { //delete planets, should be object pool in future
 
-
+        transform.GetComponent<MeshFilter>().mesh = sunUnloaded;
         //This needs to change so it doesnt have an infinite loop
         for (int i = 0; i < transform.childCount; ++i) {
             transform.GetChild(i).gameObject.SetActive(false);

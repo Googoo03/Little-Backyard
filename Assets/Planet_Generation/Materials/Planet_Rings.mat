@@ -83,8 +83,8 @@ Material:
     - _Width: 11
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.51953125, g: 0.9375, b: 0.1171875, a: 0.13671875}
+    - _Color: {r: 0.4140625, g: 0.05078125, b: 0.75390625, a: 0.84375}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _PlaneNormal: {r: 0.121643096, g: 0.9847298, b: 0.12453936, a: 0}
-    - _PlanetPos: {r: 35.507694, g: -353.0785, b: -304.2083, a: 0}
+    - _PlaneNormal: {r: 0.011276774, g: 0.71043676, b: 0.7036707, a: 0}
+    - _PlanetPos: {r: -231.67946, g: 177.21405, b: -411.1847, a: 0}
   m_BuildTextureStacks: []

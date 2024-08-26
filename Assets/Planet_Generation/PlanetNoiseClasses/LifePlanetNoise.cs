@@ -108,7 +108,7 @@ public class LifePlanetNoise : GeneratePlane
             Vector3 lookVec = new Vector3(tree_positions[i].x, tree_positions[i].y, tree_positions[i].z);
             if (lookVec.magnitude < (radius+oceanFloor*2)) continue; //dont generate in water
             Quaternion rot = Quaternion.LookRotation(-lookVec);
-            Vector3 sca = Vector3.one * .01f;
+            Vector3 sca = Vector3.one * .02f;
             tree_m.Add(Matrix4x4.TRS(tree_positions[i]+origin,rot,sca)); //transform rotation scale
         }
 

@@ -4,6 +4,7 @@ Shader "Custom/Rock_Surface_Shader"
     {
         _Color ("Color", Color) = (1,1,1,1)
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
+        _BlueNoise ("Blue Noise", 2D) = "white" {}
         _SunPos( "Sun Position", Vector) = (1,1,1,1)
 
     }
@@ -21,6 +22,7 @@ Shader "Custom/Rock_Surface_Shader"
         #pragma target 3.0
 
         sampler2D _MainTex;
+        sampler2D _BlueNoise;
 
         struct Input
         {
@@ -54,6 +56,7 @@ Shader "Custom/Rock_Surface_Shader"
 
         fixed4 _Color;
         float3 _SunPos;
+        
 
         // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
         // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
@@ -68,8 +71,10 @@ Shader "Custom/Rock_Surface_Shader"
             float3 viewDirection = normalize(IN.viewVector);
             // Albedo comes from a texture tinted by color
             fixed4 c = tex2D (_MainTex, IN.uv_MainTex);
+            fixed4 blueNoise = tex2D (_BlueNoise, IN.uv_MainTex);
             o.Albedo = c.rgb;
-            o.Albedo *= dot(IN.worldNormal,toSunVector);
+            o.Albedo *= dot(IN.worldNormal,toSunVector) > 0.5 ? 1 : 0.2;
+            o.Albedo *= 1-(blueNoise*0.4);
             o.Alpha = c.a;
             //BLACK OUTLINE
             /*if(abs(dot(IN.worldNormal,viewDirection))< 0.5){

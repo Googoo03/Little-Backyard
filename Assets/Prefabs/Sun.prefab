@@ -43,7 +43,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5106270707835546434}
-  m_Mesh: {fileID: -2124705421725058983, guid: eb7d0ac1871eb344da47d286753f985a, type: 3}
+  m_Mesh: {fileID: 3635823603335089682, guid: eb7d0ac1871eb344da47d286753f985a, type: 3}
 --- !u!23 &4085902976000094956
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -163,13 +163,17 @@ MonoBehaviour:
   planet: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
   event_manager: {fileID: 0}
   seed: 310925700
-  density: 3
+  density: 2
   planetCount: 3
   RegionRadius: 50
   RegionHeight: 50
   solarsystemSpacing: 1
   Sun_Halo: {fileID: 2100000, guid: 7364f74ec0245734a82bfc99fb795b4a, type: 2}
   starColor: {r: 0, g: 0, b: 0, a: 0}
+  sunLoaded: {fileID: -789479026012231341, guid: 99e4550956fb21d4bb4afdf7a91f58e1,
+    type: 3}
+  sunUnloaded: {fileID: 3635823603335089682, guid: eb7d0ac1871eb344da47d286753f985a,
+    type: 3}
   initialize: 0
 --- !u!114 &9044314076374535129
 MonoBehaviour:

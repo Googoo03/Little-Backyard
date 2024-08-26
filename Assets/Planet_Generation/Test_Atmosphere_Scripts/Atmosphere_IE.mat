@@ -105,6 +105,6 @@ Material:
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _NebulaCoeff: {r: 0.36, g: 0.7, b: 0.14, a: 0}
     - _NebulaCol: {r: 1, g: 0.5871031, b: 0, a: 1}
-    - _PlanetPos: {r: 35.507694, g: -353.0785, b: -304.2083, a: 0}
+    - _PlanetPos: {r: -231.67946, g: 177.21405, b: -411.1847, a: 0}
     - _SunPos: {r: 5, g: 300, b: 5, a: 0}
   m_BuildTextureStacks: []

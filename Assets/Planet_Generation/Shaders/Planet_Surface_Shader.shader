@@ -172,7 +172,8 @@ Shader "Custom/Planet_Surface_Shader"
             float dotProduct = dot(IN.normal,toSunVector)*mask;
 
             float step = 1.0 / _Levels;
-            int level = (dot(IN.worldNormal,toSunVector)) / (step);
+            float dotP = (dot(IN.worldNormal,toSunVector)) > 0.8 ? 1 : (dot(IN.worldNormal,toSunVector));
+            int level = dotP / (step);
             //darkness is equal to the current value
 
 
