@@ -6,12 +6,14 @@ Shader "Custom/Atmosphere_IE"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _CloudTex ("Cloud Texture", 3D) = "white"{}
+        _BlueNoise ("Blue Noise", 2D) = "White"{}
 
         _CloudColor ("Cloud Color", Color) = (1,1,1,1)
         _Threshold ("Cloud Threshold", float) = 1
         _ThresholdG ("Cloud Threshold G", float) = 1
         _CloudDensity ("Cloud Density Coeff",float) = 1
         _CloudFalloff ("CLoud Falloff Coeff",float) = 1
+        _CloudCoeff ("Cloud Coefficients",Vector) = (0,0,0,0)
 
         _PlanetPos ("Planet Position", Vector) = (0,0,0,0)
         _SunPos ("Sun Position", Vector) = (0,0,0,0)
@@ -20,7 +22,16 @@ Shader "Custom/Atmosphere_IE"
         _Radius ("Planet Radius", float) = 5
         _AtmosphereHeight ("Atmosphere Height", float) = 0.5
         _Density ("Atmosphere Density", float) = 1
+
         _Samples ("Number of Samples", int) = 1
+
+        _NebulaScale ("Nebula Scale", float)  =1
+        _NebulaCol ("Nebula Color",Color) = (1,1,1,1)
+        _NebulaDensity ("Nebula Density", float)  =1
+        _NebulaCoeff ("Nebula Coefficients", Vector) = (0,0,0,0)
+        _NebulaThreshold ("Nebula Threshold",float)  = 1
+
+        _Generate ("Generate",int) = 0
     }
     SubShader
     {
@@ -90,28 +101,27 @@ Shader "Custom/Atmosphere_IE"
 
             float distanceToPlanet;
 
+            int _Generate;
+
             //CLOUD PARAMETERS
             float _Threshold;
             float _ThresholdG;
             float _Samples;
             sampler3D _CloudTex;
+            sampler2D _BlueNoise;
             float4 _CloudTex_ST;
             float _CloudDensity;
             float _CloudFalloff;
             float4 _CloudColor;
+            float4 _CloudCoeff;
 
-            RWStructuredBuffer<float3> planetPositions;
-            float numPlanets;
+            //Nebula PARAMETERS
+            float _NebulaScale;
+            fixed4 _NebulaCol;
+            float _NebulaDensity;
+            float4 _NebulaCoeff;
+            float _NebulaThreshold;
 
-
-            float3 orthogonalProjection(float3 mu, float3 v, float cameraDistanceToPlanet) //calculates the orthogonal projection of v onto mu, returns the orthogonal vector
-            {
-                float lengthV = length(v);
-                float scalar = (dot(mu,v)/(lengthV*lengthV));
-                float3 w1 = scalar * v;
-                float3 w2 = mu - w1;
-                return (scalar < 0 && cameraDistanceToPlanet > _Radius+_AtmosphereHeight) ? w2 * 1000 : w2;
-            }
 
             float QuadraticSolve(float a, float b, float c, bool plus){
                 return plus ? ( (-b + sqrt(b*b - 4*a*c)) / 2*a) : ( (-b - sqrt(b*b - 4*a*c)) / 2*a);
@@ -143,12 +153,47 @@ Shader "Custom/Atmosphere_IE"
                 
 
                 fixed4 noColor = tex2D(_MainTex, i.uv);
+                float blueNoise = tex2D(_BlueNoise,i.uv).r * 5 / 25.0;
+
                 
+
+                //INCORPORATE NEBULAE HERE
+                float tNebula = 1.0;
+                float3 farPlanePosition = (ray_direction / ray_depth_world) * 100 +  _WorldSpaceCameraPos;
+                bool returnCondNeb = false;
+                float3 intersectionLineNeb;
+                float densityNeb = 0.0;
+
+                fixed4 nebulaSample;
+                float nebula; //sample with applied coefficients
+                if(terrainLevel > 100){
+                    for(;tNebula > 0.1; tNebula-= 1.0/25.0){
+                        //FIX THE NORMALIZE LOCATION. RIGHT NOW TCLOUD DOESNT DO ANYTHING
+                    
+                        intersectionLineNeb = (farPlanePosition-_WorldSpaceCameraPos)*(tNebula+blueNoise) + _WorldSpaceCameraPos;
+                            
+                        nebulaSample = tex3D(_CloudTex,intersectionLineNeb * (1.0/_NebulaScale) );
+                        nebula = (nebulaSample.r*_NebulaCoeff.x) + (nebulaSample.g*_NebulaCoeff.y) + (nebulaSample.b*_NebulaCoeff.z);
+                           
+                        
+                        densityNeb += ( nebula > _NebulaThreshold) ? nebula : 0;
+                        //densityNeb += nebula;
+                    }
+                    returnCondNeb = densityNeb > 0.1 ? true : false;
+                        
+                    densityNeb /= 25.0 * (1.0/_NebulaDensity);
+                    
+
+                    if(returnCondNeb){
+                                    //col = fixed4(1,1,1,1);
+                        noColor = lerp(_NebulaCol,noColor,exp(-densityNeb) );//fixed4(1,1,1,1);
+                    }
+                }
                
                 float atmosphereAlpha = 1;
                 
 
-                
+                if(_Generate==0) return noColor;
 
                 /////////ONLY SHOW WHERE INTERSECTS WITH LIGHT
                 float r = _Radius + _AtmosphereHeight;
@@ -232,33 +277,40 @@ Shader "Custom/Atmosphere_IE"
                         bool returnCond = false;
                         //float cloudNormal = 1;
                         float density = 0.0;
+                        float cloud;
                         
+                        float blueNoise = tex2D(_BlueNoise,i.uv).r * 5 / 25.0;
+                        float3 startCloud = end_point;
 
-                        for(;tCloud > 0.0; tCloud -= 1.0/50.0){
+                        for(;tCloud > 0.0; tCloud -= 1.0/25.0){
                             //FIX THE NORMALIZE LOCATION. RIGHT NOW TCLOUD DOESNT DO ANYTHING
                             iterator++;
-                            intersectionLine = normalize(end_point-start_point)*tCloud + start_point;
+                            intersectionLine = normalize(ray_direction)*(tCloud+blueNoise) + start_point;
                             
                             float3 uvCoords = (intersectionLine-_PlanetPos) / r;
                             float atmosphereLength = length(uvCoords-float3(0,0,0));
                             cloudSample = atmosphereLength < (1.0) && atmosphereLength > (_Radius/r) && length(terrainPosition-_WorldSpaceCameraPos)> length(intersectionLine-_WorldSpaceCameraPos) ? tex3D(_CloudTex,uvCoords+_CloudTex_ST) : fixed4(0,0,0,0);
                             
-                           
-                            returnCond = (cloudSample.r + cloudSample.g > _Threshold) ? true : returnCond;
+                            cloud = (cloudSample.r*_CloudCoeff.x) + (cloudSample.g*_CloudCoeff.y) + (cloudSample.b*_CloudCoeff.z);
 
+                            
                             //changes cloud opacity based on the height its at
                             float densityModifier = min(length(intersectionLine-_PlanetPos)-_Radius,r-length(intersectionLine-_PlanetPos))*_CloudFalloff;
                             //compute gradient, then calculate normal?
                             //cloudNormal = (cloudSample.r + cloudSample.g > _Threshold) ? dot(normalize(intersectionLine-_SunPos),normalize(intersectionLine-_PlanetPos)) : cloudNormal;
-                            density += (cloudSample.r + cloudSample.g > _Threshold) ? (cloudSample.r + cloudSample.g)*densityModifier : 0;
+                            if(density == 0.0 && ( cloud > _Threshold) && start_point.x == end_point.x) startCloud = intersectionLine;
+                            density += ( cloud > _Threshold) ? cloud*_CloudFalloff : 0;
                         }
 
+
+                        returnCond = density > 0.1 ? true : false;
                         
                         density /= iterator* (1.0/_CloudDensity);
+                        float cloudAlpha = dot(normalize(startCloud-_PlanetPos),normalize(_SunPos-_PlanetPos));
                         
                         if(returnCond){
                                 //col = fixed4(1,1,1,1);
-                                col = lerp(_CloudColor*max(0.2,atmosphereAlpha),col,exp(-density*distanceAlpha));//fixed4(1,1,1,1);
+                                col = lerp(_CloudColor*max(0.2,cloudAlpha),col,exp(-density*distanceAlpha));//fixed4(1,1,1,1);
                         }
                         
                         //cloudColor /= 100.0;
@@ -270,6 +322,8 @@ Shader "Custom/Atmosphere_IE"
                     }
                     
                 }else{
+
+                    //If not intersecting atmosphere
                     col = noColor;
                 }
                

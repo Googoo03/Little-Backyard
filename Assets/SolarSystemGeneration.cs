@@ -52,13 +52,22 @@ public class SolarSystemGeneration : MonoBehaviour {
 
 
 
-    public void Update()
+    /*public void Update()
     {
         if (initialize)
         {
             Initialize();
             initialize = false;
         }
+    }*/
+    public void Uninitialize() { //delete planets, should be object pool in future
+
+
+        //This needs to change so it doesnt have an infinite loop
+        for (int i = 0; i < transform.childCount; ++i) {
+            transform.GetChild(i).gameObject.SetActive(false);
+        }
+
     }
 
     public void Start()
@@ -70,22 +79,19 @@ public class SolarSystemGeneration : MonoBehaviour {
         hashValue.Append(transform.position.x);
         hashValue.Append(transform.position.y);
         hashValue.Append(transform.position.z);
-        int hashCode = hashValue.GetHashCode();
+        UInt64 hashCode = (UInt64)hashValue.GetHashCode();
 
         
         starColor = new Color((hashCode >> 3) % 256, (hashCode>> 6) % 256, (hashCode>> 9) % 256, (hashCode>> 12) % 256);
         starColor/= 256.0f;
 
-        transform.GetComponent<Renderer>().material.SetColor("_ColorB",starColor);
+        transform.GetComponent<Renderer>().material.SetColor("_Color",starColor);
         ////////////////////////
     }
 
     public void setEventManager(Event_Manager_Script e_m) { event_manager = e_m; }
 
     public void GenerateSolarSystem() {
-        //List<GameObject> planets = new List<GameObject> { };
-
-
 
         for (int x = 0; x < planetCount; x++)
         {
@@ -106,6 +112,8 @@ public class SolarSystemGeneration : MonoBehaviour {
 
                 Vector3 position = new Vector3(transform.position.x + (fracX * cosineVal), transform.position.y, transform.position.z + (fracX * sineVal));
                 GameObject newPlanet = Instantiate(planet, position, Quaternion.identity);
+                newPlanet.transform.parent = transform; //we want the planets to be children
+
                 planets.Add(newPlanet);
 
             }

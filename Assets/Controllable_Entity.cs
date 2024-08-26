@@ -7,7 +7,7 @@ public abstract class Controllable_Entity : MonoBehaviour
     //
     //THIS CLASS WILL STORE THINGS THAT ALL CONTROLLABLE ENTITIES WILL UTILIZE
     //SUCH AS INVENTORY, SEMAPHORES, MOVEMENT, ETC.
-    protected bool canMove;
+    [SerializeField] protected bool canMove;
     [SerializeField] protected Camera _camera;
     [SerializeField] protected Vector3 camera_offset;
     [SerializeField] protected float reach; //for interaction

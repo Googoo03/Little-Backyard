@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityStandardAssets.Characters.FirstPerson;
 
 public class Player_Movement : Controllable_Entity
 {
@@ -24,6 +25,14 @@ public class Player_Movement : Controllable_Entity
     public Quaternion targetRotation;
 
     public float forward;
+    private float side;
+    private bool jump;
+    [SerializeField] private bool onGround=true;
+    [SerializeField] private float jumpForce;
+
+    [SerializeField] private float t;
+
+    [SerializeField] private bool headBob = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -37,6 +46,16 @@ public class Player_Movement : Controllable_Entity
     {
         if (!canMove) return;
         MovementProtocol(); //move
+
+        //Assign head bobbing accordingly
+        if (headBob && _camera)
+        {
+            HeadBob();
+        }
+        else if(_camera){ _camera.transform.localPosition = camera_offset; }
+
+        if (jump && onGround) JumpProtocol();
+
         InteractionCheck(); //interact raycast
         InteractInput(); //check if interact button pressed
         ApplyGravity(false); //apply gravity to nearest planet
@@ -45,8 +64,30 @@ public class Player_Movement : Controllable_Entity
 
     //public void setNearbyPlanet(GameObject planet) {nearbyPlanet = planet;}
 
+
+    //It should be researched if this is slow. I would imagine it is
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.transform.tag == "Planet") onGround = true;
+    }
+
+    private void JumpProtocol() {
+        onGround = false;
+
+        Vector3 toPlanet = (nearbyPlanet.transform.position - transform.position).normalized;
+        //_rigidbody.AddForce(-toPlanet*jumpForce);
+    }
+
+
     private void InteractInput() {
         if (Input.GetKeyDown(KeyCode.E) && canMove) objectInteraction();
+    }
+
+    private void HeadBob() {
+        t += (forward * Time.deltaTime)*8.5f;
+        t = t > 6.28f ? 0.0f : t;
+
+        _camera.transform.localPosition = camera_offset + (new Vector3(Mathf.Sin(t),Mathf.Cos(2*t), 0)*0.3f);
     }
 
     protected override void InteractionCheck() {
@@ -118,7 +159,7 @@ public class Player_Movement : Controllable_Entity
         Debug.DrawLine(transform.position, transform.position+transform.up, Color.white);
         Debug.DrawLine(transform.position, transform.position + forwardVec, Color.red);
 
-        transform.position += forwardVec * (forward * speed) * Time.deltaTime;
+        transform.position += ((forwardVec*forward) + (_camera.transform.right * side)) * speed * Time.deltaTime;
 
     }
 
@@ -135,6 +176,7 @@ public class Player_Movement : Controllable_Entity
         if (_rigidbody != null)
         {
             _rigidbody.AddForce(toPlanet);
+            
         }
         return;
     }
@@ -142,6 +184,8 @@ public class Player_Movement : Controllable_Entity
     private void setKeyInputs()
     {
         forward = Input.GetAxis("Vertical");
+        side = Input.GetAxis("Horizontal");
+        jump = Input.GetKey(KeyCode.Space);
 
         yawChange = Input.GetAxis("Mouse X") * mouseSensitivityX;
         pitchChange = Input.GetAxis("Mouse Y") * mouseSensitivityY;

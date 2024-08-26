@@ -3,6 +3,7 @@ Shader "Custom/Sun_US"
     Properties
     {
         _NoiseTex ("Texture", 3D) = "white" {}
+        
         _ColorA ("Color_A", Color) = (1,1,1,1)
         _ColorB ("Color_B", Color) = (1,1,1,1)
         _Threshold ("Threshold", int) = 1.0

@@ -123,12 +123,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &160406696 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5106270707835546434, guid: 6382b0aa7770d5347a481be529d07b4e,
-    type: 3}
-  m_PrefabInstance: {fileID: 2925073152425729192}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &249311379
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -201,6 +195,11 @@ PrefabInstance:
         type: 3}
       propertyPath: speed
       value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8917118438352458586, guid: e763a0a9c5c45494b870bd1b8ee32927,
+        type: 3}
+      propertyPath: headBob
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8917118438352458586, guid: e763a0a9c5c45494b870bd1b8ee32927,
         type: 3}
@@ -278,6 +277,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
+      propertyPath: boostAmount
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
       propertyPath: event_manager
       value: 
       objectReference: {fileID: 1260474179}
@@ -342,7 +346,11 @@ MonoBehaviour:
   playerInteract: {fileID: 0}
   ship: {fileID: 1697110495}
   playerCamera: {fileID: 573247469}
-  sun: {fileID: 160406696}
+  sun: {fileID: 0}
+  generatedSolarSystem: 0
+  atmosphereShader: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
+  planetRingShader: {fileID: 2100000, guid: 70acc38ebb9f787459fb5e85da6bfadb, type: 2}
+  galacticCenter: {fileID: 0}
 --- !u!1 &1697110495 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1081970301040300, guid: e7624d12d32d3426ea30613788c3244f,
@@ -645,9 +653,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4800738646672415216, guid: 6382b0aa7770d5347a481be529d07b4e,
         type: 3}
-      propertyPath: Event_Manager
-      value: 
-      objectReference: {fileID: 1260474179}
+      propertyPath: RegionHeight
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800738646672415216, guid: 6382b0aa7770d5347a481be529d07b4e,
+        type: 3}
+      propertyPath: RegionRadius
+      value: 50
+      objectReference: {fileID: 0}
     - target: {fileID: 4800738646672415216, guid: 6382b0aa7770d5347a481be529d07b4e,
         type: 3}
       propertyPath: event_manager
@@ -658,6 +671,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: Sun
       objectReference: {fileID: 0}
+    - target: {fileID: 9044314076374535129, guid: 6382b0aa7770d5347a481be529d07b4e,
+        type: 3}
+      propertyPath: _playerCamera
+      value: 
+      objectReference: {fileID: 573247469}
+    - target: {fileID: 9044314076374535129, guid: 6382b0aa7770d5347a481be529d07b4e,
+        type: 3}
+      propertyPath: event_manager
+      value: 
+      objectReference: {fileID: 1260474179}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

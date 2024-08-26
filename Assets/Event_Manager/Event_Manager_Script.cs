@@ -22,9 +22,14 @@ public class Event_Manager_Script : MonoBehaviour
     [SerializeField] private GameObject ship;
     [SerializeField] private Camera playerCamera; //used for both the player and vehicles
 
-    //TEMPORARY, DO NOT KEEP
+    //For the solar system states
     [SerializeField] private GameObject sun;
+    [SerializeField] private bool generatedSolarSystem = false;
+
+    [SerializeField] private Material atmosphereShader;
+    [SerializeField] private Material planetRingShader;
     ///
+    [SerializeField] private GalacticBox galacticCenter;
 
     void Start()
     {
@@ -40,7 +45,7 @@ public class Event_Manager_Script : MonoBehaviour
         ship.GetComponent<Controllable_Entity>().setCanMove(true);
         ship.GetComponent<Controllable_Entity>().setCamera(playerCamera);
 
-        sun.GetComponent<SolarSystemGeneration>().Initialize();
+        //sun.GetComponent<SolarSystemGeneration>().Initialize();
     }
 
     // Update is called once per frame
@@ -50,6 +55,56 @@ public class Event_Manager_Script : MonoBehaviour
         if(enterShip) enterShipProtocol();
         if(lerpCameraPosition) lerpCameraToFromShip();
         if (updatePlanetList) updateShipPlanetList();
+
+        //If a planet is generated, then the shader should be turned on
+        if (planets.Count > 0)
+        {
+            atmosphereShader.SetInt("_Generate", 1);
+            planetRingShader.SetInt("_Generate", 1);
+        }
+        else {
+            //turn off the shader since no planets are present
+            atmosphereShader.SetInt("_Generate", 0);
+            planetRingShader.SetInt("_Generate", 0);
+        }
+
+        calculateClosestStar();
+        if (sun != null && Vector3.Distance(playerCamera.transform.position, sun.transform.position) > 70 && generatedSolarSystem)
+        {
+            sun.GetComponent<SolarSystemGeneration>().Uninitialize();
+            planets.Clear();
+
+            
+            updatePlanetList = true;
+
+            generatedSolarSystem = false;
+        }
+        else if (sun != null && Vector3.Distance(playerCamera.transform.position, sun.transform.position) < 70 && !generatedSolarSystem) {
+            sun.GetComponent<SolarSystemGeneration>().Initialize();
+            generatedSolarSystem = true;
+        }
+    }
+
+    private void calculateClosestStar() {
+        List<GameObject> stars = galacticCenter.getStars();
+        float distance;
+        float minDist = float.MaxValue;
+        GameObject closestStar = null;
+
+        for (int i = 0; i < stars.Count; ++i) {
+            distance = Vector3.Distance(playerCamera.transform.position, stars[i].transform.position);
+            closestStar = minDist != Mathf.Min(minDist, distance) ? stars[i] : closestStar;
+            minDist = Mathf.Min(minDist, distance);
+        }
+
+        //if you change stars, reset the parameters
+        if (closestStar != sun)
+        {
+            generatedSolarSystem = false;
+            if(sun) sun.GetComponent<SolarSystemGeneration>().Uninitialize();
+            sun = closestStar;
+        }
+        
     }
 
     private void updateShipPlanetList() {
@@ -77,6 +132,7 @@ public class Event_Manager_Script : MonoBehaviour
 
     private void lerpCameraToFromShip() {
         Transform destination = exitShip ? player.transform : playerInteract.transform;
+        //Transform fromTranform = exitShip ? playerInteract.transform : player.transform;
         Vector3 offset = destination.GetComponent<Controllable_Entity>().getOffset();
         float scale = destination.transform.lossyScale.x;
 
@@ -91,12 +147,14 @@ public class Event_Manager_Script : MonoBehaviour
         else {
             //if close enough, set parent to the destination, turn off lerp.
             playerCamera.transform.parent.GetComponent<Controllable_Entity>().setCanMove(false);
+            playerCamera.transform.parent.GetComponent<Controllable_Entity>().setCamera(null);
 
             destination.GetComponent<Controllable_Entity>().setCanMove(true);
             playerCamera.transform.parent = destination;
             playerCamera.transform.localPosition = offset;
 
             destination.GetComponent<Controllable_Entity>().setCamera(playerCamera);
+            //fromTranform.GetComponent<Controllable_Entity>().setCamera(null);
             lerpCameraPosition=false;
 
             if(destination != player.transform) player.SetActive(false);
@@ -122,4 +180,9 @@ public class Event_Manager_Script : MonoBehaviour
     public void set_enterShip(bool enter) { enterShip = enter;}
 
     public void set_PlayerInteract(GameObject obj) {playerInteract = obj;}
+
+    public Camera get_playerCamera() { return playerCamera; }
+
+    //compare distances between stars but how?
+    public void set_galacticCenter(GalacticBox gc) {galacticCenter = gc;}
 }

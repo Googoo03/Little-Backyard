@@ -28,6 +28,8 @@ public class LifePlanetNoise : GeneratePlane
     private List<Matrix4x4> tree_m = new List<Matrix4x4>(1);
     private List<Matrix4x4> rock_m = new List<Matrix4x4>(1);
     private List<Matrix4x4> grass_m = new List<Matrix4x4>(1);
+
+    [SerializeField] private List<Vector3> rock_positions = new List<Vector3>();
     Mesh mesh;
 
     public LifePlanetNoise()
@@ -75,9 +77,16 @@ public class LifePlanetNoise : GeneratePlane
         grass_mat = (Material)(Resources.Load("Grass/Grass_Mat"));
 
 
+        /*
         List<Vector3> tree_positions = new List<Vector3>(tree_m.Capacity);
         List<Vector3> rock_positions = new List<Vector3>(rock_m.Capacity);
         List<Vector3> grass_positions = new List<Vector3>(grass_m.Capacity);
+        */
+
+        List<Vector3> tree_positions = new List<Vector3>();
+        //List<Vector3> rock_positions = new List<Vector3>();
+        List<Vector3> grass_positions = new List<Vector3>();
+
 
         int seed;
         int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
@@ -112,11 +121,15 @@ public class LifePlanetNoise : GeneratePlane
             Vector3 sca = Vector3.one * .01f;
             rock_m.Add(Matrix4x4.TRS(rock_positions[i] + origin, rot, sca)); //transform rotation scale
         }
+
+
+
         for (int i = 0; i < grass_positions.Count; ++i)
         { //add the tree positions and subsequent rotations to the matrix buffer
 
             Vector3 lookVec = grass_positions[i];
             if (lookVec.magnitude < radius+0.15f/* || lookVec.magnitude > radius + 0.2f*/) continue; //corresponds to level1 in the shader. These need to communicate with one another
+            
             Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0, 0, 90);
             Vector3 sca = Vector3.one * .01f;
             grass_m.Add(Matrix4x4.TRS(grass_positions[i] + origin, rot, sca)); //transform rotation scale
@@ -127,6 +140,8 @@ public class LifePlanetNoise : GeneratePlane
 
     protected override void DispatchFoliage() {
         //sends over to the gpu
+        if (!foliageGenerationReturned) return;
+
         Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m);
         Graphics.DrawMeshInstanced(rock_mesh, 0, rock_mat, rock_m);
         Graphics.DrawMeshInstanced(grass_mesh, 0, grass_mat, grass_m);

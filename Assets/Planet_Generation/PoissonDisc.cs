@@ -170,7 +170,7 @@ namespace Poisson
             while (index < points.Count && points_placed < num)
             { //while we havent placed enough points and havent reached the end of our array
                 found = false;
-                for (int i = 0; i < k; i++)
+                for (int i = 0; i < k && points_placed < num; i++)
                 {
                     //generate new random number from 0 to 2pi
                     rand = ((float)PRNG() / 256.0f) * _2PI;
@@ -185,7 +185,7 @@ namespace Poisson
                     y = Mathf.Min(y, maxY - 1);
 
                     //check if its valid, if so, add it, if not, skip it
-                    bool_index = ((int)Mathf.Max(y - 1, 0) * maxX) + (int)x;
+                    bool_index = ((int)Mathf.Max(y-1, 0) * maxX) + (int)x;
                     int interpolate_index = ((int)Mathf.Max(y, 0) * maxX) + (int)(x+1);
 
                     if (meetsDistanceThreshold(radius, ref hashgrid, bool_index, maxX, maxY))
@@ -195,8 +195,9 @@ namespace Poisson
                             found = true;
                         }
                         hashgrid[bool_index] = true;
-                        
+
                         Vector3 newpoint = interpolate_index < (maxX*maxY)-1 ? interpolate( vertices[bool_index], vertices[interpolate_index],x-(int)x) : vertices[bool_index];
+                        //Vector3 newpoint = vertices[bool_index];
                         points.Add(newpoint);
                         points_placed++;
                     }

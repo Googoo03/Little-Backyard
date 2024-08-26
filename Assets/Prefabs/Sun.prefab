@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4085902976000094956}
   - component: {fileID: 503415751096111832}
   - component: {fileID: 4800738646672415216}
+  - component: {fileID: 9044314076374535129}
   m_Layer: 0
   m_Name: Sun
   m_TagString: Untagged
@@ -30,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 5, y: 300, z: 5}
-  m_LocalScale: {x: 2.23635, y: 2.23635, z: 2.23635}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -42,7 +43,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5106270707835546434}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: -2124705421725058983, guid: eb7d0ac1871eb344da47d286753f985a, type: 3}
 --- !u!23 &4085902976000094956
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -160,11 +161,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   planet: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
-  Event_Manager: {fileID: 0}
+  event_manager: {fileID: 0}
   seed: 310925700
   density: 3
-  planetCount: 6
-  RegionRadius: 100
-  RegionHeight: 100
+  planetCount: 3
+  RegionRadius: 50
+  RegionHeight: 50
   solarsystemSpacing: 1
   Sun_Halo: {fileID: 2100000, guid: 7364f74ec0245734a82bfc99fb795b4a, type: 2}
+  starColor: {r: 0, g: 0, b: 0, a: 0}
+  initialize: 0
+--- !u!114 &9044314076374535129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5106270707835546434}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5f39677fd6554d48913f0581c4bafad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  event_manager: {fileID: 0}
+  _playerCamera: {fileID: 0}

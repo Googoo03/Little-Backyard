@@ -9,6 +9,8 @@ Shader "Custom/Planet_Rings"
         _Radius ("Ring Radius", float) = 1
         _Width ("Ring Width", float) = 1
         _Height ("Ring Height", float) = 1
+
+         _Generate ("Generate",int) = 0
     }
     SubShader
     {
@@ -70,9 +72,12 @@ Shader "Custom/Planet_Rings"
             float _Width;
             float _Height;
 
+            int _Generate;
+
 
             fixed4 frag (v2f i) : SV_Target
             {
+                
                 //add a check for the rings being no smaller than the planet radius
                 _Width = max(_Radius,_Width);
                 _PlaneNormal= normalize(_PlaneNormal); //fix parameters to prevent undefined behavior
@@ -85,6 +90,8 @@ Shader "Custom/Planet_Rings"
 
                 fixed4 col = tex2D(_MainTex, i.uv);
                 fixed4 noCol = tex2D(_MainTex, i.uv); //no color
+
+                if(_Generate == 0) return noCol;
 
                 int intersectionCombination = 0;
 

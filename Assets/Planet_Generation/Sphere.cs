@@ -224,7 +224,7 @@ public class Sphere : MonoBehaviour
 
     public void SetAtmoShader() {
         atmoShader.SetVector("_PlanetPos", transform.position);
-        atmoShader.SetFloat("_Radius", radius+0.2f);
+        atmoShader.SetFloat("_Radius", radius+0.5f);
         //no setting atmosphere height as of yet
         return;
     }
@@ -262,6 +262,7 @@ public class Sphere : MonoBehaviour
     void GeneratePatch(PatchConfig aConf, int u, int v)
     {
         GameObject patch = new GameObject(aConf.name + "_" + u + v);
+        patch.transform.tag = "Planet";
 
         //patch.AddComponent<GeneratePlane>();
         addMeshGenerationScript(patch);

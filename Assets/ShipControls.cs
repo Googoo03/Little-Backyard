@@ -35,6 +35,7 @@ public class ShipControls : Controllable_Entity
 
     public float forward;
 
+
     [SerializeField] private bool tiltShipPlanet = false;
 
     //LANDING PROTOCOL
@@ -46,6 +47,10 @@ public class ShipControls : Controllable_Entity
     [SerializeField] private float initialDistanceThreshold;
     [SerializeField] private float atmosphereDistance;
     [SerializeField] private float pullUpDistance;
+
+    [SerializeField] private float boostAmount;
+
+    private float boostSpeed = 0;
     //private float pullUpDistance = 1.1f; //should be grabbed from the planet when it's said and done
 
     public float angle;
@@ -148,7 +153,13 @@ public class ShipControls : Controllable_Entity
 
         //change ship speed when in atmosphere. Slows down closer it gets
         bool sprint = (Input.GetKey(KeyCode.LeftShift));
-        speed = sprint ? 1f : 0.25f;
+        bool boost = (Input.GetKey(KeyCode.Space) && sprint && !isInAtmosphere()); //add a boost factor is space is held and the player is not in the atmosphere
+
+        float boostDestination = boost ? boostAmount : 0;
+        boostSpeed = Mathf.Lerp(boostSpeed, boostDestination, Time.deltaTime);
+        boostSpeed = !boost ? 0 : boostSpeed;
+
+        speed = (sprint ? 1f : 0.25f) + (boostSpeed);
 
         float _currentFOV = _camera.GetComponent<Camera>().fieldOfView;
         float _newFOV = sprint ? FOV[1] : FOV[0];
@@ -182,12 +193,13 @@ public class ShipControls : Controllable_Entity
 
         ///////////////////////
 
-        transform.position += transform.forward * (forward * speed) * Time.deltaTime;
+        transform.position += (transform.forward * forward) * speed * Time.deltaTime;
 
     }
 
     private void setKeyInputs() {
         forward = Input.GetAxis("Vertical");
+        
 
         yawChange = Input.GetAxis("Mouse X") * mouseSensitivityX;
         pitchChange = Input.GetAxis("Mouse Y") * mouseSensitivityY;
@@ -321,6 +333,8 @@ public class ShipControls : Controllable_Entity
         initialDistanceThreshold = nearbyPlanet.GetComponent<Sphere>().getInitialDistanceThreshold(); //for LOD loading
         atmosphereDistance = nearbyPlanet.GetComponent<Sphere>().getAtmosphereDistance(); //self explanatory
         pullUpDistance = nearbyPlanet.GetComponent<Sphere>().getRadius() * 1.1f;
+
+        //THESE SHOULD NOT BE IN HERE. IF ANYTHING IT SHOULD BE IN THE EVENT CONTROLLER
         nearbyPlanet.transform.GetChild(1).gameObject.SetActive(false);
         nearbyPlanet.GetComponent<Sphere>().SetRingShader();
         nearbyPlanet.GetComponent<Sphere>().SetAtmoShader();

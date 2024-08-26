@@ -79,6 +79,7 @@ public class PatchLOD {
 
             addMeshGenerationScript(patchChild);
 
+            patchChild.transform.tag = patch.transform.tag;
             patchChild.transform.parent = patch.transform;
             patchChild.transform.localEulerAngles = Vector3.zero; //zero out local position and rotation
             patchChild.transform.localPosition = Vector3.zero;

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Atmosphere_IE
-  m_Shader: {fileID: 4800000, guid: 8a4f88cfff744de4f972adf80051cbe5, type: 3}
+  m_Name: Star_Far
+  m_Shader: {fileID: 10755, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -23,17 +23,9 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _BlueNoise:
-        m_Texture: {fileID: 2800000, guid: f149fd00606ad6c4dbd02d12a19c9ffc, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _BumpMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _CloudTex:
-        m_Texture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
-        m_Scale: {x: 4.54, y: 42.88}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
         m_Texture: {fileID: 0}
@@ -69,42 +61,23 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AtmosphereHeight: 0.33
     - _BumpScale: 1
-    - _CloudDensity: 29.85
-    - _CloudFalloff: 1.15
     - _Cutoff: 0.5
-    - _Density: 0.68
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Generate: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _Metallic: 0
     - _Mode: 0
-    - _NebulaDensity: 0.23
-    - _NebulaScale: 200
-    - _NebulaThreshold: 0.97
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Radius: 5.5
-    - _Samples: 5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _Threshold: 1
-    - _ThresholdG: 0.73
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _CloudCoeff: {r: 0.21, g: 0.26, b: 0.69, a: 0}
-    - _CloudColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 0.06274507, g: 0.855165, b: 0.8784314, a: 1}
-    - _Color2: {r: 1, g: 0.61535674, b: 0.19433957, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _NebulaCoeff: {r: 0.36, g: 0.7, b: 0.14, a: 0}
-    - _NebulaCol: {r: 1, g: 0.5871031, b: 0, a: 1}
-    - _PlanetPos: {r: 35.507694, g: -353.0785, b: -304.2083, a: 0}
-    - _SunPos: {r: 5, g: 300, b: 5, a: 0}
   m_BuildTextureStacks: []

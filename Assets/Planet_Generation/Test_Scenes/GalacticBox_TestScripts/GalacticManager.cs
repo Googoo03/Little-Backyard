@@ -56,6 +56,7 @@ public class GalacticManager : MonoBehaviour
                     boxScript.setColor(new Color(i, j, k, 0.5f));
                     boxScript.setGalacticPosition(new Vector3(i, j, k));
                     boxScript.setEventManager(event_manager);
+                    if (i==0 && j==0 & k==0) event_manager.set_galacticCenter(boxScript);
                     boxes.Add(box);
                 }
             }
@@ -99,6 +100,10 @@ public class GalacticManager : MonoBehaviour
             Vector3 shiftDirection = Vector3.zero;
             shiftDirection[Mathf.Abs(direction)-1] = boxScale * (direction < 0 ? -1 : 1); //should give a positive boxScale for the given direction
             boxes[i].transform.position += shiftDirection;
+            GalacticBox boxScript = boxes[i].GetComponent<GalacticBox>();
+
+            //set the event_manager's galactic center to new galactic center
+            if (boxes[i].transform.position == Vector3.zero)event_manager.set_galacticCenter(boxScript);
 
             //wrapping in a given direction
             if (Mathf.Abs(boxes[i].transform.position[Mathf.Abs(direction)-1]) > 1.1f*boxScale)
@@ -110,11 +115,13 @@ public class GalacticManager : MonoBehaviour
                 boxes[i].transform.position += wrapDirection;
 
                 //This lets the box generate new star positions when they wrap
-                boxes[i].GetComponent<GalacticBox>().setGenerate(true);
-                Vector3 boxGalacticPosition = boxes[i].GetComponent<GalacticBox>().getGalacticPosition();
+                
+
+                boxScript.setGenerate(true);
+                Vector3 boxGalacticPosition = boxScript.getGalacticPosition();
                 boxGalacticPosition += wrapDirection / (3f * boxScale);
 
-                boxes[i].GetComponent<GalacticBox>().setGalacticPosition(boxGalacticPosition);
+                boxScript.setGalacticPosition(boxGalacticPosition);
             }
         }
     }

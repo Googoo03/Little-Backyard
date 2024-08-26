@@ -59,6 +59,8 @@ public abstract class GeneratePlane : MonoBehaviour
     protected int rock_nummax;
     protected int rock_radius;
 
+    protected bool foliageGenerationReturned = false;
+
     public abstract float NoiseValue(Vector3 pos, float scale);
 
     protected int generateUniqueSeed(Vector3 pos) {
@@ -199,7 +201,7 @@ public abstract class GeneratePlane : MonoBehaviour
         transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
         transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
 
-        if (generateFoliage) GenerateFoliage(ref vertices, transform.position); //generate foliage if and only if it's at the lowest level
+        //if (generateFoliage) GenerateFoliage(ref vertices, transform.position); //generate foliage if and only if it's at the lowest level
         //DispatchFoliage();
 
         transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -patch.LODOffset * (1 << patch.LODlevel));
@@ -227,6 +229,8 @@ public abstract class GeneratePlane : MonoBehaviour
         m.SetIndices(indices, MeshTopology.Quads, 0);
         m.RecalculateBounds();
         m.RecalculateNormals();
+
+        foliageGenerationReturned = true;
 
         //mf.sharedMesh.SetTriangles(mf.sharedMesh.GetTriangles(0), 0);
         if (generateFoliage) GenerateFoliage(ref vertices, transform.position);

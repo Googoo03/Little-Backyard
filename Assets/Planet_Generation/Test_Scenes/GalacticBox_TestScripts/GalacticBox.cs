@@ -57,6 +57,7 @@ public class GalacticBox : MonoBehaviour
             GameObject instantiatedStar = Instantiate(star, starPositions[i]*(_size/2f) + transform.position, Quaternion.identity);
             instantiatedStar.transform.parent = transform;
             instantiatedStar.GetComponent<SolarSystemGeneration>().setEventManager(event_manager);
+            instantiatedStar.GetComponent<Object_Billboard>().setEventManager(event_manager);
             stars.Add(instantiatedStar);
         }
     }
@@ -79,6 +80,8 @@ public class GalacticBox : MonoBehaviour
         }
     }
 
+    public ref List<GameObject> getStars() { return ref stars; }
+
     private void generateStarPositions() {
         _generate = false;
         starPositions.Clear();
@@ -93,7 +96,7 @@ public class GalacticBox : MonoBehaviour
         starGenerator.setSeedPRNG((int)seed);
 
         //Generate new stars with the new seed
-        starGenerator.generatePoissonDisc3DSphere(ref starPositions, 5, 40, 16, 64);
+        starGenerator.generatePoissonDisc3DSphere(ref starPositions, 5, 5, 16, 64);
     }
 
 
