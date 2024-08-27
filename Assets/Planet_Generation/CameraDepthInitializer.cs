@@ -52,8 +52,8 @@ public class CameraDepthInitializer : MonoBehaviour
         Planet_intermediate.Create();
 
         Graphics.Blit(source, intermediate, mat);
-        Graphics.Blit(intermediate, destination, planetRings);
-        //Graphics.Blit(Planet_intermediate, destination, sunHalo);
+        Graphics.Blit(intermediate, Planet_intermediate, planetRings);
+        Graphics.Blit(Planet_intermediate, destination, sunHalo);
         intermediate.Release();
         Planet_intermediate.Release();
     }

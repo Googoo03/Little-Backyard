@@ -7,7 +7,7 @@ public class Event_Manager_Script : MonoBehaviour
     //THIS OBJECT IS THE MIDDLE MAN FOR ALL INTERACTIONS BETWEEN THE PLAYER AND THE ENVIRONMENT
 
     //SOLAR SYSTEM EVENTS
-    List<GameObject> planets = new List<GameObject> { };
+    [SerializeField ]List<GameObject> planets = new List<GameObject> { };
     [SerializeField] private bool updatePlanetList;
 
     //VEHICLE EVENTS
@@ -81,6 +81,11 @@ public class Event_Manager_Script : MonoBehaviour
         }
         else if (sun != null && Vector3.Distance(playerCamera.transform.position, sun.transform.position) < 70 && !generatedSolarSystem) {
             sun.GetComponent<SolarSystemGeneration>().Initialize();
+            atmosphereShader.SetVector("_SunPos", sun.transform.position);
+
+            ////////
+
+
             generatedSolarSystem = true;
         }
     }
@@ -185,4 +190,6 @@ public class Event_Manager_Script : MonoBehaviour
 
     //compare distances between stars but how?
     public void set_galacticCenter(GalacticBox gc) {galacticCenter = gc;}
+
+    public GameObject get_sun() { return sun; }
 }

@@ -339,6 +339,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6f242a6aed95b14fbf0422346b486f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  planets: []
   updatePlanetList: 0
   exitShip: 0
   enterShip: 0
@@ -547,6 +548,10 @@ PrefabInstance:
     - target: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
       propertyPath: m_Name
       value: Planet
+      objectReference: {fileID: 0}
+    - target: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4020168595206606, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
       propertyPath: m_LocalPosition.x

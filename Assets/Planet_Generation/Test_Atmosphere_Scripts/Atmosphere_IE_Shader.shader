@@ -163,6 +163,21 @@ Shader "Custom/Atmosphere_IE"
                 bool returnCondNeb = false;
                 float3 intersectionLineNeb;
                 float densityNeb = 0.0;
+                float nebR = tex3D(_CloudTex,_WorldSpaceCameraPos * (0.5/_NebulaScale) ).r;
+                float nebG = tex3D(_CloudTex,float3(0.5,0.5,0.5)+_WorldSpaceCameraPos * (0.5/_NebulaScale) ).r;
+                
+                float nebB = tex3D(_CloudTex,float3(0.6,0.2,0.8)+_WorldSpaceCameraPos * (0.5/_NebulaScale) ).r;
+                
+
+                nebR = (1-nebR)*(1-nebR);
+                nebB = (1-nebB)*(1-nebB);
+                nebG = (1-nebG)*(1-nebG);
+
+                float sum = nebR+nebG+nebB;
+                nebR/=sum;
+                nebG/=sum;
+                nebB/=sum;
+                _NebulaCol = float4(nebR,nebG,nebB,1);
 
                 fixed4 nebulaSample;
                 float nebula; //sample with applied coefficients

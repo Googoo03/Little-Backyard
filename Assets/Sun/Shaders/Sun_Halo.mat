@@ -67,13 +67,13 @@ Material:
     m_Floats:
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _Density: 0.08
+    - _Density: 0.35
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _HaloRadius: 1.93
+    - _HaloRadius: 1.29
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
@@ -89,7 +89,7 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _HaloColor: {r: 0.953125, g: 0.3671875, b: 0.54296875, a: 0.56640625}
+    - _HaloColor: {r: 0.3515625, g: 0.54296875, b: 0.94140625, a: 0.7421875}
     - _SolarSystemNormal: {r: 0, g: 1, b: 0, a: 0}
-    - _SunPos: {r: 5, g: 300, b: 5, a: 0}
+    - _SunPos: {r: -26.161411, g: 41.41248, b: 497.59482, a: 0}
   m_BuildTextureStacks: []

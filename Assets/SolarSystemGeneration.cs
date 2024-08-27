@@ -42,6 +42,10 @@ public class SolarSystemGeneration : MonoBehaviour {
         //Generates solar system
         GenerateSolarSystem();
 
+        //Each planet should inherit the event_manager script
+        for (int i = 0; i < planets.Count; ++i) { planets[i].GetComponent<Sphere>().setEventManager(event_manager); }
+
+
         //Set the sun to an icosohedron mesh
         transform.GetComponent<MeshFilter>().mesh = sunLoaded;
 
@@ -53,6 +57,7 @@ public class SolarSystemGeneration : MonoBehaviour {
         Sun_Halo.SetInt("_PlanetCount", planetCount);
         Sun_Halo.SetFloat("_OrbitRad", RegionRadius / planetCount);
         Sun_Halo.SetColor("_HaloColor", starColor);
+        Sun_Halo.SetVector("_SunPos", transform.position);
     }
 
 
@@ -118,6 +123,7 @@ public class SolarSystemGeneration : MonoBehaviour {
                 Vector3 position = new Vector3(transform.position.x + (fracX * cosineVal), transform.position.y, transform.position.z + (fracX * sineVal));
                 GameObject newPlanet = Instantiate(planet, position, Quaternion.identity);
                 newPlanet.transform.parent = transform; //we want the planets to be children
+                
 
                 planets.Add(newPlanet);
 

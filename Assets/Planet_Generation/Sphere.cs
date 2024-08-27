@@ -83,6 +83,8 @@ public class Sphere : MonoBehaviour
 
     [SerializeField] private Material atmoShader;
 
+    [SerializeField] private Event_Manager_Script event_manager;
+
     public float oceanFloor;
     public float oceanMultiplier;
 
@@ -156,6 +158,7 @@ public class Sphere : MonoBehaviour
 
         //set the ocean size
         transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor)*2;
+        transform.GetChild(0).GetComponent<Renderer>().material.SetVector("_SunPos", event_manager.get_sun().transform.position);
         ////////////////////////////
 
         //create all 6 sides of the sphere-cube
@@ -228,6 +231,8 @@ public class Sphere : MonoBehaviour
         //no setting atmosphere height as of yet
         return;
     }
+
+    public Event_Manager_Script getEvent_Manager() { return event_manager; }
 
     public ref List<Vector3> getWorleyPoints() {
         return ref worleyPoints;
@@ -373,6 +378,9 @@ public class Sphere : MonoBehaviour
     public float getInitialDistanceThreshold() {
         return initialDistanceThreshold;
     }
+
+    public void setEventManager(Event_Manager_Script e_m) { event_manager = e_m; }
+
 
     void GeneratePatches()
     {

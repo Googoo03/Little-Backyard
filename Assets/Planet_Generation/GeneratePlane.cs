@@ -59,6 +59,9 @@ public abstract class GeneratePlane : MonoBehaviour
     protected int rock_nummax;
     protected int rock_radius;
 
+    //EVENT MANAGER
+    Event_Manager_Script event_manager;
+
     protected bool foliageGenerationReturned = false;
 
     public abstract float NoiseValue(Vector3 pos, float scale);
@@ -125,6 +128,7 @@ public abstract class GeneratePlane : MonoBehaviour
         planetMaterial.SetFloat("_DisplacementStrength", 0.1f);
 
         float TypePlanet = (float)planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
+        event_manager = planePatch.planetObject.GetComponent<Sphere>().getEvent_Manager();
         planetMaterial.SetFloat("_PlanetType", TypePlanet); //I guess pixel sampling is 1-indexed?
 
 
@@ -212,6 +216,8 @@ public abstract class GeneratePlane : MonoBehaviour
 
 
         transform.GetComponent<Renderer>().material.SetVector("_Offset", new Vector4(patch.textureOffset.x, patch.textureOffset.y, 0, 0));
+
+        rend.material.SetVector("_SunPos", event_manager.get_sun().transform.position);
         /////////////////////////////////////////////////////////////////////
     }
 
@@ -254,6 +260,7 @@ public abstract class GeneratePlane : MonoBehaviour
     protected abstract void DispatchFoliage();
 
     
+
 
     private void Update()
     {
