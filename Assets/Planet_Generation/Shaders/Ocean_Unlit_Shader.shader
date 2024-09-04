@@ -17,18 +17,65 @@ Shader "Unlit/Ocean_Unlit_Shader"
     }
     SubShader
     {
-        Tags { "Queue" = "Transparent" "RenderType"="Transparent" }
-        ZWrite Off
-		Blend SrcAlpha OneMinusSrcAlpha
 
-        LOD 100
+        /*Pass{
+            Tags {"LightMode"="ShadowCaster"}
+            ZWrite On
+            ZTest LEqual
+		    Blend SrcAlpha OneMinusSrcAlpha
 
-        Pass
-        {
+            LOD 100
+
             CGPROGRAM
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile_shadowcaster
+            // make fog work
+            
+
+            #include "UnityCG.cginc"
+
+            
+
+            struct v2f
+            {
+
+                V2F_SHADOW_CASTER;
+            };
+
+            v2f vert (appdata_base v)
+            {
+                v2f o;
+
+                TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
+                return o;
+            }
+
+            
+
+            fixed4 frag (v2f i) : SV_Target
+            {
+                return fixed4(0,0,0,0);
+
+            }
+            ENDCG
+        }*/
+
+        Pass
+        {
+            Tags {"Queue"="Geometry"}
+            ZWrite On
+            ZTest LEqual
+		    Blend SrcAlpha OneMinusSrcAlpha
+
+            LOD 100
+
+            CGPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag
+            //#pragma multi_compile_shadowcaster
             // make fog work
             
 
@@ -44,6 +91,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 float3 worldPos : TEXCOORD3;
                 float3 worldNormal : TEXCOORD4;
                 float4 vertex : SV_POSITION;
+                //V2F_SHADOW_CASTER;
             };
 
             sampler2D _Bubbles;
@@ -78,7 +126,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
 
                 float3 viewVector = mul(unity_CameraInvProjection, float4((o.screenPos.xy/o.screenPos.w) * 2 - 1, 0, -1));
                 o.viewVector = mul(unity_CameraToWorld, float4(viewVector,0));
-
+                //TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
                 return o;
             }
 
@@ -143,6 +191,8 @@ Shader "Unlit/Ocean_Unlit_Shader"
 
                 waterColor *= dot(i.worldNormal,toSunVector);//(float)level / _Levels;
                 waterColor += specular;
+
+                //SHADOW_CASTER_FRAGMENT(i)
 
                 return float4(waterColor,alpha);
 

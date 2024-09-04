@@ -31,6 +31,10 @@ Shader "Custom/Atmosphere_IE"
         _NebulaCoeff ("Nebula Coefficients", Vector) = (0,0,0,0)
         _NebulaThreshold ("Nebula Threshold",float)  = 1
 
+        _OceanRad ("Ocean Radius", float) = 1
+        _Ocean ("Ocean Present", int) = 1
+        _OceanCol ("Ocean Color", Color) = (1,1,1,1)
+
         _Generate ("Generate",int) = 0
     }
     SubShader
@@ -90,6 +94,7 @@ Shader "Custom/Atmosphere_IE"
 
 
             sampler2D _MainTex;
+            sampler2D _LastCameraDepthTexture;
             
             float3 _PlanetPos;
             float3 _SunPos;
@@ -122,6 +127,12 @@ Shader "Custom/Atmosphere_IE"
             float4 _NebulaCoeff;
             float _NebulaThreshold;
 
+            //Ocean PARAMETERS
+            float _OceanRad;
+            int _Ocean;
+            float4 _OceanCol;
+
+
 
             float QuadraticSolve(float a, float b, float c, bool plus){
                 return plus ? ( (-b + sqrt(b*b - 4*a*c)) / 2*a) : ( (-b - sqrt(b*b - 4*a*c)) / 2*a);
@@ -139,6 +150,11 @@ Shader "Custom/Atmosphere_IE"
                 float depthTextureSample = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
                 float terrainLevel = LinearEyeDepth(depthTextureSample);
 
+
+                //water DEPTH
+                float waterDepthTextureSample = SAMPLE_DEPTH_TEXTURE(_LastCameraDepthTexture, i.uv);
+                float waterLevel = LinearEyeDepth(waterDepthTextureSample);
+
                  //CALCULATES WORLD POSITION AS OPPOSED TO DEPTH
                  const float3 ray_direction = normalize(viewDirection);
 
@@ -147,7 +163,8 @@ Shader "Custom/Atmosphere_IE"
                 float3 cam_forward_world = mul((float3x3)unity_CameraToWorld, float3(0,0,1));
                 float ray_depth_world = dot(cam_forward_world, ray_direction);
 
-                float3 terrainPosition = (ray_direction / ray_depth_world) * terrainLevel +  _WorldSpaceCameraPos;
+                float3 terrainPosition = (ray_direction / ray_depth_world) * min(terrainLevel,waterLevel) +  _WorldSpaceCameraPos;
+                //float3 waterPosition = (ray_direction / ray_depth_world) * waterLevel +  _WorldSpaceCameraPos;
                 ///////////////////////////////////////////////
 
                 
@@ -261,7 +278,7 @@ Shader "Custom/Atmosphere_IE"
                         // add the world space camera position to get the world space position from the depth texture
                         float3 terrainworldPos = viewPlane * terrainLevel + _WorldSpaceCameraPos;
 
-                        end_point = t2 > (terrainLevel) ? terrainPosition : _WorldSpaceCameraPos+(t2*viewDirection);
+                        end_point = t2 > (min(terrainLevel,waterLevel)) ? terrainPosition : _WorldSpaceCameraPos+(t2*viewDirection);
 
                         
                     
@@ -341,6 +358,16 @@ Shader "Custom/Atmosphere_IE"
                     //If not intersecting atmosphere
                     col = noColor;
                 }
+                
+
+                
+                float3 nearPlanePosition = (ray_direction * 0.01) +  _WorldSpaceCameraPos;
+                //if under water, color 
+                if(length(nearPlanePosition-_PlanetPos) <= _OceanRad){
+                    
+                    col = lerp(_OceanCol,col,exp(-terrainLevel)) * _OceanCol;
+                }
+                //////////////////////////////////////
                
 
                 return col;

@@ -157,7 +157,7 @@ public class Sphere : MonoBehaviour
 
 
         //set the ocean size
-        transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor)*2;
+        transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor);
         transform.GetChild(0).GetComponent<Renderer>().material.SetVector("_SunPos", event_manager.get_sun().transform.position);
         ////////////////////////////
 

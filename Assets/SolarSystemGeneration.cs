@@ -16,7 +16,8 @@ public class SolarSystemGeneration : MonoBehaviour {
     [SerializeField]private float seed;
     [SerializeField]private int density;
 
-    [SerializeField] private int planetCount;
+    [SerializeField] private int planetCap;
+    [SerializeField] private int planetCount = 0;
 
     [SerializeField]private int RegionRadius;
     [SerializeField]private int RegionHeight;
@@ -55,7 +56,7 @@ public class SolarSystemGeneration : MonoBehaviour {
 
         //Sets necessary shader variables for ring HUD
         Sun_Halo.SetInt("_PlanetCount", planetCount);
-        Sun_Halo.SetFloat("_OrbitRad", RegionRadius / planetCount);
+        Sun_Halo.SetFloat("_OrbitRad", planetCount > 0 ? RegionRadius / planetCount : 0);
         Sun_Halo.SetColor("_HaloColor", starColor);
         Sun_Halo.SetVector("_SunPos", transform.position);
     }
@@ -102,8 +103,8 @@ public class SolarSystemGeneration : MonoBehaviour {
     public void setEventManager(Event_Manager_Script e_m) { event_manager = e_m; }
 
     public void GenerateSolarSystem() {
-
-        for (int x = 0; x < planetCount; x++)
+        planetCount = 0;
+        for (int x = 0; x < planetCap; x++)
         {
 
             var hashValue = new Hash128();
@@ -118,7 +119,7 @@ public class SolarSystemGeneration : MonoBehaviour {
                 //ROTATE RANDOMLY ALONG CIRCULAR PATH
                 float cosineVal = Mathf.Cos( (hashCode % 360)); //the 500 is so its within 2pi range 
                 float sineVal = Mathf.Sin( (hashCode % 360));
-                float fracX = ( (x+1) / (float)planetCount) * RegionRadius; //each planet is a set fraction distance away from the sun.
+                float fracX = ( (x+1) / (float)planetCap) * RegionRadius; //each planet is a set fraction distance away from the sun.
 
                 Vector3 position = new Vector3(transform.position.x + (fracX * cosineVal), transform.position.y, transform.position.z + (fracX * sineVal));
                 GameObject newPlanet = Instantiate(planet, position, Quaternion.identity);
@@ -126,6 +127,7 @@ public class SolarSystemGeneration : MonoBehaviour {
                 
 
                 planets.Add(newPlanet);
+                planetCount++;
 
             }
         }  

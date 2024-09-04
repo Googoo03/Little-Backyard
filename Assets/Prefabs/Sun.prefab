@@ -164,7 +164,8 @@ MonoBehaviour:
   event_manager: {fileID: 0}
   seed: 310925700
   density: 2
-  planetCount: 3
+  planetCap: 3
+  planetCount: 0
   RegionRadius: 50
   RegionHeight: 50
   solarsystemSpacing: 1

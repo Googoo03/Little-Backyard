@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Sun_Halo
-  m_Shader: {fileID: 4800000, guid: 4ac8711fc26b1f042ae56459abd64ca5, type: 3}
+  m_Name: Simple_BLue
+  m_Shader: {fileID: 4800000, guid: ff18334b2357ee54eabadda632315d92, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -23,6 +23,10 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _Bubbles:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _BumpMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -43,16 +47,16 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _HeightMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _NoiseTex:
-        m_Texture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -63,33 +67,43 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _TexArray:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _BumpScale: 1
+    - _CliffThreshold: 0.1
     - _Cutoff: 0.5
-    - _Density: 0.35
+    - _DepthCoef: 0
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _HaloRadius: 1.29
+    - _L1: 0.1
+    - _L2: 0.5
+    - _Levels: 5
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
-    - _OrbitRad: 25
     - _Parallax: 0.02
-    - _PlanetCount: 2
+    - _PlanetType: 2
     - _SmoothnessTextureChannel: 0
+    - _Specular: 1
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _SunRayThreshold: 0.89
+    - _Threshold: 1
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Deep: {r: 0.5999999, g: 0.057735827, b: 0.057735827, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _HaloColor: {r: 0.14453125, g: 0.640625, b: 0.828125, a: 0.9765625}
-    - _SolarSystemNormal: {r: 0, g: 1, b: 0, a: 0}
-    - _SunPos: {r: -108.17511, g: 433.5525, b: -224.3443, a: 0}
+    - _Offset: {r: 0, g: 0, b: 0, a: 0}
+    - _Shallow: {r: 0.9245283, g: 0, b: 0, a: 1}
+    - _SunPos: {r: 1, g: 1, b: 1, a: 1}
+    - _Tile: {r: 1, g: 1, b: 0, a: 0}
+    - _Tiling: {r: 1, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []

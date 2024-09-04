@@ -7,11 +7,18 @@ public class CameraDepthInitializer : MonoBehaviour
 {
     // Start is called before the first frame update
     [SerializeField] private Camera playerCamera;
+    [SerializeField] private Camera transparentCamera;
+
+    [SerializeField] private Shader oceanDepthShader;
+
     [SerializeField] private Material mat;
     [SerializeField] private Material planetRings;
     [SerializeField] private Material sunHalo;
+
+    [SerializeField] private Material depthCopier;
     //[SerializeField] private int planetCount = 3;
     [SerializeField] private GameObject planet;
+    private RenderTexture waterDepthTexture;
 
     void Start()
     {
@@ -22,12 +29,32 @@ public class CameraDepthInitializer : MonoBehaviour
     {
         playerCamera = this.GetComponent<Camera>();
         playerCamera.depthTextureMode = DepthTextureMode.Depth;
+
+        
+        if (!waterDepthTexture) waterDepthTexture = new RenderTexture(Screen.width,Screen.height, 32, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
+        //waterDepthTexture.format = RenderTextureFormat.Depth;
+        waterDepthTexture.Create();
+
+        transparentCamera.depthTextureMode = DepthTextureMode.Depth;
+        transparentCamera.targetTexture = waterDepthTexture;
+
+        //transparentCamera.cullingMask = TransparentObject; //Water
+    }
+
+    private void LateUpdate()
+    {
+        transparentCamera.RenderWithShader(oceanDepthShader, "");
     }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
+        //Lets assume this works
+        transparentCamera.RenderWithShader(oceanDepthShader, "");
+        
+        //Then Graphics.blit with target texture as destination?
+        //Graphics.Blit(source, waterDepthTexture);
 
-        //GameObject planet = transform.parent.GetComponent<ShipControls>().nearbyPlanet;
+
         if (planet != null)
         {
             mat.SetVector("_PlanetPos", planet.transform.position); //sets new planet position for atmosphere shader when adequately close.
