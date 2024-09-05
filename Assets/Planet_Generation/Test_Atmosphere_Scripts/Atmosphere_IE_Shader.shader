@@ -279,6 +279,8 @@ Shader "Custom/Atmosphere_IE"
                         float3 terrainworldPos = viewPlane * terrainLevel + _WorldSpaceCameraPos;
 
                         end_point = t2 > (min(terrainLevel,waterLevel)) ? terrainPosition : _WorldSpaceCameraPos+(t2*viewDirection);
+                        //end_point = t2 > (terrainLevel) ? terrainPosition : _WorldSpaceCameraPos+(t2*viewDirection);
+
 
                         
                     

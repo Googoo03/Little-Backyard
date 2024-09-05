@@ -48,11 +48,10 @@ public class CameraDepthInitializer : MonoBehaviour
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        //Lets assume this works
+        MatchCameraSettings();
+
+        //Render depth texture with oceanDepthShader by rendering everything in view with a shadow cast
         transparentCamera.RenderWithShader(oceanDepthShader, "");
-        
-        //Then Graphics.blit with target texture as destination?
-        //Graphics.Blit(source, waterDepthTexture);
 
 
         if (planet != null)
@@ -62,9 +61,6 @@ public class CameraDepthInitializer : MonoBehaviour
             planetRings.SetVector("_PlanetPos", planet.transform.position);
             //planet.GetComponent<Sphere>().SetRingShader();
         }
-
-        //planetRings.SetVectorArray("_planetPositions", planetPositions);
-        //planetRings.GetVectorArray("_planetPositions", getplanetPos);
 
         RenderTexture intermediate = new RenderTexture(source.width, source.height, 0, source.format)
         {
@@ -83,5 +79,9 @@ public class CameraDepthInitializer : MonoBehaviour
         Graphics.Blit(Planet_intermediate, destination, sunHalo);
         intermediate.Release();
         Planet_intermediate.Release();
+    }
+
+    private void MatchCameraSettings() {
+        if(playerCamera) transparentCamera.fieldOfView = playerCamera.fieldOfView;
     }
 }

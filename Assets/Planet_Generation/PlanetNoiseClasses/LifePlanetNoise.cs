@@ -25,6 +25,9 @@ public class LifePlanetNoise : GeneratePlane
     [SerializeField] private Material grass_mat;
 
     private PoissonDisc poissonSampling = new PoissonDisc(); //used for generating foliage
+
+    [SerializeField] private List<GameObject> tree_objs = new List<GameObject>();
+
     private List<Matrix4x4> tree_m = new List<Matrix4x4>(1);
     private List<Matrix4x4> rock_m = new List<Matrix4x4>(1);
     private List<Matrix4x4> grass_m = new List<Matrix4x4>(1);
@@ -66,7 +69,7 @@ public class LifePlanetNoise : GeneratePlane
 
 
     protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) {
-        //POISSON DISC DISTRIBUTION OF TREE MESHES. SETS TEH MATRICES FOR POSITION, ROTATION, AND SCALE.
+        //POISSON DISC DISTRIBUTION OF TREE MESHES. SETS THE MATRICES FOR POSITION, ROTATION, AND SCALE.
         tree_mesh = (Resources.Load<GameObject>("Tree/Tree_Prefab").GetComponent<MeshFilter>().sharedMesh);
         tree_mat = (Material)(Resources.Load("Tree/Tree_Mat"));
 
@@ -103,14 +106,25 @@ public class LifePlanetNoise : GeneratePlane
         poissonSampling.setSeedPRNG(generateUniqueSeed(vertices[xVertCount * yVertCount / 2] + new Vector3(2, 0, 0)));
         poissonSampling.generatePoissonDisc(ref grass_positions, ref vertices, 32, xVertCount * yVertCount, xVertCount, yVertCount, 2);
 
-        for (int i = 0; i < tree_positions.Count; ++i) { //add the tree positions and subsequent rotations to the matrix buffer
+        //Request objects from the object pool (1 frame buffer)
+        object_pool_manager.requestPoolObjs(ref tree_objs, tree_positions.Count);
+
+        //NEED TO IDENTIFY WHEN TO SET OBJECT POSITIONS ETC. BECAUSE AT THE MOMENT THE LIST IS EMPTY WHEN THESE CHANGES ARE APPLIED
+
+        for (int i = 0; i < tree_objs.Count; ++i) { //add the tree positions and subsequent rotations to the matrix buffer
             
             Vector3 lookVec = new Vector3(tree_positions[i].x, tree_positions[i].y, tree_positions[i].z);
             if (lookVec.magnitude < (radius+oceanFloor*2)) continue; //dont generate in water
             Quaternion rot = Quaternion.LookRotation(-lookVec);
             Vector3 sca = Vector3.one * .02f;
-            tree_m.Add(Matrix4x4.TRS(tree_positions[i]+origin,rot,sca)); //transform rotation scale
+            //tree_m.Add(Matrix4x4.TRS(tree_positions[i]+origin,rot,sca)); //transform rotation scale
+            tree_objs[i].transform.position = tree_positions[i]+origin;
+            tree_objs[i].transform.rotation = rot;
+            tree_objs[i].transform.localScale = sca;
         }
+
+
+
 
         for (int i = 0; i < rock_positions.Count; ++i)
         { //add the tree positions and subsequent rotations to the matrix buffer
@@ -142,7 +156,7 @@ public class LifePlanetNoise : GeneratePlane
         //sends over to the gpu
         if (!foliageGenerationReturned) return;
 
-        Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m);
+        //Graphics.DrawMeshInstanced(tree_mesh, 0, tree_mat, tree_m);
         Graphics.DrawMeshInstanced(rock_mesh, 0, rock_mat, rock_m);
         Graphics.DrawMeshInstanced(grass_mesh, 0, grass_mat, grass_m);
     }

@@ -62,6 +62,9 @@ public abstract class GeneratePlane : MonoBehaviour
     //EVENT MANAGER
     Event_Manager_Script event_manager;
 
+    //POOL MANAGER
+    protected Object_Pool_Manager object_pool_manager;
+
     protected bool foliageGenerationReturned = false;
 
     public abstract float NoiseValue(Vector3 pos, float scale);
@@ -103,6 +106,11 @@ public abstract class GeneratePlane : MonoBehaviour
     private void Start() //this may need to be removed
     {
         parent = transform.parent.gameObject;
+
+        //Find object manager script at start. Expensive.
+        if(!object_pool_manager) object_pool_manager = FindObjectOfType<Object_Pool_Manager>();
+
+
         Generate(patch);
     }
     ~GeneratePlane() {
@@ -238,7 +246,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
         foliageGenerationReturned = true;
 
-        //mf.sharedMesh.SetTriangles(mf.sharedMesh.GetTriangles(0), 0);
+        //Generate foliage if and only if its at the lowest LOD level
         if (generateFoliage) GenerateFoliage(ref vertices, transform.position);
 
         this.gameObject.AddComponent<MeshCollider>();
