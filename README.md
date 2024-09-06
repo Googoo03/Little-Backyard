@@ -1,23 +1,27 @@
-# Space-Game
 
-This project, formally called the "Space-Game" is a personal project to demonstrate my skills with complex algorithms, procedural noise, GPU Programming, and game design.
+![LB_Banner_Aug21](https://github.com/user-attachments/assets/df342711-48be-4466-9554-10fd683af113)
 
-In this project, a procedural galaxy will be generated for the player. Using clever mechanics, the player can travel between each solar system and planet in real time. Each solar system and subsequent planet are procedurally generated as well. The player can explore each one of these planets, collect resources, build bases, and converse with alien species.
+## Description
 
-The planets use a dynamic Level-Of-Detail system to create the needed geometry on the fly. This makes it possible for each planet to be planet-sized while still containing detail on the minute levels. The terrain of each planet uses a mix of algorithms. As of now, each planet uses a mix of Worley Noise and Simplex Noise to generate its various terrains. In the future, more noise algorithms will be introduced to create rivers, towns, and economies on each of these planets.
+This project, formally called Little Backyard is a passion project of mine to demonstrate my skills with complex algorithms, procedural noise, GPU Programming, and game design. My ultimate goal for this project is to be published on Itch.io, link [here](https://karalis03.itch.io/little-backyard), and be maintained with features that both the playerbase and myself look forward to implementing. This game will be free to play, with pay-as-you-wish donations to further fund development.
 
-![Procedural Planet](https://raw.githubusercontent.com/Googoo03/Space-Game/782587b9eb24069287db498643e91f83170eefb7/.github/images/Planet_Render.png)
+In this project, the player is placed in the middle of a procedurally generated galaxy, filled with diverse planets, resources, and alien life. The player does not have a goal by design, this game falls under the "zen" category of games, letting the player simply experience the world around them as a moment to relax from the stresses of the world they wish to escape. 
 
-Each planet is made of a cube-sphere. There are 6 sides to each cube, whose lengths are normalized to give the impression of a sphere. Each side of the sphere is the root of an individual quadtree, which extends in height when the player crosses a boundary threshold. This continues recursively until a maximum height is reached. Example here.
+## Current Goals
 
-![LOD_Example](https://raw.githubusercontent.com/Googoo03/Space-Game/fa63fe534175d9518bdfca7bc8a105b07b1a7ae8/.github/images/DynamicLOD.png)
+As of September 6, 2024, my current goal is to implement an object pool system for all generated foliage on planets. At the moment, all foliage created is simply a GPU-instanced mesh, letting the player see but not interact with the foliage.
 
-All terrain values are decided by the GPU under a compute shader. This applies for both the Simplex Noise algorithm and Worley Noise algorithm. Each vertex position is then displaced in parallel in the GPU and passed back to the CPU for mesh generation.
+![Tree_Devlog2](https://github.com/user-attachments/assets/a8ddd89a-3b04-4ef7-b35d-393fced674f5)
 
-After the mesh positions have been decided, the normals are recalculated and the surface shader takes over. The surface shader assigns a color value per pixel of the mesh. Similar to the compute shader, this is computed in parallel on the GPU, allowing for consistent 400fps. The shader determines each color either by a corresponding height value of the vertex, or through calculating the steepness of each pixel, allowing for organic mountain colors to appear.
+By implementing this system, this will only have overhead at the beginning of the game, and virtually none elsewhere. All foliage objects will be picked from a pool, and will change their mesh, position, and various properties accordingly as the terrain generation scripts call on them. Once this is finished, the only GPU-instanced mesh will be the grass.
 
-![Atmosphere Render](https://raw.githubusercontent.com/Googoo03/Space-Game/782587b9eb24069287db498643e91f83170eefb7/.github/images/Atmosphere_Render.png)
+## Challenges and Compromises
 
-The atmosphere uses a post-processing shader that uses a clever algorithm to compute a fog around the planet quickly and efficiently. Most algorithms use a raycast, needing an iterative process to compute. However, my solution uses the orthogonal projection of the player's view and the planet position to determine where the atmosphere is. This is done in O(1) time as opposed to the standard O(n) time. Similar to all previous shaders, this is ran on the GPU in parallel.
+One of the detailing features that I wanted in Little Backyard was the ability to travel between planets and solar systems with no loading screen. There are many incredible examples of this, including No Man's Sky, however the player is still unable to travel between solar systems, rather only between planets within the same solar system. To tackle this, the player does not move around the galaxy, rather, the galaxy moves around the player. The entire playspace is encompassed in a 3x3 grid of "galactic boxes" - subset managers that govern their own part of the galaxy. When a player crosses the boundary of these boxes, they are shifted accordingly and generate any needed features.
 
-The difficulties that come with running algorithms on the GPU is in most cases pixels cannot communicate with each other. Therefore, each pixel has to determine is color or displacement purely based on itself. Additionally, algorithms must be computationally simple for compute shaders. If not, then they run the risk of interfering with each other on the same GPU. This was a large issue when implementing the Worley Noise algorithm, and ultimately led to refinements in its calculation.
+![GalacticBox](https://github.com/user-attachments/assets/9b2ed92a-30bd-4a86-ba32-8d1e8e1ca356)
+
+
+This means the entire play space that the player can interact with must fit within floating point error boundaries. This puts a barrier on how large the planets can be without encountering either floating point errors or solar systems interfering with each other. There are ideas to get around this, but nothing of the sort has been implemented as of yet.
+
+
