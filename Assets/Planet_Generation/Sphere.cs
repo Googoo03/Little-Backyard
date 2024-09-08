@@ -75,6 +75,8 @@ public class Sphere : MonoBehaviour
     [SerializeField] private float lacunarity;
 
     [SerializeField] private bool hasRings;
+    [SerializeField] private bool hasOcean;
+
     [SerializeField] private Material ringShader;
     [SerializeField] private Vector3 ringNormal;
     [SerializeField] private Color ringColor = new Color(0,0,0);
@@ -143,23 +145,21 @@ public class Sphere : MonoBehaviour
         
         //
         //hasRings = seed % 3 == 0; //rings will only appear if the seed is a multiple of 3. Is there a more sophistocated way of doing this? Sure.
-        hasRings = true; //for testing purposes only
+        
 
         //MAKE A NEW WAY OF GENERATING TYPE??? UGLY TO READ??
         //planetType = Mathf.FloorToInt((Perlin3d(px + seed, py + seed, pz + seed)*1000) % 6);
         //planetType = Random.Range(0,6);
 
         //set the planet type and name
-        planetType = UnityEngine.Random.Range(0,5);
+        planetType = (int)(seed % 6);
         planetType = planetType > 2 ? 2 : 4;
-        planetType = 2;
+        //planetType = 4;
         transform.name = "Planet" + planetType.ToString();
 
 
-        //set the ocean size
-        transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor);
-        transform.GetChild(0).GetComponent<Renderer>().material.SetVector("_SunPos", event_manager.get_sun().transform.position);
-        ////////////////////////////
+        hasRings = true; //for testing purposes only
+        hasOcean = planetType == 2 ? true : false;
 
         //create all 6 sides of the sphere-cube
         Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
@@ -179,6 +179,21 @@ public class Sphere : MonoBehaviour
 
         //Spawn Ring with correct orientation. Store orientation?
         if (hasRings) GenerateRings();
+        if (hasOcean)
+        {
+            transform.GetChild(0).gameObject.SetActive(true);
+            //set the ocean size
+            transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor);
+            transform.GetChild(0).GetComponent<Renderer>().material.SetVector("_SunPos", event_manager.get_sun().transform.position);
+        }
+        else {
+            transform.GetChild(0).gameObject.SetActive(true);
+            //set the ocean size
+            transform.GetChild(0).transform.localScale = Vector3.one * (0);
+            
+        }
+        
+        ////////////////////////////
 
         //generate the patches when finished configuring
         GeneratePatches();
@@ -228,6 +243,7 @@ public class Sphere : MonoBehaviour
     public void SetAtmoShader() {
         atmoShader.SetVector("_PlanetPos", transform.position);
         atmoShader.SetFloat("_Radius", radius+0.5f);
+        atmoShader.SetFloat("_OceanRad", transform.GetChild(0).transform.localScale.x);
         //no setting atmosphere height as of yet
         return;
     }

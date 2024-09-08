@@ -14,6 +14,9 @@ Shader "Unlit/Ocean_Unlit_Shader"
        _SunPos("Sun Position", Vector) = (1,1,1,1)
        _Threshold("Threshold",float)  =1
        _Specular("Specular",float)  =1
+
+       _WaveA ("WaveA", 2D) = "white"{}
+       _WaveB ("WaveB", 2D) = "white"{}
     }
     SubShader
     {
@@ -98,6 +101,9 @@ Shader "Unlit/Ocean_Unlit_Shader"
             float4 _Bubbles_ST;
 
             sampler2D _CameraDepthTexture;
+
+            sampler2D _WaveA;
+            sampler2D _WaveB;
             
             float _DepthCoef;
             float _Threshold;
@@ -118,6 +124,26 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 float3 worldNormal = normalize(mul((float3x3)unity_ObjectToWorld, v.normal));
                 float3 worldPos = mul (unity_ObjectToWorld, v.vertex).xyz;
 
+                
+
+                //float3 worldPos =  mul(unity_ObjectToWorld,v.vertex).xyz;
+
+				float vertexAnimWeight = length(worldPos - _WorldSpaceCameraPos);
+				vertexAnimWeight = 1;//saturate(pow(vertexAnimWeight / 30, 3));
+
+				float waveAnimDetail = 100;
+				float maxWaveAmplitude = 0.001* vertexAnimWeight; // 0.001
+				float waveAnimSpeed = 1;
+
+				//float3 worldNormal = normalize(mul(unity_ObjectToWorld, float4(v.normal, 0)).xyz);
+				float theta = acos(worldNormal.z);
+				float phi = sin(v.vertex.y);//atan2(v.vertex.y, v.vertex.x);
+				float waveA = sin(_Time.x * 3.5*waveAnimSpeed + theta * waveAnimDetail);
+				float waveB = sin(_Time.y * waveAnimSpeed + phi * waveAnimDetail);
+				float waveVertexAmplitude = (waveA + waveB) * maxWaveAmplitude;
+				v.vertex += float4(v.normal, 0) * waveVertexAmplitude;
+                //o.worldPos += float4(v.normal, 0) * waveVertexAmplitude;
+                //*-----------------------------------------------------------
                 o.worldNormal = worldNormal;
                 o.worldPos = worldPos;
                 o.vertex = UnityObjectToClipPos(v.vertex);
@@ -129,6 +155,57 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 //TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
                 return o;
             }
+
+            // Reoriented Normal Mapping
+			// http://blog.selfshadow.com/publications/blending-in-detail/
+			// Altered to take normals (-1 to 1 ranges) rather than unsigned normal maps (0 to 1 ranges)
+			float3 blend_rnm(float3 n1, float3 n2)
+			{
+				n1.z += 1;
+				n2.xy = -n2.xy;
+
+				return n1 * dot(n1, n2) / n1.z - n2;
+			}
+
+            float3 triplanarNormal(float3 vertPos, float3 normal, float3 scale, float2 offset, sampler2D normalMap) {
+				float3 absNormal = abs(normal);
+
+				// Calculate triplanar blend
+				float3 blendWeight = saturate(pow(normal, 4));
+				// Divide blend weight by the sum of its components. This will make x + y + z = 1
+				blendWeight /= dot(blendWeight, 1);
+
+				// Calculate triplanar coordinates
+				float2 uvX = vertPos.zy * scale + offset;
+				float2 uvY = vertPos.xz * scale + offset;
+				float2 uvZ = vertPos.xy * scale + offset;
+
+				// Sample tangent space normal maps
+				// UnpackNormal puts values in range [-1, 1] (and accounts for DXT5nm compression)
+				float3 tangentNormalX = UnpackNormal(tex2D(normalMap, uvX));
+				float3 tangentNormalY = UnpackNormal(tex2D(normalMap, uvY));
+				float3 tangentNormalZ = UnpackNormal(tex2D(normalMap, uvZ));
+
+				// Swizzle normals to match tangent space and apply reoriented normal mapping blend
+				tangentNormalX = blend_rnm(half3(normal.zy, absNormal.x), tangentNormalX);
+				tangentNormalY = blend_rnm(half3(normal.xz, absNormal.y), tangentNormalY);
+				tangentNormalZ = blend_rnm(half3(normal.xy, absNormal.z), tangentNormalZ);
+
+				// Apply input normal sign to tangent space Z
+				float3 axisSign = sign(normal);
+				tangentNormalX.z *= axisSign.x;
+				tangentNormalY.z *= axisSign.y;
+				tangentNormalZ.z *= axisSign.z;
+
+				// Swizzle tangent normals to match input normal and blend together
+				float3 outputNormal = normalize(
+					tangentNormalX.zyx * blendWeight.x +
+					tangentNormalY.xzy * blendWeight.y +
+					tangentNormalZ.xyz * blendWeight.z
+				);
+
+				return outputNormal;
+			}
 
             
 
@@ -159,14 +236,35 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 ///////////////////////////////////////////////
 
 
+                ////////////////REMOVE LATER
+                // -------- Specularity --------
+				// Specular normal
+				float waveSpeed = 0.1;
+				float waveNormalScale = 5;
+				float waveStrength = 0.4;
+				
+				float2 waveOffsetA = float2(_Time.x * waveSpeed, _Time.x * waveSpeed * 0.8);
+				float2 waveOffsetB = float2(_Time.x * waveSpeed * - 0.8, _Time.x * waveSpeed * -0.3);
+				float3 waveNormal1 = triplanarNormal(i.worldPos, i.worldNormal, waveNormalScale, waveOffsetA, _WaveA);
+				float3 waveNormal2 = triplanarNormal(i.worldPos, i.worldNormal, waveNormalScale, waveOffsetB, _WaveB);
+				float3 waveNormal = triplanarNormal(i.worldPos, waveNormal1, waveNormalScale, waveOffsetB, _WaveB);
+				float3 specWaveNormal = normalize(lerp(i.worldNormal, waveNormal, waveStrength));
+                ////////////////
+
                 //PHONG SPECULAR HIGHLIGHTS
-                float3 ref = normalize((2 * dot(i.worldNormal,toSunVector)* i.worldNormal) - toSunVector); //direction already normalized?
+                float3 ref = normalize((2 * dot(specWaveNormal,toSunVector)* specWaveNormal) - toSunVector); //direction already normalized?
                 fixed4 specular = fixed4(1,1,1,1);
+
+                
 
                 float reflection_value = dot(ray_direction,-ref) < 0 ? 0 : dot(ray_direction,-ref);
                 reflection_value = pow(reflection_value, _Specular); //is specular_power the same as a?
 
-                specular *= reflection_value/* * bubbleCol.b*/;
+                float step = 1.0 / _Levels;
+                int level = (reflection_value) / (step);
+                reflection_value = (float)level / _Levels;
+
+                specular *= reflection_value;
                 ////
 
 
@@ -176,6 +274,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 float waterDepth = length(terrainPosition - waterLevel);
 
                 float crestDepth = (0.5-(_SinTime.w/2));
+                crestDepth = waterDepth < (0.005) ? 0 : crestDepth; //that 0.005 shouldn't really be a constant. Should be a dynamic value instead
 
                 float3 waterColor = lerp(_Deep,_Shallow,exp(-waterDepth*_DepthCoef));
 
@@ -185,8 +284,8 @@ Shader "Unlit/Ocean_Unlit_Shader"
 
                 float alpha = 1;max(1-dot(-viewDirection, i.worldNormal),0.5);
 
-                float step = 1.0 / _Levels;
-                int level = (dot(i.worldNormal,toSunVector)) / (step);
+               
+                
                 //darkness is equal to the current value
 
                 waterColor *= dot(i.worldNormal,toSunVector);//(float)level / _Levels;

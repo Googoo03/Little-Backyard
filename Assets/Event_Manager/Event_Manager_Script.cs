@@ -82,7 +82,7 @@ public class Event_Manager_Script : MonoBehaviour
         else if (sun != null && Vector3.Distance(playerCamera.transform.position, sun.transform.position) < 70 && !generatedSolarSystem) {
             sun.GetComponent<SolarSystemGeneration>().Initialize();
             atmosphereShader.SetVector("_SunPos", sun.transform.position);
-
+            //atmosphereShader.SetFloat("_OceanRad", );
             ////////
 
 

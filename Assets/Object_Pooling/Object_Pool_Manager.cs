@@ -10,28 +10,31 @@ public class Object_Pool_Manager : MonoBehaviour
     [SerializeField] private GameObject obj;
 
     //Num of objects in pool
-    [SerializeField] private const int num = 250;
+    [SerializeField] private const int num = 1024;
 
     //Object pool itself
     Object_Pool<GameObject> objPool = new Object_Pool<GameObject>(num);
 
-    //Queue of requesters to be resolved each frame
-    Queue<Tuple<List<GameObject>, int>> queue = new Queue<Tuple<List<GameObject>, int>>();
+    //List of requesters to hold until release
+    //Holds 2
+    List<Tuple<List<GameObject>, List<int>>> _requestReceipt = new List<Tuple<List<GameObject>, List<int> >>();
 
 
     //Awake runs before the game starts
     void Awake()
     {
-        if (!obj) obj = new GameObject("Foliage_Object_");
+        if (!obj) obj = new GameObject();
 
         for (int i = 0; i < num; ++i)
         {
             GameObject newObj = Instantiate(obj, Vector3.zero, Quaternion.identity);
-            newObj.transform.name += i.ToString();
+            newObj.transform.name = "Foliage_Object_"+i.ToString();
             newObj.AddComponent<MeshFilter>();
             newObj.AddComponent<MeshRenderer>();
+            newObj.AddComponent<BoxCollider>();
             //newObj.transform.position = Vector3.zero;
-
+            newObj.SetActive(false);
+            newObj.transform.parent = transform;
             objPool.addPoolObj(newObj);
         }
     }
@@ -39,7 +42,7 @@ public class Object_Pool_Manager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        while (queue.Count > 0)
+        /*while (queue.Count > 0)
         {
 
             //Get request
@@ -47,13 +50,33 @@ public class Object_Pool_Manager : MonoBehaviour
 
             //use find Subpool to get objects if available. Apply to list
             objPool.findSubPool(request);
+        }*/
+    }
+
+    public void releasePoolObjs(ref List<GameObject> list) {
+        for (int i = 0; i < _requestReceipt.Count; ++i) {
+            if (_requestReceipt[i].Item1 != list) continue;
+
+            _requestReceipt[i].Item2.ForEach(item => { 
+                //int index = _requestReceipt[i].Item2.IndexOf(item);
+                objPool.releasePool(item); 
+                
+            });
+            
+            _requestReceipt.RemoveAt(i);
+            break;
         }
     }
 
     public void requestPoolObjs(ref List<GameObject> list, int num)
     {
+        Tuple<List<GameObject>, int> request = new Tuple<List<GameObject>, int>(list, num);
+        Tuple<List<GameObject>, List<int>> receipt = new Tuple<List<GameObject>, List<int>>(list, new List<int>());
 
-        //need to enqueue the pointer of the list so it can be modified later
-        queue.Enqueue(new Tuple<List<GameObject>, int>(list, num));
+        //find a subpool of objects that can be allocated, then store the indices at which these are found in a receipt.
+        objPool.findSubPool(request,receipt);
+
+        _requestReceipt.Add(receipt); // can be referenced later on to release objects
+
     }
 }

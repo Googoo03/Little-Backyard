@@ -9,16 +9,18 @@ namespace ObjPool
 {
     public class Object_Pool<T>
     {
-        private List<Tuple<T,bool>> _pool;
+        [SerializeField] private List<Tuple<T,bool>> _pool;
         private int _m; //max value
 
-        private int _indexer;
+        private static int _indexer = 0;
 
 
 
         //CONSTRUCTORS
         public Object_Pool( int capacity ){
             _pool = new List<Tuple<T,bool>>(capacity);
+            //set all indices to false at start
+            _pool.ForEach(item => { item = new Tuple<T, bool>(item.Item1, false); }) ;
             _m = capacity;
         }
 
@@ -36,16 +38,17 @@ namespace ObjPool
         }
 
         public void lockPool(int index) {
+            
             _pool[index] = new Tuple<T, bool>(_pool[index].Item1, true);
         }
 
         //returns a list of objects that are free. Does 1 complete rotation in the list
-        public void findSubPool( Tuple<List<T>,int> request) {
+        public void findSubPool( Tuple<List<T>,int> request, Tuple<List<T>,List<int>> receipt) {
 
             List<int> foundIndices = new List<int> ();
             List<T> foundObjs = new List<T> ();
             int found = 0;
-            int i = _indexer;
+            int i = 0;
             //int max = _indexer == 0 ? _m-1 : _indexer - 1;
 
             while (i < _pool.Count && found < request.Item2) {
@@ -76,9 +79,11 @@ namespace ObjPool
                 //increment number that is found
                 found++;
             }*/
-            _indexer = i;
+            
 
             if (found < request.Item2) return; //return an empty list if quota is not met
+
+            _indexer = i;
 
 
             //if quota is met, then lock those who are needed
@@ -88,6 +93,7 @@ namespace ObjPool
 
             //WOOHOO FIRST LAMBDA FUNCTION
             foundObjs.ForEach(item => { request.Item1.Add(item); });
+            foundIndices.ForEach(item => { receipt.Item2.Add(item); });
 
             return; //return the list that we find
         }

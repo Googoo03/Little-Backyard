@@ -40,7 +40,7 @@ public class Object_Pool_Test : MonoBehaviour
             Tuple<List<GameObject>,int> request = queue.Dequeue();
 
             //use find Subpool to get objects if available. Apply to list
-            objPool.findSubPool(request);
+            //objPool.findSubPool(request);
         }
     }
 

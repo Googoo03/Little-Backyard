@@ -5,6 +5,7 @@ Shader "Custom/Planet_Surface_Shader"
         _Color ("Color", Color) = (1,1,1,1)
         _HeightMap ("HeightMap", 2D) = "white" {}
         _TexArray("Texture Array", 2DArray) = "" {}
+        _BlueNoise( "Blue Noise", 2D) = "white"{}
 
         _Tiling("TextureTiling", Vector) = (1,1,0,0)
         _PlanetType("Planet Type", int) = 2
@@ -37,6 +38,9 @@ Shader "Custom/Planet_Surface_Shader"
         #pragma target 3.5
 
         sampler2D _HeightMap;
+        sampler2D _BlueNoise;
+        float4 _BlueNoise_ST;
+        
         float4 _Tile;
         float4 _Offset;
         float4 _Tiling;
@@ -79,7 +83,6 @@ Shader "Custom/Planet_Surface_Shader"
 
 
         float3 blend(fixed4 c1, float a1, fixed4 c2, float a2){
-            //return c1.a + a1 > c2.a + a2 ? c1.rgb : c2.rgb;
             float denom = a1+a2;
             return (c1.rgb * a1/denom) + (c2.rgb * a2/denom);
         }
@@ -91,12 +94,21 @@ Shader "Custom/Planet_Surface_Shader"
             return ret;
         }
 
+        float easeInOutExpo(float x){
+        return x == 0
+          ? 0
+          : x == 1
+          ? 1
+          : x < 0.5 ? pow(2, 20 * x - 10) / 2
+          : (2 - pow(2, -20 * x + 10)) / 2;
+        }
+
         void vert(inout appdata_full vertexData, out Input o) {
 
             UNITY_INITIALIZE_OUTPUT(Input, o);
 
             o.normal = vertexData.normal;
-            o.vertPos = vertexData.vertex;
+            o.vertPos = vertexData.vertex.xyz;//mul (unity_ObjectToWorld, vertexData.vertex).xyz;
             o.worldNormal = WorldNormalVector (IN, o.normal);
 
             float4 oVertex = UnityObjectToClipPos(vertexData.vertex);
@@ -110,16 +122,17 @@ Shader "Custom/Planet_Surface_Shader"
 
 
 
-
+        
         float CliffOpacity(Input IN){
-
-            float3 toPlanetVector = normalize(IN.vertPos);
+            float3 vertexPos = mul (unity_ObjectToWorld, IN.vertPos).xyz;
+            float3 toPlanetVector = normalize(vertexPos-_PlanetPos);
             float steepness = 1-dot(toPlanetVector,IN.normal);
-            if(steepness > _CliffThreshold) return 1;
+            //if(steepness > _CliffThreshold) return 1;
 
-            return steepness;
+            return steepness > _CliffThreshold ? 1 : 0;
+            //return steepness;
         }
-
+        
 
 
 
@@ -147,12 +160,20 @@ Shader "Custom/Planet_Surface_Shader"
             fixed4 cliff = UNITY_SAMPLE_TEX2DARRAY(_TexArray, float3(IN.uv_HeightMap * _Tiling.xy, (3*6) + _PlanetType)); //sample index 0. There should be a designated index for cliffs.
             ///////////////////////////////////////////////////////////////
 
+            //Sample Blue Noise
+            fixed4 blueNoise = tex2D(_BlueNoise,IN.uv_HeightMap * _BlueNoise_ST);
+            //
+
 
             //CALCULATE ALL SURFACE OPACITIES
             float cliffOpacity = CliffOpacity(IN);
 
-            float blendOpacity = abs((    (red.r - texBounds[level_index]) - (texBounds[level_index+1] - texBounds[level_index]) )) / abs(texBounds[level_index+1] - texBounds[level_index] + .000001);
-            blendOpacity = easeInOutCubic(blendOpacity);
+            float blendOpacity = 1.0 - (abs( (red.r - texBounds[level_index]) ) / abs(texBounds[level_index+1] - texBounds[level_index]));
+            blendOpacity = level_index < 2 ? blendOpacity : 1;
+
+            
+            
+            blendOpacity = easeInOutExpo(blendOpacity);
             /////////////////////////////////
 
             //BLACK OUTLINE
@@ -177,13 +198,8 @@ Shader "Custom/Planet_Surface_Shader"
             int level = dotP / (step);
             //darkness is equal to the current value
 
-
-            //int range = dot(IN.worldNormal,toSunVector)*mask
-            /*o.Albedo *= dot(IN.worldNormal,toSunVector) <= 0.01 ? .25 : 1;
-            o.Albedo *= dot(IN.worldNormal,toSunVector) <= 0.1 ? .5 : 1;
-            o.Albedo *= dot(IN.worldNormal,toSunVector) >= 0.7 ? 1.5 : 1;
-            */
             o.Albedo *= (float)level / _Levels;
+            o.Albedo *= 1-(blueNoise*0.2);
 
             o.Alpha = c1.a;
             /////////////////////
