@@ -3,6 +3,7 @@ Shader "Custom/Rock_Surface_Shader"
     Properties
     {
         _Color ("Color", Color) = (1,1,1,1)
+        _Accent ("Accent Color", Color) = (1,1,1,1)
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
         _BlueNoise ("Blue Noise", 2D) = "white" {}
         _SunPos( "Sun Position", Vector) = (1,1,1,1)
@@ -38,6 +39,15 @@ Shader "Custom/Rock_Surface_Shader"
             INTERNAL_DATA
         };
 
+        float easeInOutExpo(float x){
+        return x == 0
+          ? 0
+          : x == 1
+          ? 1
+          : x < 0.5 ? pow(2, 20 * x - 10) / 2
+          : (2 - pow(2, -20 * x + 10)) / 2;
+        }
+
         void vert(inout appdata_full vertexData, out Input o) {
 
             UNITY_INITIALIZE_OUTPUT(Input, o);
@@ -55,6 +65,8 @@ Shader "Custom/Rock_Surface_Shader"
         }
 
         fixed4 _Color;
+        float4 _BlueNoise_ST;
+        fixed4 _Accent;
         float3 _SunPos;
         
 
@@ -71,10 +83,12 @@ Shader "Custom/Rock_Surface_Shader"
             float3 viewDirection = normalize(IN.viewVector);
             // Albedo comes from a texture tinted by color
             fixed4 c = tex2D (_MainTex, IN.uv_MainTex);
-            fixed4 blueNoise = tex2D (_BlueNoise, IN.uv_MainTex);
-            o.Albedo = c.rgb;
+            fixed4 blueNoise = tex2D (_BlueNoise, IN.uv_MainTex * _BlueNoise_ST);
+            //blueNoise = blueNoise.r > 0.15 ? fixed4(1,1,1,1) : fixed4(0,0,0,0);
+            //o.Albedo = c.rgb;
+            o.Albedo = lerp(_Accent, c.rgb,1-(easeInOutExpo(blueNoise)));
             o.Albedo *= dot(IN.worldNormal,toSunVector) > 0.5 ? 1 : 0.2;
-            o.Albedo *= 1-(blueNoise*0.4);
+            
             o.Alpha = c.a;
             //BLACK OUTLINE
             /*if(abs(dot(IN.worldNormal,viewDirection))< 0.5){

@@ -8,6 +8,7 @@ namespace Poisson
     {
         private uint startSeed;
         private const float _2PI = 6.28f;
+        private float density = 1;
 
         public void setSeedPRNG(int seed)
         {
@@ -25,6 +26,8 @@ namespace Poisson
             startSeed = val;
             return val;
         }
+
+        public void setDensity(float den) { density = den; }
 
         private bool meetsDistanceThreshold(int radius, ref bool[] hashgrid,int startIndex,int maxX, int maxY) {
             int halfradius = radius / 2;
@@ -188,7 +191,7 @@ namespace Poisson
                     bool_index = ((int)Mathf.Max(y-1, 0) * maxX) + (int)x;
                     int interpolate_index = ((int)Mathf.Max(y, 0) * maxX) + (int)(x+1);
 
-                    if (meetsDistanceThreshold(radius, ref hashgrid, bool_index, maxX, maxY))
+                    if (meetsDistanceThreshold(radius, ref hashgrid, bool_index, maxX, maxY) && rand/_2PI > (1.0f/density))
                     {
                         if (!found) {
                             next_x = x; next_y = y;

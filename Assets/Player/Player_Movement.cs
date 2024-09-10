@@ -84,7 +84,9 @@ public class Player_Movement : Controllable_Entity
     }
 
     private void HeadBob() {
-        t += (forward * Time.deltaTime)*8.5f;
+        float forward_side_factor = Mathf.Clamp(forward+side,-1,1);
+        if (Mathf.Abs(forward + side) < 0.001f) forward_side_factor = Mathf.Max(forward, side);
+        t += (forward_side_factor * Time.deltaTime)*6.5f;
         t = t > 6.28f ? 0.0f : t;
 
         _camera.transform.localPosition = camera_offset + (new Vector3(Mathf.Sin(t),Mathf.Cos(2*t), 0)*0.3f);

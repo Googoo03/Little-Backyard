@@ -13,14 +13,7 @@ using UnityEditor.Rendering.LookDev;
 
 public class LifePlanetNoise : GeneratePlane
 {
-    //Noise simplexNoise = new Noise();
     ComputeShader simplex;
-    //private int simplexHandle;
-    [SerializeField] private Mesh tree_mesh;
-    [SerializeField] private Material tree_mat;
-
-    [SerializeField] private Mesh rock_mesh;
-    [SerializeField] private Material rock_mat;
 
     [SerializeField] private Mesh grass_mesh;
     [SerializeField] private Material grass_mat;
@@ -30,8 +23,6 @@ public class LifePlanetNoise : GeneratePlane
     [SerializeField] private List<GameObject> tree_objs = new List<GameObject>();
     [SerializeField] private List<GameObject> rock_objs = new List<GameObject>();
 
-    private List<Matrix4x4> tree_m = new List<Matrix4x4>(1);
-    private List<Matrix4x4> rock_m = new List<Matrix4x4>(1);
     private List<Matrix4x4> grass_m = new List<Matrix4x4>(1);
 
     Mesh mesh;
@@ -102,6 +93,7 @@ public class LifePlanetNoise : GeneratePlane
 
         int seed;
         int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
+        poissonSampling.setDensity(3f);
         
 
         seed = generateUniqueSeed(vertices[mid_index]);

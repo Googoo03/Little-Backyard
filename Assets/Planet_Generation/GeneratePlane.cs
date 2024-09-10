@@ -50,6 +50,12 @@ public abstract class GeneratePlane : MonoBehaviour
     private GameObject parent;
 
     //FOLIAGE PARAMETERS
+    [SerializeField] protected Mesh tree_mesh;
+    [SerializeField] protected Material tree_mat;
+
+    [SerializeField] protected Mesh rock_mesh;
+    [SerializeField] protected Material rock_mat;
+
     public bool generateFoliage;
     protected int tree_k;
     protected int tree_nummax = 256;

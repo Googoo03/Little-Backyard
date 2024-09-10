@@ -143,7 +143,7 @@ public class Event_Manager_Script : MonoBehaviour
 
         Vector3 offsetRespecttoRotation = ((destination.transform.right*offset.x) + (destination.transform.up*offset.y) + (destination.transform.forward*offset.z))*scale;
 
-        if (Vector3.Distance(playerCamera.transform.position, destination.position+(offsetRespecttoRotation)) > .01f)
+        if (Vector3.Distance(playerCamera.transform.position, destination.position+(offsetRespecttoRotation)) > .001f)
         {
             //if not close enough, lerp
             playerCamera.transform.position = Vector3.Lerp(playerCamera.transform.position, destination.position + (offsetRespecttoRotation), 3*Time.deltaTime);

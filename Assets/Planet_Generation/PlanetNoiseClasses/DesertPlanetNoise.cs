@@ -4,11 +4,17 @@ using UnityEngine;
 using Simplex;
 using Worley;
 using UnityEngine.Rendering;
+using Poisson;
 
 public class DesertPlanetNoise : GeneratePlane
 {
     ComputeShader simplex;
     ComputeShader worley;
+
+    private PoissonDisc poissonSampling = new PoissonDisc();
+
+    [SerializeField] private List<GameObject> tree_objs = new List<GameObject>();
+    [SerializeField] private List<GameObject> rock_objs = new List<GameObject>();
 
     int worleyScale;
 
@@ -25,38 +31,90 @@ public class DesertPlanetNoise : GeneratePlane
         lacunarity = 2;
         persistance = 0.5f;
         changeHeight = true;
+
+        tree_k = 3;
+        tree_radius = 8;
+        tree_nummax = 1;
+
+        rock_k = 3;
+        rock_radius = 8;
+        rock_nummax = 1;
     }
-    /*protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight)
+
+    private void OnDestroy()
     {
-        //EACH PLANET TYPE NEEDS TO HAVE INDEPENDENT TUNED PARAMETERS
+        if (this == null) return;
+        tree_objs.ForEach(item => { item.SetActive(false); });
+        rock_objs.ForEach(item => { item.SetActive(false); });
 
-
-
-        //the getcomponent lines look ugly, is there a way to clean it up?
-        int regionLength = patch.planetObject.GetComponent<Sphere>().getRegionLength();
-        for (int r = 0; r < regionLength - 1; r++)
-        {
-            float currentIndexHeight = patch.planetObject.GetComponent<Sphere>().getHeightArrayValue(r);
-            float nextIndexHeight = patch.planetObject.GetComponent<Sphere>().getHeightArrayValue(r + 1);
-
-
-            if (currentHeight >= currentIndexHeight && currentHeight < nextIndexHeight)
-            {
-                Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r);
-                //tex.SetPixel(x, y, color);
-                break;
-            }
-            if (r == regionLength - 2)
-            {
-                Color color = patch.planetObject.GetComponent<Sphere>().getRegionColor(r - 1);
-                //tex.SetPixel(x, y, color);
-            }
-        }
-    }*/
+        object_pool_manager.releasePoolObjs(ref tree_objs);
+        object_pool_manager.releasePoolObjs(ref rock_objs);
+    }
 
     protected override void DispatchFoliage() { }
 
-    protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) { }
+    protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) {
+        tree_mesh = (Resources.Load<GameObject>("Cactus/Cactus_Prefab").GetComponent<MeshFilter>().sharedMesh);
+        tree_mat = (Material)(Resources.Load("Cactus/Cactus_Mat"));
+
+        rock_mesh = (Resources.Load<GameObject>("Rock/Rock_Prefab").GetComponent<MeshFilter>().sharedMesh);
+        rock_mat = (Material)(Resources.Load("Rock/Rock_Mat"));
+
+        List<Vector3> tree_positions = new List<Vector3>();
+        List<Vector3> rock_positions = new List<Vector3>();
+
+        int seed;
+        int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
+        poissonSampling.setDensity(1.05f);
+
+        seed = generateUniqueSeed(vertices[mid_index]);
+        poissonSampling.setSeedPRNG(seed);
+        poissonSampling.generatePoissonDisc(ref tree_positions, ref vertices, tree_k, tree_nummax, xVertCount, yVertCount, tree_radius);
+
+        seed = generateUniqueSeed(vertices[mid_index] + new Vector3(1, 0, 0));
+        poissonSampling.setSeedPRNG(seed);
+        poissonSampling.generatePoissonDisc(ref rock_positions, ref vertices, rock_k, rock_nummax, xVertCount, yVertCount, rock_radius);
+
+        //Request objects from the object pool (1 frame buffer)
+        object_pool_manager.requestPoolObjs(ref tree_objs, tree_positions.Count);
+
+        for (int i = 0; i < tree_objs.Count; ++i)
+        { //add the tree positions and subsequent rotations to the matrix buffer
+
+            Vector3 lookVec = new Vector3(tree_positions[i].x, tree_positions[i].y, tree_positions[i].z);
+
+            Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0, 0, UnityEngine.Random.Range(0, 180));
+            Vector3 sca = Vector3.one * .015f;
+
+            tree_objs[i].SetActive(true);
+            tree_objs[i].transform.position = tree_positions[i] + origin;
+            tree_objs[i].transform.rotation = rot;
+            tree_objs[i].transform.localScale = sca;
+            tree_objs[i].GetComponent<MeshFilter>().mesh = tree_mesh;
+            tree_objs[i].GetComponent<MeshRenderer>().material = tree_mat;
+        }
+
+        //REQUEST OBJECTS FOR ROCKS-----------------------------------------------
+        object_pool_manager.requestPoolObjs(ref rock_objs, rock_positions.Count);
+
+        for (int i = 0; i < rock_objs.Count; ++i)
+        { //add the tree positions and subsequent rotations to the matrix buffer
+
+            Vector3 lookVec = new Vector3(rock_positions[i].x, rock_positions[i].y, rock_positions[i].z);
+
+            Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0, 0, UnityEngine.Random.Range(0, 180));
+            Vector3 sca = Vector3.one * .01f;
+            rock_objs[i].SetActive(true);
+            rock_objs[i].transform.position = rock_positions[i] + origin;
+            rock_objs[i].transform.rotation = rot;
+            rock_objs[i].transform.localScale = sca;
+            rock_objs[i].GetComponent<MeshFilter>().mesh = rock_mesh;
+            rock_objs[i].GetComponent<MeshRenderer>().material = rock_mat;
+        }
+        //-----------------------------------------------------------------------
+
+        return;
+    }
 
     protected override void DispatchNoise(Vector3[] vertices, Vector3 origin)
     {
