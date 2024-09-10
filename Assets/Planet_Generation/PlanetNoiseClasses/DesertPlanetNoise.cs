@@ -15,6 +15,7 @@ public class DesertPlanetNoise : GeneratePlane
 
     [SerializeField] private List<GameObject> tree_objs = new List<GameObject>();
     [SerializeField] private List<GameObject> rock_objs = new List<GameObject>();
+    [SerializeField] private List<GameObject> bush_objs = new List<GameObject>();
 
     int worleyScale;
 
@@ -60,8 +61,13 @@ public class DesertPlanetNoise : GeneratePlane
         rock_mesh = (Resources.Load<GameObject>("Rock/Rock_Prefab").GetComponent<MeshFilter>().sharedMesh);
         rock_mat = (Material)(Resources.Load("Rock/Rock_Mat"));
 
+        Mesh bush_mesh = (Resources.Load<GameObject>("Dead_Bush/Dead_Bush_Prefab").GetComponent<MeshFilter>().sharedMesh);
+        Material bush_mat = (Material)(Resources.Load("Dead_Bush/Dead_Bush_Mat"));
+
+
         List<Vector3> tree_positions = new List<Vector3>();
         List<Vector3> rock_positions = new List<Vector3>();
+        List<Vector3> bush_positions = new List<Vector3>();
 
         int seed;
         int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
@@ -74,6 +80,10 @@ public class DesertPlanetNoise : GeneratePlane
         seed = generateUniqueSeed(vertices[mid_index] + new Vector3(1, 0, 0));
         poissonSampling.setSeedPRNG(seed);
         poissonSampling.generatePoissonDisc(ref rock_positions, ref vertices, rock_k, rock_nummax, xVertCount, yVertCount, rock_radius);
+
+        seed = generateUniqueSeed(vertices[mid_index] + new Vector3(2, 0, 0));
+        poissonSampling.setSeedPRNG(seed);
+        poissonSampling.generatePoissonDisc(ref bush_positions, ref vertices, 3, 6, xVertCount, yVertCount, 6);
 
         //Request objects from the object pool (1 frame buffer)
         object_pool_manager.requestPoolObjs(ref tree_objs, tree_positions.Count);
@@ -110,6 +120,25 @@ public class DesertPlanetNoise : GeneratePlane
             rock_objs[i].transform.localScale = sca;
             rock_objs[i].GetComponent<MeshFilter>().mesh = rock_mesh;
             rock_objs[i].GetComponent<MeshRenderer>().material = rock_mat;
+        }
+        //-----------------------------------------------------------------------
+
+        //REQUEST OBJECTS FOR DEAD BUSHES----------------------------------------
+        object_pool_manager.requestPoolObjs(ref bush_objs, bush_positions.Count);
+
+        for (int i = 0; i < bush_objs.Count; ++i)
+        { //add the tree positions and subsequent rotations to the matrix buffer
+
+            Vector3 lookVec = bush_positions[i];
+
+            Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0, 0, UnityEngine.Random.Range(0, 180));
+            Vector3 sca = Vector3.one * .002f;
+            bush_objs[i].SetActive(true);
+            bush_objs[i].transform.position = bush_positions[i] + origin;
+            bush_objs[i].transform.rotation = rot;
+            bush_objs[i].transform.localScale = sca;
+            bush_objs[i].GetComponent<MeshFilter>().mesh = bush_mesh;
+            bush_objs[i].GetComponent<MeshRenderer>().material = bush_mat;
         }
         //-----------------------------------------------------------------------
 

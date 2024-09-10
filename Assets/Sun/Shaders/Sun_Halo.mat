@@ -77,9 +77,9 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
-    - _OrbitRad: 16
+    - _OrbitRad: 25
     - _Parallax: 0.02
-    - _PlanetCount: 3
+    - _PlanetCount: 2
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -89,7 +89,7 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _HaloColor: {r: 0.53125, g: 0.06640625, b: 0.8828125, a: 0.484375}
+    - _HaloColor: {r: 0.14453125, g: 0.640625, b: 0.828125, a: 0.9765625}
     - _SolarSystemNormal: {r: 0, g: 1, b: 0, a: 0}
-    - _SunPos: {r: 25.183582, g: -353.0785, b: -353.13083, a: 0}
+    - _SunPos: {r: -108.17511, g: 433.5525, b: -224.3443, a: 0}
   m_BuildTextureStacks: []
