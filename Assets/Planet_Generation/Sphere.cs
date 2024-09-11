@@ -67,6 +67,8 @@ public class Sphere : MonoBehaviour
 
     [SerializeField] private float radius;
     [SerializeField] private float atmosphereHeight;
+    [SerializeField] private float atmosphereDensity;
+    [SerializeField] private float cloudDensity;
 
     [SerializeField] private UInt64 seed;
     [SerializeField] private float scale;
@@ -153,13 +155,19 @@ public class Sphere : MonoBehaviour
 
         //set the planet type and name
         planetType = (int)(seed % 6);
-        planetType = planetType > 2 ? 2 : 4;
-        planetType = 3;
+        planetType = planetType > 2 ? (planetType > 4 ? 3 : 4) : 2;
+        planetType = 2;
         transform.name = "Planet" + planetType.ToString();
 
 
         hasRings = true; //for testing purposes only
         hasOcean = planetType == 2 ? true : false;
+
+        atmosphereDensity = ((seed >> 8) % 256) / 256.0f;
+        atmosphereDensity *= planetType == 3 ? 0.03f : 1;
+
+        cloudDensity = ((seed >> 12) % 256) / 256.0f * 32.0f;
+        cloudDensity *= planetType == 3 ? 0 : 1;
 
         //create all 6 sides of the sphere-cube
         Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
@@ -243,6 +251,8 @@ public class Sphere : MonoBehaviour
     public void SetAtmoShader() {
         atmoShader.SetVector("_PlanetPos", transform.position);
         atmoShader.SetFloat("_Radius", radius+0.5f);
+        atmoShader.SetFloat("_CloudDensity", cloudDensity);
+        atmoShader.SetFloat("_Density", atmosphereDensity);
         atmoShader.SetFloat("_OceanRad", transform.GetChild(0).transform.localScale.x);
         //no setting atmosphere height as of yet
         return;

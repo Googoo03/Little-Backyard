@@ -28,7 +28,7 @@ public class CameraDepthInitializer : MonoBehaviour
     private void InitializeDepthTexture()
     {
         playerCamera = this.GetComponent<Camera>();
-        playerCamera.depthTextureMode = DepthTextureMode.Depth;
+        playerCamera.depthTextureMode = DepthTextureMode.DepthNormals;
 
         
         if (!waterDepthTexture) waterDepthTexture = new RenderTexture(Screen.width,Screen.height, 32, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);

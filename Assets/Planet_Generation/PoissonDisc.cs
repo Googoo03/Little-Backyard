@@ -166,7 +166,7 @@ namespace Poisson
             ///////////////////////////////////
 
             bool_index = ((int)Mathf.Max(y - 1, 0) * maxX) + (int)x;
-            points.Add(vertices[bool_index]);
+            if(rand / _2PI > (1.0f / density)) points.Add(vertices[bool_index]);
             hashgrid[bool_index] = true;
 
 

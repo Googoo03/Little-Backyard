@@ -69,7 +69,7 @@ Shader "Custom/Atmosphere_IE"
                 float4 vertex : SV_POSITION;
             };
 
-            UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
+            //UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
             v2f vert (appdata_base v)
             {
@@ -94,6 +94,7 @@ Shader "Custom/Atmosphere_IE"
 
 
             sampler2D _MainTex;
+            sampler2D _CameraDepthNormalsTexture;
             sampler2D _LastCameraDepthTexture;
             
             float3 _PlanetPos;
@@ -114,6 +115,7 @@ Shader "Custom/Atmosphere_IE"
             float _Samples;
             sampler3D _CloudTex;
             sampler2D _BlueNoise;
+            float4 _BlueNoise_ST;
             float4 _CloudTex_ST;
             float _CloudDensity;
             float _CloudFalloff;
@@ -147,13 +149,19 @@ Shader "Custom/Atmosphere_IE"
                 float cameraDistanceToPlanet = length(cameraToPlanetVector);
                 
 
-                float depthTextureSample = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
-                float terrainLevel = LinearEyeDepth(depthTextureSample);
+                float4 depthTextureSample = tex2D(_CameraDepthNormalsTexture,i.uv);
+                float terrainLevel;
+                float3 textureNormal;
+                DecodeDepthNormal(depthTextureSample, terrainLevel, textureNormal);
+                terrainLevel = terrainLevel* _ProjectionParams.z;
 
 
                 //water DEPTH
-                float waterDepthTextureSample = SAMPLE_DEPTH_TEXTURE(_LastCameraDepthTexture, i.uv);
+                float waterDepthTextureSample = tex2D(_LastCameraDepthTexture,i.uv);
+                float3 waterNormal;
                 float waterLevel = LinearEyeDepth(waterDepthTextureSample);
+                // DecodeDepthNormal(waterDepthTextureSample, waterLevel, waterNormal);
+               // waterLevel = waterLevel * _ProjectionParams.z;
 
                  //CALCULATES WORLD POSITION AS OPPOSED TO DEPTH
                  const float3 ray_direction = normalize(viewDirection);
@@ -303,7 +311,7 @@ Shader "Custom/Atmosphere_IE"
                         _CloudTex_ST.x += _Time.x / 10.0;
 
                         
-                        float tCloud = 5.0;
+                        float tCloud = 0.0;
                         float3 intersectionLine;
                         fixed4 cloudSample;
                         
@@ -313,10 +321,11 @@ Shader "Custom/Atmosphere_IE"
                         float density = 0.0;
                         float cloud;
                         
-                        float blueNoise = tex2D(_BlueNoise,i.uv).r * 5 / 25.0;
+                        float blueNoise = tex2D(_BlueNoise,i.uv*_BlueNoise_ST).r * 5 / 10.0;
                         float3 startCloud = end_point;
+                        //float cloudAlpha = 1.0;
 
-                        for(;tCloud > 0.0; tCloud -= 1.0/25.0){
+                        for(;tCloud < 5.0; tCloud += 1.0/15.0){
                             //FIX THE NORMALIZE LOCATION. RIGHT NOW TCLOUD DOESNT DO ANYTHING
                             iterator++;
                             intersectionLine = normalize(ray_direction)*(tCloud+blueNoise) + start_point;
@@ -330,16 +339,39 @@ Shader "Custom/Atmosphere_IE"
                             
                             //changes cloud opacity based on the height its at
                             float densityModifier = min(length(intersectionLine-_PlanetPos)-_Radius,r-length(intersectionLine-_PlanetPos))*_CloudFalloff;
-                            //compute gradient, then calculate normal?
-                            //cloudNormal = (cloudSample.r + cloudSample.g > _Threshold) ? dot(normalize(intersectionLine-_SunPos),normalize(intersectionLine-_PlanetPos)) : cloudNormal;
-                            if(density == 0.0 && ( cloud > _Threshold) && start_point.x == end_point.x) startCloud = intersectionLine;
-                            density += ( cloud > _Threshold) ? cloud*_CloudFalloff : 0;
+
+
+
+                            if(( cloud > _Threshold) && density == 0.0){
+                                startCloud = intersectionLine;
+                                
+                                
+                            }
+
+                            density += ( cloud > _Threshold) ? cloud*densityModifier : 0;
+
+                            /*float u = 1.0/5.0;
+                            float3 intersectLight;
+                            float4 shadowSample;
+                            float shadowPass;
+                            for(;u < 1.0; u += 1.0/10.0){
+                                intersectLight = (normalize(_SunPos-intersectionLine)*u)+intersectionLine;
+                                float3 uvCoords = (intersectLight-_PlanetPos) / r;
+                                float atmosphereLength = length(uvCoords-float3(0,0,0));
+                                shadowSample = atmosphereLength < (1.0) && atmosphereLength > (_Radius/r) && length(terrainPosition-_WorldSpaceCameraPos)> length(intersectLight-_WorldSpaceCameraPos) ? tex3D(_CloudTex,uvCoords+_CloudTex_ST) : fixed4(0,0,0,0);
+                            
+                                shadowPass = (shadowSample.r*_CloudCoeff.x) + (shadowSample.g*_CloudCoeff.y) + (shadowSample.b*_CloudCoeff.z);
+                                if(shadowPass > _Threshold && density == 0.0) cloudAlpha = 0.2;
+                                
+                            }*/
+
+                            
                         }
 
-
+                        density /= iterator* (1.0/_CloudDensity);
                         returnCond = density > 0.1 ? true : false;
                         
-                        density /= iterator* (1.0/_CloudDensity);
+                        
                         float cloudAlpha = dot(normalize(startCloud-_PlanetPos),normalize(_SunPos-_PlanetPos));
                         
                         if(returnCond){

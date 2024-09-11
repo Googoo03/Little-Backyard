@@ -19,9 +19,9 @@ public class BarrenPlanetNoise : GeneratePlane
 
         //set up noise parameters. surely theres a better way to do this
         oceanFloor = 0.3f;
-        oceanMulitplier = 0.5f;
-        landMultiplier = 1f;
-        octaves = 1;
+        oceanMulitplier = 0.05f;
+        landMultiplier = 0.2f;
+        octaves = 5;
         scale = 5;
         lacunarity = 2;
         persistance = 0.5f;
@@ -56,12 +56,12 @@ public class BarrenPlanetNoise : GeneratePlane
 
         int seed;
         int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
-        poissonSampling.setDensity(3f);
+        
 
-        poissonSampling.setDensity(1);
+        poissonSampling.setDensity(1.1f);
         seed = generateUniqueSeed(vertices[mid_index]);
         poissonSampling.setSeedPRNG(seed);
-        poissonSampling.generatePoissonDisc(ref big_rock_positions, ref vertices, 2, xVertCount * yVertCount, xVertCount, yVertCount, 10);
+        poissonSampling.generatePoissonDisc(ref big_rock_positions, ref vertices, 1, xVertCount * yVertCount, xVertCount, yVertCount, 12);
 
         poissonSampling.setDensity(2f);
         seed = generateUniqueSeed(vertices[mid_index] + new Vector3(1, 0, 0));

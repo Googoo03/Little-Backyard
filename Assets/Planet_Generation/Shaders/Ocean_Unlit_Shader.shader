@@ -67,7 +67,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
 
         Pass
         {
-            Tags {"Queue"="Geometry"}
+            Tags {"Queue"="Geometry" "RenderType"="Opaque"}
             ZWrite On
             ZTest LEqual
 		    Blend SrcAlpha OneMinusSrcAlpha

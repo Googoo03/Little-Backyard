@@ -47,9 +47,11 @@ public class DesertPlanetNoise : GeneratePlane
         if (this == null) return;
         tree_objs.ForEach(item => { item.SetActive(false); });
         rock_objs.ForEach(item => { item.SetActive(false); });
+        bush_objs.ForEach(item => { item.SetActive(false); });
 
         object_pool_manager.releasePoolObjs(ref tree_objs);
         object_pool_manager.releasePoolObjs(ref rock_objs);
+        object_pool_manager.releasePoolObjs(ref bush_objs);
     }
 
     protected override void DispatchFoliage() { }
@@ -71,7 +73,7 @@ public class DesertPlanetNoise : GeneratePlane
 
         int seed;
         int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
-        poissonSampling.setDensity(1.05f);
+        poissonSampling.setDensity(2f);
 
         seed = generateUniqueSeed(vertices[mid_index]);
         poissonSampling.setSeedPRNG(seed);
@@ -81,6 +83,8 @@ public class DesertPlanetNoise : GeneratePlane
         poissonSampling.setSeedPRNG(seed);
         poissonSampling.generatePoissonDisc(ref rock_positions, ref vertices, rock_k, rock_nummax, xVertCount, yVertCount, rock_radius);
 
+
+        poissonSampling.setDensity(2.5f);
         seed = generateUniqueSeed(vertices[mid_index] + new Vector3(2, 0, 0));
         poissonSampling.setSeedPRNG(seed);
         poissonSampling.generatePoissonDisc(ref bush_positions, ref vertices, 3, 6, xVertCount, yVertCount, 6);

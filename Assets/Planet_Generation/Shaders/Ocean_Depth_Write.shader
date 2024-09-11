@@ -15,8 +15,6 @@ Shader "Custom/Water Depth Replacement"
 
             #include "UnityCG.cginc"
 
-            sampler2D _CameraDepthTexture;
-
             struct v2f
             {
                 //float4 screenPos : TEXCOORD1;

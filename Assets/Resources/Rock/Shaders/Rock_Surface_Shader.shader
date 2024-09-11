@@ -11,7 +11,7 @@ Shader "Custom/Rock_Surface_Shader"
     }
     SubShader
     {
-        Tags { "RenderType"="Transparent" }
+        Tags { "RenderType"="Opaque" }
         Blend SrcAlpha OneMinusSrcAlpha
         LOD 200
 
