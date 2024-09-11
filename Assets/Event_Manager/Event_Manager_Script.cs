@@ -163,6 +163,7 @@ public class Event_Manager_Script : MonoBehaviour
             lerpCameraPosition=false;
 
             if(destination != player.transform) player.SetActive(false);
+            
 
             //reset needed variables. These should be mutually exclusive?
             exitShip = exitShip ? false : exitShip;

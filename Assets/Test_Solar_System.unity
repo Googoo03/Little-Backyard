@@ -287,6 +287,11 @@ PrefabInstance:
       objectReference: {fileID: 1260474179}
     - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
+      propertyPath: outlineMat
+      value: 
+      objectReference: {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
+    - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
       propertyPath: oceanDepthShader
       value: 
       objectReference: {fileID: 4800000, guid: f5c7aa42cf6366e4db8715b4f00bf220, type: 3}

@@ -14,6 +14,7 @@ public class CameraDepthInitializer : MonoBehaviour
     [SerializeField] private Material mat;
     [SerializeField] private Material planetRings;
     [SerializeField] private Material sunHalo;
+    [SerializeField] private Material outlineMat;
 
     [SerializeField] private Material depthCopier;
     //[SerializeField] private int planetCount = 3;
@@ -28,7 +29,7 @@ public class CameraDepthInitializer : MonoBehaviour
     private void InitializeDepthTexture()
     {
         playerCamera = this.GetComponent<Camera>();
-        playerCamera.depthTextureMode = DepthTextureMode.DepthNormals;
+        playerCamera.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.DepthNormals;
 
         
         if (!waterDepthTexture) waterDepthTexture = new RenderTexture(Screen.width,Screen.height, 32, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
@@ -74,10 +75,18 @@ public class CameraDepthInitializer : MonoBehaviour
             enableRandomWrite = true
         };
         Planet_intermediate.Create();
+        RenderTexture Outline_intermediate = new RenderTexture(source.width, source.height, 0, source.format)
+        {
+            enableRandomWrite = true
+        };
+        Outline_intermediate.Create();
 
+        
         Graphics.Blit(source, intermediate, mat);
-        Graphics.Blit(intermediate, Planet_intermediate, planetRings);
+        Graphics.Blit(intermediate, Outline_intermediate, outlineMat);
+        Graphics.Blit(Outline_intermediate, Planet_intermediate, planetRings);
         Graphics.Blit(Planet_intermediate, destination, sunHalo);
+        Outline_intermediate.Release();
         intermediate.Release();
         Planet_intermediate.Release();
     }
