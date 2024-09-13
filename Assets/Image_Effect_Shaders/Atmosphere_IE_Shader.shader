@@ -25,12 +25,6 @@ Shader "Custom/Atmosphere_IE"
 
         _Samples ("Number of Samples", int) = 1
 
-        _NebulaScale ("Nebula Scale", float)  =1
-        _NebulaCol ("Nebula Color",Color) = (1,1,1,1)
-        _NebulaDensity ("Nebula Density", float)  =1
-        _NebulaCoeff ("Nebula Coefficients", Vector) = (0,0,0,0)
-        _NebulaThreshold ("Nebula Threshold",float)  = 1
-
         _OceanRad ("Ocean Radius", float) = 1
         _Ocean ("Ocean Present", int) = 1
         _OceanCol ("Ocean Color", Color) = (1,1,1,1)
@@ -95,6 +89,7 @@ Shader "Custom/Atmosphere_IE"
 
             sampler2D _MainTex;
             sampler2D _CameraDepthNormalsTexture;
+            sampler2D _CameraDepthTexture;
             sampler2D _LastCameraDepthTexture;
             
             float3 _PlanetPos;
@@ -148,17 +143,12 @@ Shader "Custom/Atmosphere_IE"
                 float3 cameraToPlanetVector =  _PlanetPos - _WorldSpaceCameraPos;
                 float cameraDistanceToPlanet = length(cameraToPlanetVector);
                 
-
-                float4 depthTextureSample = tex2D(_CameraDepthNormalsTexture,i.uv);
-                float terrainLevel;
-                float3 textureNormal;
-                DecodeDepthNormal(depthTextureSample, terrainLevel, textureNormal);
-                terrainLevel = terrainLevel* _ProjectionParams.z;
+                float terrainLevel = tex2D(_CameraDepthTexture,i.uv);
+                terrainLevel = LinearEyeDepth(terrainLevel);
 
 
                 //water DEPTH
                 float waterDepthTextureSample = tex2D(_LastCameraDepthTexture,i.uv);
-                float3 waterNormal;
                 float waterLevel = LinearEyeDepth(waterDepthTextureSample);
                 // DecodeDepthNormal(waterDepthTextureSample, waterLevel, waterNormal);
                // waterLevel = waterLevel * _ProjectionParams.z;
@@ -179,56 +169,6 @@ Shader "Custom/Atmosphere_IE"
 
                 fixed4 noColor = tex2D(_MainTex, i.uv);
                 float blueNoise = tex2D(_BlueNoise,i.uv).r * 5 / 25.0;
-
-                
-
-                //INCORPORATE NEBULAE HERE
-                float tNebula = 1.0;
-                float3 farPlanePosition = (ray_direction / ray_depth_world) * 100 +  _WorldSpaceCameraPos;
-                bool returnCondNeb = false;
-                float3 intersectionLineNeb;
-                float densityNeb = 0.0;
-                float nebR = tex3D(_CloudTex,_WorldSpaceCameraPos * (0.5/_NebulaScale) ).r;
-                float nebG = tex3D(_CloudTex,float3(0.5,0.5,0.5)+_WorldSpaceCameraPos * (0.5/_NebulaScale) ).r;
-                
-                float nebB = tex3D(_CloudTex,float3(0.6,0.2,0.8)+_WorldSpaceCameraPos * (0.5/_NebulaScale) ).r;
-                
-
-                nebR = (1-nebR)*(1-nebR);
-                nebB = (1-nebB)*(1-nebB);
-                nebG = (1-nebG)*(1-nebG);
-
-                float sum = nebR+nebG+nebB;
-                nebR/=sum;
-                nebG/=sum;
-                nebB/=sum;
-                _NebulaCol = float4(nebR,nebG,nebB,1);
-
-                fixed4 nebulaSample;
-                float nebula; //sample with applied coefficients
-                if(terrainLevel > 100){
-                    for(;tNebula > 0.1; tNebula-= 1.0/25.0){
-                        //FIX THE NORMALIZE LOCATION. RIGHT NOW TCLOUD DOESNT DO ANYTHING
-                    
-                        intersectionLineNeb = (farPlanePosition-_WorldSpaceCameraPos)*(tNebula+blueNoise) + _WorldSpaceCameraPos;
-                            
-                        nebulaSample = tex3D(_CloudTex,intersectionLineNeb * (1.0/_NebulaScale) );
-                        nebula = (nebulaSample.r*_NebulaCoeff.x) + (nebulaSample.g*_NebulaCoeff.y) + (nebulaSample.b*_NebulaCoeff.z);
-                           
-                        
-                        densityNeb += ( nebula > _NebulaThreshold) ? nebula : 0;
-                        //densityNeb += nebula;
-                    }
-                    returnCondNeb = densityNeb > 0.1 ? true : false;
-                        
-                    densityNeb /= 25.0 * (1.0/_NebulaDensity);
-                    
-
-                    if(returnCondNeb){
-                                    //col = fixed4(1,1,1,1);
-                        noColor = lerp(_NebulaCol,noColor,exp(-densityNeb) );//fixed4(1,1,1,1);
-                    }
-                }
                
                 float atmosphereAlpha = 1;
                 
@@ -378,12 +318,6 @@ Shader "Custom/Atmosphere_IE"
                                 //col = fixed4(1,1,1,1);
                                 col = lerp(_CloudColor*max(0.2,cloudAlpha),col,exp(-density*distanceAlpha));//fixed4(1,1,1,1);
                         }
-                        
-                        //cloudColor /= 100.0;
-                        //Change to cloud if meets condition
-                        //if(end_point != terrainworldPos)
-                        //if(length(intersectionPoint-start_point) > length(terrainPosition-start_point)) return col;
-                        //col = cloudColor.r > _Threshold || cloudColor.g > _ThresholdG ? lerp(col,fixed4(1,1,1,1),cloudColor.b) : col;
                         
                     }
                     

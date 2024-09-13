@@ -123,6 +123,11 @@ public abstract class GeneratePlane : MonoBehaviour
         texture.Release();
     }
 
+    private void OnDestroy()
+    {
+        texture.Release();
+    }
+
     public void Generate(PatchConfig planePatch)
     {
 
@@ -137,12 +142,13 @@ public abstract class GeneratePlane : MonoBehaviour
 
         mf = this.gameObject.AddComponent<MeshFilter>();
         rend = this.gameObject.AddComponent<MeshRenderer>();
+        Sphere planetScript = planePatch.planetObject.GetComponent<Sphere>();
 
         Material planetMaterial = Instantiate(Resources.Load("Planet_Shader", typeof(Material))) as Material;
         planetMaterial.SetFloat("_DisplacementStrength", 0.1f);
 
-        float TypePlanet = (float)planePatch.planetObject.GetComponent<Sphere>().getPlanetType();
-        event_manager = planePatch.planetObject.GetComponent<Sphere>().getEvent_Manager();
+        float TypePlanet = (float)planetScript.getPlanetType();
+        event_manager = planetScript.getEvent_Manager();
         planetMaterial.SetFloat("_PlanetType", TypePlanet); //I guess pixel sampling is 1-indexed?
 
 
@@ -167,7 +173,7 @@ public abstract class GeneratePlane : MonoBehaviour
         uvs = new Vector2[vertices.Length];
 
         //GET NECESSARY VALUES FOR NOISE FROM PARENT PLANET
-        seed = planePatch.planetObject.GetComponent<Sphere>().getSeed();
+        seed = planetScript.getSeed();
 
 
         for (int y = 0; y < yVertCount; y++)
@@ -211,27 +217,25 @@ public abstract class GeneratePlane : MonoBehaviour
 
 
         Vector3 position = transform.position; //world position of planet
-        DispatchNoise(vertices, position); //there's no ref here, optimization opportunity?
+        DispatchNoise(ref vertices, position); //there's no ref here, optimization opportunity?
 
         m.RecalculateNormals();
 
         //////////////////////SET THE TEXTURE SIZE, SCALE, AND TEXTURE ITSELF
-        transform.GetComponent<Renderer>().material.SetTexture("_HeightMap", texture);
-        transform.GetComponent<Renderer>().material.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
 
-        //if (generateFoliage) GenerateFoliage(ref vertices, transform.position); //generate foliage if and only if it's at the lowest level
-        //DispatchFoliage();
+        planetMaterial.SetTexture("_HeightMap", texture);
+        planetMaterial.SetTextureScale("_HeightMap", new Vector2(1 << patch.LODlevel, 1 << patch.LODlevel));
 
-        transform.GetComponent<Renderer>().material.SetTextureOffset("_HeightMap", -patch.LODOffset * (1 << patch.LODlevel));
-        transform.GetComponent<Renderer>().material.SetVector("_Tile", new Vector4(1 << patch.LODlevel, 1 << patch.LODlevel, 0, 0));
+        planetMaterial.SetTextureOffset("_HeightMap", -patch.LODOffset * (1 << patch.LODlevel));
+        planetMaterial.SetVector("_Tile", new Vector4(1 << patch.LODlevel, 1 << patch.LODlevel, 0, 0));
 
         float textureTiling = (1 << patch.maxLOD) / (1 << patch.LODlevel);
-        transform.GetComponent<Renderer>().material.SetVector("_Tiling", new Vector4(textureTiling, textureTiling, 0, 0));
+        planetMaterial.SetVector("_Tiling", new Vector4(textureTiling, textureTiling, 0, 0));
 
 
-        transform.GetComponent<Renderer>().material.SetVector("_Offset", new Vector4(patch.textureOffset.x, patch.textureOffset.y, 0, 0));
+        planetMaterial.SetVector("_Offset", new Vector4(patch.textureOffset.x, patch.textureOffset.y, 0, 0));
 
-        rend.material.SetVector("_SunPos", event_manager.get_sun().transform.position);
+        planetMaterial.SetVector("_SunPos", event_manager.get_sun().transform.position);
         /////////////////////////////////////////////////////////////////////
     }
 
@@ -267,7 +271,7 @@ public abstract class GeneratePlane : MonoBehaviour
         return;
     }
 
-    protected abstract void DispatchNoise(Vector3[] vertices, Vector3 origin);
+    protected abstract void DispatchNoise(ref Vector3[] vertices, Vector3 origin);
 
     protected abstract void GenerateFoliage(ref Vector3[] vertices, Vector3 origin);
 

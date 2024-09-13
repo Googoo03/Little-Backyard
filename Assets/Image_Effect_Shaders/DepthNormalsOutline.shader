@@ -46,6 +46,8 @@ Shader "Hidden/DepthNormalsOutline"
 
             sampler2D _MainTex;
             sampler2D _CameraDepthNormalsTexture;
+            sampler2D _CameraDepthTexture;
+            float4 _CameraDepthTexture_TexelSize;
             float4 _CameraDepthNormalsTexture_TexelSize;
 
             float _NormalBias;
@@ -63,10 +65,13 @@ Shader "Hidden/DepthNormalsOutline"
                 DecodeDepthNormal(neighborSample, neighborDepth, neighborNormal);
                 neighborDepth = neighborDepth * _ProjectionParams.z;
 
+                //neighborDepth = tex2D(_CameraDepthTexture,_uv + _CameraDepthTexture_TexelSize.xy * offset);
+                //neighborDepth = LinearEyeDepth(neighborDepth);
+
                 depthOutline += abs(baseDepth-neighborDepth);
                 
-                float3 normalDifference = baseNormal - neighborNormal;
-                normalDifference = normalDifference.r + normalDifference.g + normalDifference.b;
+                float normalDifference = 1-dot(baseNormal,neighborNormal);//baseNormal - neighborNormal;
+                //normalDifference = normalDifference.r + normalDifference.g + normalDifference.b;
                 normalOutline = normalOutline + normalDifference;
             }
 
@@ -78,6 +83,9 @@ Shader "Hidden/DepthNormalsOutline"
                 float depth;
                 DecodeDepthNormal(depthnormalsSample, depth, normal);
                 depth = depth* _ProjectionParams.z;
+
+                //float _regdepth = tex2D(_CameraDepthTexture,i.uv);
+                //_regdepth = LinearEyeDepth(_regdepth);
 
                 float depthDifference = 0.0;
                 float normalDifference = 0.0;
@@ -99,7 +107,8 @@ Shader "Hidden/DepthNormalsOutline"
                 normalDifference = pow(normalDifference, _NormalBias);
 
                 //return col + depthDifference + normalDifference;
-                return lerp(col,fixed4(0,0,0,0),(depthDifference+normalDifference));
+                //if(_regdepth - depth > 0.1) return col;
+                return lerp(col,fixed4(0,0,0,0),(depthDifference+normalDifference)*(min(1,1.0/depth) ));
             }
             ENDCG
         }

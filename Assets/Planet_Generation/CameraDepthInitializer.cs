@@ -11,6 +11,7 @@ public class CameraDepthInitializer : MonoBehaviour
 
     [SerializeField] private Shader oceanDepthShader;
 
+    [SerializeField] private Material nebulaMat;
     [SerializeField] private Material mat;
     [SerializeField] private Material planetRings;
     [SerializeField] private Material sunHalo;
@@ -80,18 +81,38 @@ public class CameraDepthInitializer : MonoBehaviour
             enableRandomWrite = true
         };
         Outline_intermediate.Create();
+        RenderTexture Nebula_intermediate = new RenderTexture(source.width, source.height, 0, source.format)
+        {
+            enableRandomWrite = true
+        };
+        Nebula_intermediate.Create();
+
 
         
-        Graphics.Blit(source, intermediate, mat);
+        Graphics.Blit(source, Nebula_intermediate, nebulaMat);
+        Graphics.Blit(Nebula_intermediate, intermediate, mat);
         Graphics.Blit(intermediate, Outline_intermediate, outlineMat);
         Graphics.Blit(Outline_intermediate, Planet_intermediate, planetRings);
         Graphics.Blit(Planet_intermediate, destination, sunHalo);
         Outline_intermediate.Release();
+        Nebula_intermediate.Release();
         intermediate.Release();
         Planet_intermediate.Release();
     }
 
     private void MatchCameraSettings() {
         if(playerCamera) transparentCamera.fieldOfView = playerCamera.fieldOfView;
+
+        if (waterDepthTexture.width != Screen.width || waterDepthTexture.height != Screen.height)
+        {
+            waterDepthTexture.Release();
+            waterDepthTexture = new RenderTexture(Screen.width, Screen.height, 32, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
+
+            waterDepthTexture.Create();
+
+            transparentCamera.depthTextureMode = DepthTextureMode.Depth;
+            transparentCamera.targetTexture = waterDepthTexture;
+        }
+        
     }
 }

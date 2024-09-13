@@ -287,6 +287,11 @@ PrefabInstance:
       objectReference: {fileID: 1260474179}
     - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
+      propertyPath: nebulaMat
+      value: 
+      objectReference: {fileID: 2100000, guid: 46f2cb6a277dd934690e0d8ae67cab66, type: 2}
+    - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
       propertyPath: outlineMat
       value: 
       objectReference: {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}

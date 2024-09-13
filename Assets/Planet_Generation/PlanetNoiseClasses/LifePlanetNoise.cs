@@ -176,10 +176,10 @@ public class LifePlanetNoise : GeneratePlane
         //sends over to the gpu
         if (!foliageGenerationReturned) return;
 
-        Graphics.DrawMeshInstanced(grass_mesh, 0, grass_mat, grass_m);
+        //Graphics.DrawMeshInstanced(grass_mesh, 0, grass_mat, grass_m);
     }
 
-    protected override void DispatchNoise(Vector3[] vertices, Vector3 origin) {
+    protected override void DispatchNoise( ref Vector3[] vertices, Vector3 origin) {
         
         simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
         Vector3[] verticesWorldSpace = new Vector3[vertices.Length];

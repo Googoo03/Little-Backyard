@@ -177,10 +177,10 @@ Shader "Custom/Planet_Surface_Shader"
             /////////////////////////////////
 
             //BLACK OUTLINE
-            if(abs(dot(IN.worldNormal,viewDirection))< 0.05){
+            /*if(abs(dot(IN.worldNormal,viewDirection))< 0.05){
                 o.Albedo = fixed4(0,0,0,0);
                 return;
-            }
+            }*/
             /////
 
             //APPLY SURFACE COLOR
@@ -198,9 +198,9 @@ Shader "Custom/Planet_Surface_Shader"
             int level = dotP / (step);
             //darkness is equal to the current value
 
-            o.Albedo *= (float)level / _Levels;
+            o.Albedo *= (float)(level+2) / _Levels;
             o.Albedo *= 1-(blueNoise*0.2);
-
+            //o.Albedo += _Color;
             o.Alpha = c1.a;
             /////////////////////
             

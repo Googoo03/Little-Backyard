@@ -119,7 +119,7 @@ public class BarrenPlanetNoise : GeneratePlane
         }
     }
 
-    protected override void DispatchNoise(Vector3[] vertices, Vector3 origin)
+    protected override void DispatchNoise(ref Vector3[] vertices, Vector3 origin)
     {
         simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
         worley = (ComputeShader)Instantiate(Resources.Load("Worley Noise"));
