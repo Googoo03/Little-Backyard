@@ -79,7 +79,7 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _NebulaDensity: 0.23
-    - _NebulaScale: 1
+    - _NebulaScale: 200
     - _NebulaThreshold: 0.97
     - _OcclusionStrength: 1
     - _Parallax: 0.02
