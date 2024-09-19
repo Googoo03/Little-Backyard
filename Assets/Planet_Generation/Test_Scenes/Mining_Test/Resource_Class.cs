@@ -6,10 +6,11 @@ using UnityEngine;
 public class Resource_Class : MonoBehaviour
 {
     // Start is called before the first frame update
-    private float health;
+    [SerializeField] private float health;
     private Tuple<Item, int> resource;
     [SerializeField] private ParticleSystem niblets;
     [SerializeField] private ParticleSystem dust;
+    [SerializeField] private Color color;
 
     //BASIC CONSTRUCTOR WITH NO RESOURCE NAME. SHOULD ADD EXTRAS IN THE FUTURE
     public Resource_Class() {
@@ -24,8 +25,14 @@ public class Resource_Class : MonoBehaviour
 
     private void OnDisable()
     {
-        Instantiate(niblets, transform.position, transform.rotation);
-        Instantiate(dust, transform.position, transform.rotation);
+        ParticleSystem _newniblets = Instantiate(niblets, transform.position, transform.rotation);
+        var main = _newniblets.main;
+        main.startColor = color;
+
+        //Instantiate(dust, transform.position, transform.rotation);
+        ParticleSystem _newdust = Instantiate(dust, transform.position, transform.rotation);
+        var dustmain = _newdust.main;
+        dustmain.startColor = color;
     }
 
     public void dealDamage(float damage) {

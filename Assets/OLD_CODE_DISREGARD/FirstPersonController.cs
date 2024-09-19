@@ -19,6 +19,9 @@ public class FirstPersonController : MonoBehaviour
     float verticalLookRotation;
     Transform cameraTransform;
 
+    [SerializeField] private LineRenderer laser;
+    [SerializeField] private RaycastHit hit;
+
 
     void Awake()
     {
@@ -66,6 +69,33 @@ public class FirstPersonController : MonoBehaviour
             grounded = false;
         }
 
+        //Check shoot button.
+        ShootCheck();
+
+    }
+
+    private void ShootCheck() {
+        bool lmbDown = Input.GetMouseButton(0);
+        laser.gameObject.SetActive(lmbDown);
+        if (lmbDown)
+        {
+            LaserProtocol();
+        }
+    }
+
+    private void LaserProtocol()
+    {
+        Vector3[] positions = new Vector3[2];
+        positions[0] = transform.position + (cameraTransform.right * 0.5f);
+        positions[1] = cameraTransform.position + (cameraTransform.forward * 5);
+        laser.SetPositions(positions);
+
+        if (Physics.Raycast(cameraTransform.transform.position, cameraTransform.transform.forward, out hit, 5, 1))
+        {
+            Debug.Log(hit.transform.name);
+            Resource_Class resource = hit.transform.tag == "Resource" ? hit.transform.GetComponent<Resource_Class>() : null;
+            if (resource != null) { resource.dealDamage(5 * Time.deltaTime); }
+        }
     }
 
     void FixedUpdate()

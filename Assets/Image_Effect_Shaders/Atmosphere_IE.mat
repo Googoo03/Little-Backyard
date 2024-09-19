@@ -71,13 +71,13 @@ Material:
     m_Floats:
     - _AtmosphereHeight: 0.33
     - _BumpScale: 1
-    - _CloudDensity: 22
+    - _CloudDensity: 16.5
     - _CloudFalloff: 10.31
     - _Cutoff: 0.5
-    - _Density: 0.04296875
+    - _Density: 0.28125
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Generate: 0
+    - _Generate: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
@@ -88,7 +88,7 @@ Material:
     - _NebulaThreshold: 0.97
     - _OcclusionStrength: 1
     - _Ocean: 1
-    - _OceanRad: 5.1
+    - _OceanRad: 0
     - _Parallax: 0.02
     - _Radius: 5.5
     - _Samples: 5
@@ -108,6 +108,6 @@ Material:
     - _NebulaCoeff: {r: 0.36, g: 0.7, b: 0.14, a: 0}
     - _NebulaCol: {r: 1, g: 0.5871031, b: 0, a: 1}
     - _OceanCol: {r: 0, g: 0.85660374, b: 0.84494936, a: 1}
-    - _PlanetPos: {r: -99.58924, g: 433.5525, b: -273.60162, a: 0}
+    - _PlanetPos: {r: -122.58104, g: 433.5525, b: -194.28468, a: 0}
     - _SunPos: {r: -108.17511, g: 433.5525, b: -224.3443, a: 0}
   m_BuildTextureStacks: []
