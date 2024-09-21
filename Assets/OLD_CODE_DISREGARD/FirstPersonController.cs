@@ -2,6 +2,8 @@
 using System.Collections;
 
 //[RequireComponent(typeof(GravityBody))]
+
+using Inven;
 public class FirstPersonController : MonoBehaviour
 {
 
@@ -20,7 +22,12 @@ public class FirstPersonController : MonoBehaviour
     Transform cameraTransform;
 
     [SerializeField] private LineRenderer laser;
+    [SerializeField] private GameObject sparks;
     [SerializeField] private RaycastHit hit;
+
+    //Inventory
+    [SerializeField] private Inventory inven;
+    
 
 
     void Awake()
@@ -28,6 +35,13 @@ public class FirstPersonController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         
         cameraTransform = Camera.main.transform;
+
+        inven = new Inventory();
+        GameObject hotbar = GameObject.FindGameObjectWithTag("Hotbar");
+        int num_slots = inven.getNum_Slots();
+        for (int i = 0; i < num_slots; ++i) { //the 
+            inven.setInventory_Slot(hotbar.transform.GetChild(i).GetComponent<Inventory_Slot>(), i); //this is on awake so this should be fine
+        }
     }
 
     void Update()
@@ -81,22 +95,46 @@ public class FirstPersonController : MonoBehaviour
         {
             LaserProtocol();
         }
+        else {
+            sparks.gameObject.SetActive(false);
+        }
     }
 
+
+
+    //TO BE INTEGRATED WITH MAIN GAMEPLAY LOOP ---------------------------------------------------------
     private void LaserProtocol()
     {
+        //Assign position to the beginning and end of the laser
         Vector3[] positions = new Vector3[2];
         positions[0] = transform.position + (cameraTransform.right * 0.5f);
         positions[1] = cameraTransform.position + (cameraTransform.forward * 5);
         laser.SetPositions(positions);
 
+
+
+        //If object is hit
         if (Physics.Raycast(cameraTransform.transform.position, cameraTransform.transform.forward, out hit, 5, 1))
         {
-            Debug.Log(hit.transform.name);
+            //Set the sparks particle system at end of laser
+            sparks.gameObject.SetActive(true);
+            sparks.transform.position = hit.point;
+            sparks.transform.rotation = Quaternion.LookRotation(cameraTransform.position - hit.point);
+
+            //Deal damage if an object is hit
+            //Debug.Log(hit.transform.name);
             Resource_Class resource = hit.transform.tag == "Resource" ? hit.transform.GetComponent<Resource_Class>() : null;
             if (resource != null) { resource.dealDamage(5 * Time.deltaTime); }
         }
+        else {
+            sparks.gameObject.SetActive(false);
+        }
     }
+
+    public Inventory getInventory() { return inven; }
+
+    //-----------------------------------------------------------------------------------------
+
 
     void FixedUpdate()
     {

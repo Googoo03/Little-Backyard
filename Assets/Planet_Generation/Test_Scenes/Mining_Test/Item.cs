@@ -1,10 +1,28 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class Item
+[CreateAssetMenu(menuName ="ScriptableObject/Item")]
+public class Item : ScriptableObject
 {
     // Start is called before the first frame update
-    private Color color = Color.red;
-    private string _name = string.Empty;
+    [SerializeField] private Color color = Color.red;
+
+    [SerializeField] private Sprite sprite;
+
+    [Header("Object Name")]
+    [SerializeField] private string _name = string.Empty;
+    [SerializeField] private UInt16 ID = 0; //0 signifies empty
+
+    public UInt16 getID() {
+        return ID;
+    }
+
+    public Sprite getSprite() {
+        return sprite;
+    }
+
+    public string getName() { return _name; }
 }
