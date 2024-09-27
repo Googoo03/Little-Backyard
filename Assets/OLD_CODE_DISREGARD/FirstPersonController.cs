@@ -27,8 +27,11 @@ public class FirstPersonController : MonoBehaviour
 
     //Inventory
     [SerializeField] private Inventory inven;
-    
 
+    //Mining Laser Reach
+    [SerializeField] private float reach;
+
+    private float t;
 
     void Awake()
     {
@@ -96,7 +99,13 @@ public class FirstPersonController : MonoBehaviour
             LaserProtocol();
         }
         else {
-            sparks.gameObject.SetActive(false);
+            var sparks_main = sparks.transform.GetChild(0).GetComponent<ParticleSystem>().main;
+            sparks_main.loop = false;
+
+            var dust_main = sparks.transform.GetChild(1).GetComponent<ParticleSystem>().main;
+            dust_main.loop = false;
+
+            t = 0;
         }
     }
 
@@ -108,27 +117,53 @@ public class FirstPersonController : MonoBehaviour
         //Assign position to the beginning and end of the laser
         Vector3[] positions = new Vector3[2];
         positions[0] = transform.position + (cameraTransform.right * 0.5f);
-        positions[1] = cameraTransform.position + (cameraTransform.forward * 5);
-        laser.SetPositions(positions);
 
 
+        Vector3 endPoint = new Vector3();
 
         //If object is hit
-        if (Physics.Raycast(cameraTransform.transform.position, cameraTransform.transform.forward, out hit, 5, 1))
+        if (Physics.Raycast(cameraTransform.transform.position, cameraTransform.transform.forward, out hit, reach, 1))
         {
+            
+            //Turn on respective particle systems-----------------------------------------------
+            var sparks_main = sparks.transform.GetChild(0).GetComponent<ParticleSystem>().main;
+            sparks_main.loop = true;
+            ParticleSystem spark = sparks.transform.GetChild(0).GetComponent<ParticleSystem>();
+            if(!spark.isPlaying) spark.Play();
+
+            var dust_main = sparks.transform.GetChild(1).GetComponent<ParticleSystem>().main;
+            dust_main.loop = true;
+            ParticleSystem dust = sparks.transform.GetChild(1).GetComponent<ParticleSystem>();
+            if (!dust.isPlaying) dust.Play();
+            //----------------------------------------------------------------------------------
+
             //Set the sparks particle system at end of laser
-            sparks.gameObject.SetActive(true);
             sparks.transform.position = hit.point;
             sparks.transform.rotation = Quaternion.LookRotation(cameraTransform.position - hit.point);
 
+            
+            //Set Laser end to where it hits
+            endPoint = hit.point;
+
             //Deal damage if an object is hit
-            //Debug.Log(hit.transform.name);
             Resource_Class resource = hit.transform.tag == "Resource" ? hit.transform.GetComponent<Resource_Class>() : null;
             if (resource != null) { resource.dealDamage(5 * Time.deltaTime); }
         }
         else {
-            sparks.gameObject.SetActive(false);
+
+            endPoint = cameraTransform.position + (cameraTransform.forward * reach);
+
+            var sparks_main = sparks.transform.GetChild(0).GetComponent<ParticleSystem>().main;
+            sparks_main.loop = false;
+
+            var dust_main = sparks.transform.GetChild(1).GetComponent<ParticleSystem>().main;
+            dust_main.loop = false;
+
         }
+
+        t += t > 1 ? 0 : 3f*Time.deltaTime;
+        positions[1] = (endPoint - positions[0])*t + positions[0];
+        laser.SetPositions(positions);
     }
 
     public Inventory getInventory() { return inven; }

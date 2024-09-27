@@ -272,7 +272,7 @@ Shader "Custom/Atmosphere_IE"
                             
                             float3 uvCoords = (intersectionLine-_PlanetPos) / r;
                             float atmosphereLength = length(uvCoords-float3(0,0,0));
-                            cloudSample = atmosphereLength < (1.0) && atmosphereLength > (_Radius/r) && length(terrainPosition-_WorldSpaceCameraPos)> length(intersectionLine-_WorldSpaceCameraPos) ? tex3D(_CloudTex,uvCoords+_CloudTex_ST) : fixed4(0,0,0,0);
+                            cloudSample = atmosphereLength < (1.0) && atmosphereLength > (_Radius/r) && length(terrainPosition-_WorldSpaceCameraPos)> length(intersectionLine-_WorldSpaceCameraPos) ? tex3D(_CloudTex,(uvCoords*_CloudTex_ST)) : fixed4(0,0,0,0);
                             
                             cloud = (cloudSample.r*_CloudCoeff.x) + (cloudSample.g*_CloudCoeff.y) + (cloudSample.b*_CloudCoeff.z);
 

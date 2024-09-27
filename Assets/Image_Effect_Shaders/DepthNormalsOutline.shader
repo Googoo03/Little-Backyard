@@ -8,6 +8,8 @@ Shader "Hidden/DepthNormalsOutline"
 
         _DepthMult ("Depth Multiplier", float) = 1.0
         _NormalMult ("Normal Multiplier", float) = 1.0
+
+        _Strength ("Strength", float) = 1.0
     }
     SubShader
     {
@@ -55,6 +57,8 @@ Shader "Hidden/DepthNormalsOutline"
 
             float _NormalMult;
             float _DepthMult;
+
+            float _Strength;
             //sampler2D _LastCameraDepthNormalsTexture;
 
             void Compare(inout float depthOutline, inout float normalOutline, float baseDepth,float3 baseNormal, float2 _uv, float2 offset){
@@ -108,7 +112,7 @@ Shader "Hidden/DepthNormalsOutline"
 
                 //return col + depthDifference + normalDifference;
                 //if(_regdepth - depth > 0.1) return col;
-                return lerp(col,fixed4(0,0,0,0),(depthDifference+normalDifference)*(min(1,1.0/depth) ));
+                return lerp(col,fixed4(0,0,0,0),(depthDifference+normalDifference)*min(1,exp(-depth*_Strength) ));
             }
             ENDCG
         }

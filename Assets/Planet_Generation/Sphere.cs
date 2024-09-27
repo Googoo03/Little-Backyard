@@ -156,7 +156,7 @@ public class Sphere : MonoBehaviour
         //set the planet type and name
         planetType = (int)(seed % 6);
         planetType = planetType > 2 ? (planetType > 4 ? 3 : 4) : 2;
-        planetType = 4;
+        //planetType = 3;
         transform.name = "Planet" + planetType.ToString();
 
 

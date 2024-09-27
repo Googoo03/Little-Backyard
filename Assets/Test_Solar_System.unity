@@ -223,6 +223,12 @@ Camera:
     type: 3}
   m_PrefabInstance: {fileID: 903820971}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &861593897 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6556474202827670180, guid: e7624d12d32d3426ea30613788c3244f,
+    type: 3}
+  m_PrefabInstance: {fileID: 903820971}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &903820971
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -277,6 +283,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
+      propertyPath: shipModel
+      value: 
+      objectReference: {fileID: 861593897}
+    - target: {fileID: 114597149340543706, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
       propertyPath: boostAmount
       value: 50
       objectReference: {fileID: 0}
@@ -285,6 +296,11 @@ PrefabInstance:
       propertyPath: event_manager
       value: 
       objectReference: {fileID: 1260474179}
+    - target: {fileID: 6556474202827670180, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
       propertyPath: nebulaMat

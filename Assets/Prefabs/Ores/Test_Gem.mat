@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Test_Gem
-  m_Shader: {fileID: 4800000, guid: 5a72c48435e5d6d4aa6b7793401606c5, type: 3}
+  m_Shader: {fileID: 4800000, guid: 64ef7dcafdbb8284cb5c2ee0f6539c33, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -76,6 +76,7 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _Shake: 1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1

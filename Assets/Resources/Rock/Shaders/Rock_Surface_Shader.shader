@@ -1,3 +1,6 @@
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+// Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
+
 Shader "Custom/Rock_Surface_Shader"
 {
     Properties
@@ -7,7 +10,7 @@ Shader "Custom/Rock_Surface_Shader"
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
         _BlueNoise ("Blue Noise", 2D) = "white" {}
         _SunPos( "Sun Position", Vector) = (1,1,1,1)
-
+        _Shake ("Shake", int) = 1
     }
     SubShader
     {
@@ -24,6 +27,7 @@ Shader "Custom/Rock_Surface_Shader"
 
         sampler2D _MainTex;
         sampler2D _BlueNoise;
+        int _Shake;
 
         struct Input
         {
@@ -50,10 +54,20 @@ Shader "Custom/Rock_Surface_Shader"
 
         void vert(inout appdata_full vertexData, out Input o) {
 
-            UNITY_INITIALIZE_OUTPUT(Input, o);
+            //UNITY_INITIALIZE_OUTPUT(Input, o);
+
+            // transform into worlspace
+             float4 world_space_vertex = mul( unity_ObjectToWorld, vertexData.vertex );
+
+             /* Do some cool things here */
+             world_space_vertex *= _SinTime;
+
+             // transform back into local space
+             vertexData.vertex = mul( unity_WorldToObject, world_space_vertex );
 
             o.normal = vertexData.normal;
-            o.vertPos = vertexData.vertex;
+            o.vertPos = vertexData.vertex * _SinTime;//(_Shake ==1 ? float4(1,1,1,1)*_SinTime*100 : float4(0,0,0,0));
+            
             o.worldNormal = WorldNormalVector (IN, o.normal);
 
             float4 oVertex = UnityObjectToClipPos(vertexData.vertex);
@@ -90,6 +104,7 @@ Shader "Custom/Rock_Surface_Shader"
             o.Albedo *= dot(IN.worldNormal,toSunVector) > 0.5 ? 1 : 0.2;
             
             o.Alpha = c.a;
+            //o.Albedo = _Shake == 1 ? float4(0,1,0,1) : float4(1,0,0,1);
             //BLACK OUTLINE
             /*if(abs(dot(IN.worldNormal,viewDirection))< 0.5){
                 o.Albedo = fixed4(0,0,0,0);

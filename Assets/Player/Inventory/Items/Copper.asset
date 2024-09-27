@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Copper
   m_EditorClassIdentifier: 
   color: {r: 1, g: 0.565182, b: 0, a: 1}
-  sprite: {fileID: 21300000, guid: fdfde9ce5f106e94db5d5b9c046cadca, type: 3}
-  _name: Copper
+  sprite: {fileID: 21300000, guid: a847b2da99217c340b97e862ead41a3c, type: 3}
+  _name: Cupric
   ID: 3
