@@ -8,6 +8,8 @@ TagManager:
   - Vehicle
   - Resource
   - Hotbar
+  - Inventory
+  - Hold_Slot
   layers:
   - Default
   - TransparentFX

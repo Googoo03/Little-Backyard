@@ -27,28 +27,47 @@ public class FirstPersonController : MonoBehaviour
 
     //Inventory
     [SerializeField] private Inventory inven;
+    [SerializeField] private Animator inventory_animator;
 
     //Mining Laser Reach
     [SerializeField] private float reach;
+
+    private bool can_move;
 
     private float t;
 
     void Awake()
     {
+        can_move = true;
         Cursor.lockState = CursorLockMode.Locked;
         
         cameraTransform = Camera.main.transform;
 
         inven = new Inventory();
+
         GameObject hotbar = GameObject.FindGameObjectWithTag("Hotbar");
-        int num_slots = inven.getNum_Slots();
-        for (int i = 0; i < num_slots; ++i) { //the 
-            inven.setInventory_Slot(hotbar.transform.GetChild(i).GetComponent<Inventory_Slot>(), i); //this is on awake so this should be fine
+        GameObject inventory = GameObject.FindGameObjectWithTag("Inventory");
+
+        inventory_animator = inventory.GetComponent<Animator>();
+        int hotbar_slots = inven.getHotbarNum_Slots();
+        int inven_slots = inven.getInvenNum_Slots();
+        int i = 0;
+
+        for (; i < hotbar_slots; ++i) { //the 
+            inven.setInventory_Slot(hotbar.transform.GetChild(i).GetChild(0).GetComponent<Inventory_Slot>(), i); //this is on awake so this should be fine
+        }
+        for (int j = 0; j < inven_slots; ++j) {
+            inven.setInventory_Slot(inventory.transform.GetChild(j).GetChild(0).GetComponent<Inventory_Slot>(), i+j);
         }
     }
 
     void Update()
     {
+
+        //Check inventory button
+        InventoryOpenCheck();
+
+        if (!can_move) return;
 
         // Look rotation:
         transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * mouseSensitivityX * Time.deltaTime);
@@ -89,6 +108,27 @@ public class FirstPersonController : MonoBehaviour
         //Check shoot button.
         ShootCheck();
 
+        
+
+    }
+
+
+    //Should be in the parent class
+    private void InventoryOpenCheck() {
+        if (Input.GetKeyDown(KeyCode.Tab)) {
+            if (inventory_animator.GetCurrentAnimatorStateInfo(0).IsName("Inventory_Idle")) {
+                inventory_animator.SetTrigger("Hide");
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+                can_move = true;
+            } else if (inventory_animator.GetCurrentAnimatorStateInfo(0).IsName("Inventory_Idle_HIde")) {
+                inventory_animator.SetTrigger("Show");
+                moveAmount = Vector3.zero;
+                Cursor.lockState= CursorLockMode.None;
+                Cursor.visible = true;
+                can_move = false;
+            }
+        }
     }
 
     private void ShootCheck() {
@@ -162,7 +202,7 @@ public class FirstPersonController : MonoBehaviour
         }
 
         t += t > 1 ? 0 : 3f*Time.deltaTime;
-        positions[1] = (endPoint - positions[0])*t + positions[0];
+        positions[1] = endPoint;//(endPoint - positions[0])*t + positions[0];
         laser.SetPositions(positions);
     }
 

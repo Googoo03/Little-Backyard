@@ -10,7 +10,11 @@ namespace Inven
         //Uses the Item Class found in Item.cs in Little Backyard
 
         // Needs slots, each with a quantity and item
-        private const int num_slots = 10;
+        
+        private const int hotbar_slots = 8;
+        private const int inven_slots = 16;
+        private const int num_slots = hotbar_slots+inven_slots; //8 for hotbar, 16 for inventory
+
         private const int max_quantity = 64; //max items per slot
         private Inventory_Slot[] slots;
 
@@ -25,10 +29,17 @@ namespace Inven
             slots[index] = slot;
         }
 
+        public int getHotbarNum_Slots() { return hotbar_slots; }
+
+        public int getInvenNum_Slots() { return inven_slots; }
+
         public int getNum_Slots() { return num_slots;}
 
         public bool add_item(Tuple<Item, int> new_item)
         {
+            //what happens when the inventory fills up completely while adding items?
+
+
             int quantity_to_add = new_item.Item2;
             for (int i = 0; i < num_slots; ++i)
             {
@@ -47,6 +58,8 @@ namespace Inven
 
             }
 
+            //should return the amount of items that are left as well
+            //perhaps through the tuple since its a pointer?
             return false;
 
         }
