@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 
-public class Inventory_Slot : MonoBehaviour, IBeginDragHandler, IEndDragHandler,IDragHandler
+public class Inventory_Slot : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDragHandler
 {
     // Start is called before the first frame update
     [SerializeField] private Item item;

@@ -71,13 +71,13 @@ Material:
     m_Floats:
     - _AtmosphereHeight: 0.33
     - _BumpScale: 1
-    - _CloudDensity: 22
+    - _CloudDensity: 16.5
     - _CloudFalloff: 10.31
     - _Cutoff: 0.5
-    - _Density: 0.05859375
+    - _Density: 0.28125
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Generate: 0
+    - _Generate: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
@@ -102,12 +102,12 @@ Material:
     m_Colors:
     - _CloudCoeff: {r: 0.24, g: 0.13, b: 0.84, a: 0}
     - _CloudColor: {r: 0.6830188, g: 0.6830188, b: 0.6830188, a: 1}
-    - _Color: {r: 0.06274507, g: 0.855165, b: 0.8784314, a: 1}
+    - _Color: {r: 0.8784314, g: 0.50522786, b: 0.06274507, a: 1}
     - _Color2: {r: 1, g: 0.61535674, b: 0.19433957, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _NebulaCoeff: {r: 0.36, g: 0.7, b: 0.14, a: 0}
     - _NebulaCol: {r: 1, g: 0.5871031, b: 0, a: 1}
     - _OceanCol: {r: 0, g: 0.85660374, b: 0.84494936, a: 1}
-    - _PlanetPos: {r: -310.40332, g: 205.74223, b: -326.75302, a: 0}
-    - _SunPos: {r: -275.7585, g: 205.74223, b: -362.8049, a: 0}
+    - _PlanetPos: {r: -122.58104, g: 433.5525, b: -194.28468, a: 0}
+    - _SunPos: {r: -108.17511, g: 433.5525, b: -224.3443, a: 0}
   m_BuildTextureStacks: []

@@ -193,4 +193,8 @@ public class Event_Manager_Script : MonoBehaviour
     public void set_galacticCenter(GalacticBox gc) {galacticCenter = gc;}
 
     public GameObject get_sun() { return sun; }
+
+    public GameObject getPlayerObject() { return playerCamera.transform.parent.gameObject; }
+
+    public Controllable_Entity getPlayerObjectScript() { return playerCamera.transform.parent.GetComponent<Controllable_Entity>(); }
 }

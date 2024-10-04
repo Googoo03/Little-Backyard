@@ -1,3 +1,4 @@
+using Inven;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,10 +16,15 @@ public abstract class Controllable_Entity : MonoBehaviour
 
     //EVENT MANAGER
     [SerializeField] protected Event_Manager_Script event_manager;
+
+    //Inventory
+    [SerializeField] protected Inventory inven;
+    [SerializeField] protected Animator inventory_animator;
     void Start()
     {
         
     }
+
 
     protected abstract void MovementProtocol();
 
@@ -31,6 +37,8 @@ public abstract class Controllable_Entity : MonoBehaviour
     public Vector3 getOffset() { return camera_offset; }
 
     public GameObject getNearbyPlanet() { return nearbyPlanet; }
+
+    public Inventory getInventory() { return inven; }
 
     protected void LODCheckDistance()
     { //measures the distance between the player and nearbyPlanet. If close enough

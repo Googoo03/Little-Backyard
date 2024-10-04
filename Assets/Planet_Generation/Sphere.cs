@@ -37,7 +37,7 @@ public struct PatchConfig
         vertices = xyVert;
         planetObject = planet;
         distanceThreshold = distanceT;
-        maxLOD = 5;
+        maxLOD = 4;
         radius = _radius;
         
     }

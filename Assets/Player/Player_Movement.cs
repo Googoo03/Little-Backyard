@@ -1,3 +1,4 @@
+using Inven;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -33,7 +34,27 @@ public class Player_Movement : Controllable_Entity
     [SerializeField] private float t;
 
     [SerializeField] private bool headBob = false;
+
+    //Laser FX
+    [SerializeField] private LineRenderer laser;
+    [SerializeField] private GameObject sparks;
+    [SerializeField] private RaycastHit laser_hit;
+
+    //Mining Laser Reach
+    [SerializeField] private float laser_reach;
+
+    //Inventory
+    //[SerializeField] private Inventory inven;
+    //[SerializeField] private Animator inventory_animator;
+
+
     // Start is called before the first frame update
+
+    private void Awake()
+    {
+        InitializeInventory();
+    }
+
     void Start()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -44,6 +65,9 @@ public class Player_Movement : Controllable_Entity
     // Update is called once per frame
     void Update()
     {
+        //Check inventory button
+        InventoryOpenCheck();
+
         if (!canMove) return;
         MovementProtocol(); //move
 
@@ -56,14 +80,110 @@ public class Player_Movement : Controllable_Entity
 
         if (jump && onGround) JumpProtocol();
 
+        ShootCheck(); //check shoot button
         InteractionCheck(); //interact raycast
         InteractInput(); //check if interact button pressed
         ApplyGravity(false); //apply gravity to nearest planet
         LODCheckDistance(); //update the planet LOD if needed
     }
+    private void InventoryOpenCheck()
+    {
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            if (inventory_animator.GetCurrentAnimatorStateInfo(0).IsName("Inventory_Idle"))
+            {
+                inventory_animator.SetTrigger("Hide");
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+                canMove = true;
+            }
+            else if (inventory_animator.GetCurrentAnimatorStateInfo(0).IsName("Inventory_Idle_HIde"))
+            {
+                inventory_animator.SetTrigger("Show");
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+                canMove = false;
+            }
+        }
+    }
 
-    //public void setNearbyPlanet(GameObject planet) {nearbyPlanet = planet;}
+    private void ShootCheck()
+    {
+        bool lmbDown = Input.GetMouseButton(0);
+        laser.gameObject.SetActive(lmbDown);
+        if (lmbDown)
+        {
+            LaserProtocol();
+        }
+        else
+        {
+            var sparks_main = sparks.transform.GetChild(0).GetComponent<ParticleSystem>().main;
+            sparks_main.loop = false;
 
+            var dust_main = sparks.transform.GetChild(1).GetComponent<ParticleSystem>().main;
+            dust_main.loop = false;
+
+            t = 0;
+        }
+    }
+
+
+
+    //TO BE INTEGRATED WITH MAIN GAMEPLAY LOOP ---------------------------------------------------------
+    private void LaserProtocol()
+    {
+        //Assign position to the beginning and end of the laser
+        Vector3[] positions = new Vector3[2];
+        positions[0] = transform.position + (_camera.transform.right * transform.localScale.x);
+
+
+        Vector3 endPoint = new Vector3();
+
+        //If object is hit
+        if (Physics.Raycast(_camera.transform.position, _camera.transform.forward, out laser_hit, reach, 1))
+        {
+
+            //Turn on respective particle systems-----------------------------------------------
+            var sparks_main = sparks.transform.GetChild(0).GetComponent<ParticleSystem>().main;
+            sparks_main.loop = true;
+            ParticleSystem spark = sparks.transform.GetChild(0).GetComponent<ParticleSystem>();
+            if (!spark.isPlaying) spark.Play();
+
+            var dust_main = sparks.transform.GetChild(1).GetComponent<ParticleSystem>().main;
+            dust_main.loop = true;
+            ParticleSystem dust = sparks.transform.GetChild(1).GetComponent<ParticleSystem>();
+            if (!dust.isPlaying) dust.Play();
+            //----------------------------------------------------------------------------------
+
+            //Set the sparks particle system at end of laser
+            sparks.transform.position = laser_hit.point;
+            sparks.transform.rotation = Quaternion.LookRotation(_camera.transform.position - laser_hit.point);
+
+
+            //Set Laser end to where it hits
+            endPoint = laser_hit.point;
+
+            //Deal damage if an object is hit
+            Resource_Class resource = laser_hit.transform.tag == "Resource" ? laser_hit.transform.GetComponent<Resource_Class>() : null;
+            if (resource != null) { resource.dealDamage(5 * Time.deltaTime); }
+        }
+        else
+        {
+
+            endPoint = _camera.transform.position + (_camera.transform.forward * reach);
+
+            var sparks_main = sparks.transform.GetChild(0).GetComponent<ParticleSystem>().main;
+            sparks_main.loop = false;
+
+            var dust_main = sparks.transform.GetChild(1).GetComponent<ParticleSystem>().main;
+            dust_main.loop = false;
+
+        }
+
+        //t += t > 1 ? 0 : 3f * Time.deltaTime;
+        positions[1] = endPoint;//(endPoint - positions[0])*t + positions[0];
+        laser.SetPositions(positions);
+    }
 
     //It should be researched if this is slow. I would imagine it is
     private void OnCollisionEnter(Collision collision)
@@ -76,6 +196,29 @@ public class Player_Movement : Controllable_Entity
 
         Vector3 toPlanet = (nearbyPlanet.transform.position - transform.position).normalized;
         //_rigidbody.AddForce(-toPlanet*jumpForce);
+    }
+
+    private void InitializeInventory() {
+        Cursor.lockState = CursorLockMode.Locked;
+
+        inven = new Inventory();
+
+        GameObject hotbar = GameObject.FindGameObjectWithTag("Hotbar");
+        GameObject inventory = GameObject.FindGameObjectWithTag("Inventory");
+
+        inventory_animator = inventory.GetComponent<Animator>();
+        int hotbar_slots = inven.getHotbarNum_Slots();
+        int inven_slots = inven.getInvenNum_Slots();
+        int i = 0;
+
+        for (; i < hotbar_slots; ++i)
+        { //the 
+            inven.setInventory_Slot(hotbar.transform.GetChild(i).GetChild(0).GetComponent<Inventory_Slot>(), i); //this is on awake so this should be fine
+        }
+        for (int j = 0; j < inven_slots; ++j)
+        {
+            inven.setInventory_Slot(inventory.transform.GetChild(j).GetChild(0).GetComponent<Inventory_Slot>(), i + j);
+        }
     }
 
 

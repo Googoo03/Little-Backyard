@@ -14,7 +14,7 @@ public class Resource_Class : MonoBehaviour
     [SerializeField] private ParticleSystem dust;
     [SerializeField] private Color color;
 
-    [SerializeField] private FirstPersonController player;
+    [SerializeField] private Event_Manager_Script event_manager;
 
     //BASIC CONSTRUCTOR WITH NO RESOURCE NAME. SHOULD ADD EXTRAS IN THE FUTURE
     public Resource_Class() {
@@ -70,7 +70,7 @@ public class Resource_Class : MonoBehaviour
 
             //somehow talk to object pool manager to release this guy
             Tuple<Item, int> new_item = new Tuple<Item, int>(resource, resource_quantity);
-            if (player.getInventory().add_item(new_item)) Debug.Log("Added " + resource.getName());
+            if (event_manager.getPlayerObjectScript().getInventory().add_item(new_item)) Debug.Log("Added " + resource.getName());
         }
     }
 }
