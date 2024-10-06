@@ -85,6 +85,9 @@ public class LifePlanetNoise : GeneratePlane
         grass_mesh = (Resources.Load<GameObject>("Grass/Grass_Prefab").GetComponent<MeshFilter>().sharedMesh);
         grass_mat = (Material)(Resources.Load("Grass/Grass_Mat"));
 
+        Resource_Preset tree_resource = (Resources.Load<Resource_Preset>("Resource_Presets/Tree"));
+        Resource_Preset rock_resource = (Resources.Load<Resource_Preset>("Resource_Presets/Rock"));
+
 
         List<Vector3> tree_positions = new List<Vector3>();
         List<Vector3> rock_positions = new List<Vector3>();
@@ -134,6 +137,9 @@ public class LifePlanetNoise : GeneratePlane
             tree_objs[i].transform.localScale = sca;
             tree_objs[i].GetComponent<MeshFilter>().mesh = tree_mesh;
             tree_objs[i].GetComponent<MeshRenderer>().material = tree_mat;
+            tree_objs[i].GetComponent<Resource_Class>().setResourcePreset(tree_resource);
+            tree_objs[i].tag = "Resource";
+            //tree_objs[i].GetComponent<Resource_Class>().
             //tree_objs[i].AddComponent<BoxCollider>();
         }
 
@@ -153,6 +159,8 @@ public class LifePlanetNoise : GeneratePlane
             rock_objs[i].transform.localScale = sca;
             rock_objs[i].GetComponent<MeshFilter>().mesh = rock_mesh;
             rock_objs[i].GetComponent<MeshRenderer>().material = rock_mat;
+            rock_objs[i].GetComponent<Resource_Class>().setResourcePreset(rock_resource);
+            rock_objs[i].tag = "Resource";
             //rock_objs[i].AddComponent<BoxCollider>();
         }
 

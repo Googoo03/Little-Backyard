@@ -32,29 +32,19 @@ public class Object_Pool_Manager : MonoBehaviour
             newObj.AddComponent<MeshFilter>();
             newObj.AddComponent<MeshRenderer>();
             newObj.AddComponent<BoxCollider>();
-            //newObj.transform.position = Vector3.zero;
+            newObj.AddComponent<Resource_Class>();
+
             newObj.SetActive(false);
             newObj.transform.parent = transform;
             objPool.addPoolObj(newObj);
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        /*while (queue.Count > 0)
-        {
-
-            //Get request
-            Tuple<List<GameObject>, int> request = queue.Dequeue();
-
-            //use find Subpool to get objects if available. Apply to list
-            objPool.findSubPool(request);
-        }*/
-    }
-
     public void releasePoolObjs(ref List<GameObject> list) {
         for (int i = 0; i < _requestReceipt.Count; ++i) {
+
+            //If all objects have an ordered ID, it might be beneficial to have a binary search here
+
             if (_requestReceipt[i].Item1 != list) continue;
 
             _requestReceipt[i].Item2.ForEach(item => { 

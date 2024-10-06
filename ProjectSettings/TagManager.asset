@@ -10,6 +10,8 @@ TagManager:
   - Hotbar
   - Inventory
   - Hold_Slot
+  - Event_Manager
+  - Object_Manager
   layers:
   - Default
   - TransparentFX

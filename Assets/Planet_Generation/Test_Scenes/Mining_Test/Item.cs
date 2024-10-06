@@ -24,5 +24,7 @@ public class Item : ScriptableObject
         return sprite;
     }
 
+    public Color getColor() { return color; }
+
     public string getName() { return _name; }
 }
