@@ -217,12 +217,17 @@ public class LifePlanetNoise : GeneratePlane
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         
 
-        simplex.SetFloat("seed", 100);
-        simplex.SetFloat("mountainStrength", 5f);
+        simplex.SetInt("seed", 0);
+        simplex.SetFloat("mountainStrength", 1f);
         simplex.SetFloat("persistance", 0.95f);
         simplex.SetFloat("lacunarity", 0.25f);
+        simplex.SetFloat("frequency", 1f);
+        simplex.SetFloat("domainWarp", .2f);
         simplex.SetInt("octaves", 3);
-        simplex.SetBool("absValue", false);
+        //simplex.SetInt("mOctaves", 1);
+        //simplex.SetBool("absValue", false);
+
+        simplex.SetBool("absValue", true);
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 

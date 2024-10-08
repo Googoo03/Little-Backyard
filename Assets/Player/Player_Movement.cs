@@ -123,7 +123,7 @@ public class Player_Movement : Controllable_Entity
             var dust_main = sparks.transform.GetChild(1).GetComponent<ParticleSystem>().main;
             dust_main.loop = false;
 
-            t = 0;
+            //t = 0;
         }
     }
 

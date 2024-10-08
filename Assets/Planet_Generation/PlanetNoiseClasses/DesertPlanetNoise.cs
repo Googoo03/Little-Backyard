@@ -177,6 +177,8 @@ public class DesertPlanetNoise : GeneratePlane
         worldVerts.SetData(simplexVerts);
 
         setComputeNoiseVariables(ref simplex);
+        simplex.SetFloat("frequency", 1f);
+        simplex.SetFloat("domainWarp", .2f);
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         ////////////////
 
