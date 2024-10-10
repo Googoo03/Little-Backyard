@@ -33,8 +33,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _CloudTex:
         m_Texture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
-        m_Scale: {x: 2, y: 2}
-        m_Offset: {x: 1, y: 1}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 1, y: 3.33}
     - _DetailAlbedoMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -71,11 +71,12 @@ Material:
     m_Floats:
     - _AtmosphereHeight: 0.33
     - _BumpScale: 1
-    - _CloudDensity: 16.5
-    - _CloudFalloff: 10.31
+    - _CloudDensity: 15.375
+    - _CloudFalloff: 4.54
     - _Cutoff: 0.5
-    - _Density: 0.28125
+    - _Density: 0.2
     - _DetailNormalMapScale: 1
+    - _DomainWarp: 0.44
     - _DstBlend: 0
     - _Generate: 1
     - _GlossMapScale: 1
@@ -88,7 +89,7 @@ Material:
     - _NebulaThreshold: 0.97
     - _OcclusionStrength: 1
     - _Ocean: 1
-    - _OceanRad: 5.1
+    - _OceanRad: 0
     - _Parallax: 0.02
     - _Radius: 5.5
     - _Samples: 5
@@ -100,7 +101,7 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _CloudCoeff: {r: 0.24, g: 0.13, b: 0.84, a: 0}
+    - _CloudCoeff: {r: 0.69, g: 0.54, b: 0, a: 0}
     - _CloudColor: {r: 0.6830188, g: 0.6830188, b: 0.6830188, a: 1}
     - _Color: {r: 0.06274507, g: 0.75803244, b: 0.8784314, a: 1}
     - _Color2: {r: 1, g: 0.61535674, b: 0.19433957, a: 1}
@@ -108,6 +109,6 @@ Material:
     - _NebulaCoeff: {r: 0.36, g: 0.7, b: 0.14, a: 0}
     - _NebulaCol: {r: 1, g: 0.5871031, b: 0, a: 1}
     - _OceanCol: {r: 0, g: 0.85660374, b: 0.84494936, a: 1}
-    - _PlanetPos: {r: -122.58104, g: 433.5525, b: -194.28468, a: 0}
-    - _SunPos: {r: -108.17511, g: 433.5525, b: -224.3443, a: 0}
+    - _PlanetPos: {r: 0, g: 0, b: 0, a: 0}
+    - _SunPos: {r: -10, g: 0, b: -10, a: 0}
   m_BuildTextureStacks: []

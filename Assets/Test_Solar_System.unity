@@ -431,6 +431,26 @@ PrefabInstance:
       propertyPath: transparentCamera
       value: 
       objectReference: {fileID: 1731029016}
+    - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      propertyPath: materials.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      propertyPath: materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
+    - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      propertyPath: materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 2100000, guid: 70acc38ebb9f787459fb5e85da6bfadb, type: 2}
+    - target: {fileID: 8610533034978644952, guid: e7624d12d32d3426ea30613788c3244f,
+        type: 3}
+      propertyPath: materials.Array.data[2]
+      value: 
+      objectReference: {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
     - target: {fileID: 9044583953940408933, guid: e7624d12d32d3426ea30613788c3244f,
         type: 3}
       propertyPath: far clip plane

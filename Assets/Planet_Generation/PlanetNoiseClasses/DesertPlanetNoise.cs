@@ -5,6 +5,7 @@ using Simplex;
 using Worley;
 using UnityEngine.Rendering;
 using Poisson;
+using UnityEngine.Assertions;
 
 public class DesertPlanetNoise : GeneratePlane
 {
@@ -49,9 +50,12 @@ public class DesertPlanetNoise : GeneratePlane
         rock_objs.ForEach(item => { item.SetActive(false); });
         bush_objs.ForEach(item => { item.SetActive(false); });
 
-        object_pool_manager.releasePoolObjs(ref tree_objs);
-        object_pool_manager.releasePoolObjs(ref rock_objs);
-        object_pool_manager.releasePoolObjs(ref bush_objs);
+        if (object_pool_manager)
+        {
+            object_pool_manager.releasePoolObjs(ref tree_objs);
+            object_pool_manager.releasePoolObjs(ref rock_objs);
+            object_pool_manager.releasePoolObjs(ref bush_objs);
+        }
     }
 
     protected override void DispatchFoliage() { }
@@ -90,6 +94,7 @@ public class DesertPlanetNoise : GeneratePlane
         poissonSampling.generatePoissonDisc(ref bush_positions, ref vertices, 3, 6, xVertCount, yVertCount, 6);
 
         //Request objects from the object pool (1 frame buffer)
+        Assert.IsTrue(object_pool_manager, "Object Pool Manager is not set");
         object_pool_manager.requestPoolObjs(ref tree_objs, tree_positions.Count);
 
         for (int i = 0; i < tree_objs.Count; ++i)

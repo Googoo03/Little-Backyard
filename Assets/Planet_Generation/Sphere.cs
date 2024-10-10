@@ -79,11 +79,15 @@ public class Sphere : MonoBehaviour
     [SerializeField] private bool hasRings;
     [SerializeField] private bool hasOcean;
 
+
+    //SHADER PARAMS
+    [Header("Shader Params")]
     [SerializeField] private Material ringShader;
     [SerializeField] private Vector3 ringNormal;
     [SerializeField] private Color ringColor = new Color(0,0,0);
     [SerializeField] private float ringRadius;
     [SerializeField] private float ringWidth;
+    [SerializeField] private Vector3 sunPos;
 
     [SerializeField] private Material atmoShader;
 
@@ -156,7 +160,7 @@ public class Sphere : MonoBehaviour
         //set the planet type and name
         planetType = (int)(seed % 6);
         planetType = planetType > 2 ? (planetType > 4 ? 3 : 4) : 2;
-        planetType = 4;
+        planetType = 2;
         transform.name = "Planet" + planetType.ToString();
 
 
@@ -168,6 +172,8 @@ public class Sphere : MonoBehaviour
 
         cloudDensity = ((seed >> 12) % 256) / 256.0f * 32.0f;
         cloudDensity *= planetType == 3 ? 0 : 1;
+
+        sunPos = event_manager ? event_manager.get_sun().transform.position : sunPos;
 
         //create all 6 sides of the sphere-cube
         Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
@@ -192,7 +198,7 @@ public class Sphere : MonoBehaviour
             transform.GetChild(0).gameObject.SetActive(true);
             //set the ocean size
             transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor);
-            transform.GetChild(0).GetComponent<Renderer>().material.SetVector("_SunPos", event_manager.get_sun().transform.position);
+            transform.GetChild(0).GetComponent<Renderer>().material.SetVector("_SunPos", sunPos);
         }
         else {
             transform.GetChild(0).gameObject.SetActive(true);
@@ -417,6 +423,10 @@ public class Sphere : MonoBehaviour
         {
             GeneratePatch(patches[i], 1, 1); //GENERATES CUBE SIDE. THE 1, 1 ARGUMENT REFERS TO LOD
         }
+    }
+
+    public Vector3 getSunPos() {
+        return sunPos;
     }
 
 

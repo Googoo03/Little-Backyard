@@ -6,16 +6,14 @@ using UnityEngine.Rendering;
 public class CameraDepthInitializer : MonoBehaviour
 {
     // Start is called before the first frame update
+    [Header("Cameras")]
     [SerializeField] private Camera playerCamera;
     [SerializeField] private Camera transparentCamera;
 
     [SerializeField] private Shader oceanDepthShader;
 
-    [SerializeField] private Material nebulaMat;
-    [SerializeField] private Material mat;
-    [SerializeField] private Material planetRings;
-    [SerializeField] private Material sunHalo;
-    [SerializeField] private Material outlineMat;
+    [Header("Material List")]
+    [SerializeField] private Material[] materials;
 
     [SerializeField] private Material depthCopier;
     //[SerializeField] private int planetCount = 3;
@@ -34,13 +32,10 @@ public class CameraDepthInitializer : MonoBehaviour
 
         
         if (!waterDepthTexture) waterDepthTexture = new RenderTexture(Screen.width,Screen.height, 32, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
-        //waterDepthTexture.format = RenderTextureFormat.Depth;
         waterDepthTexture.Create();
 
         transparentCamera.depthTextureMode = DepthTextureMode.Depth;
         transparentCamera.targetTexture = waterDepthTexture;
-
-        //transparentCamera.cullingMask = TransparentObject; //Water
     }
 
     private void LateUpdate()
@@ -56,48 +51,51 @@ public class CameraDepthInitializer : MonoBehaviour
         transparentCamera.RenderWithShader(oceanDepthShader, "");
 
 
-        if (planet != null)
+        /*if (planet != null)
         {
             mat.SetVector("_PlanetPos", planet.transform.position); //sets new planet position for atmosphere shader when adequately close.
             mat.SetFloat("_Radius", planet.GetComponent<Sphere>().getRadius());
             mat.SetFloat("_OceanRad", planet.transform.GetChild(0).transform.localScale.x);
             planetRings.SetVector("_PlanetPos", planet.transform.position);
             //planet.GetComponent<Sphere>().SetRingShader();
+        }*/
+
+        RenderTexture temp = new RenderTexture(source.width, source.height, 0, source.format)
+        {
+            enableRandomWrite = true
+        };
+        temp.Create();
+
+        int i = 0;
+        RenderTexture start = source;
+        RenderTexture end = start;
+        foreach (Material _mat in materials) {
+
+
+            start = i == 0 ? source : temp;
+
+            System.Func<RenderTexture> createTex = () => {
+                RenderTexture intermediate = new RenderTexture(source.width, source.height, 0, source.format)
+                {
+                    enableRandomWrite = true
+                };
+                intermediate.Create();
+                return intermediate;
+            };
+            end = i == materials.Length - 1 ? destination : createTex();
+
+            Graphics.Blit(start, end, _mat);
+            if (temp != end && i < materials.Length - 1)
+            {
+                temp.Release();
+                temp = end;
+            }
+            i++;
         }
-
-        RenderTexture intermediate = new RenderTexture(source.width, source.height, 0, source.format)
-        {
-            enableRandomWrite = true
-        };
-        intermediate.Create();
-
-        RenderTexture Planet_intermediate = new RenderTexture(source.width, source.height, 0, source.format)
-        {
-            enableRandomWrite = true
-        };
-        Planet_intermediate.Create();
-        RenderTexture Outline_intermediate = new RenderTexture(source.width, source.height, 0, source.format)
-        {
-            enableRandomWrite = true
-        };
-        Outline_intermediate.Create();
-        RenderTexture Nebula_intermediate = new RenderTexture(source.width, source.height, 0, source.format)
-        {
-            enableRandomWrite = true
-        };
-        Nebula_intermediate.Create();
-
-
-        
-        Graphics.Blit(source, Nebula_intermediate, nebulaMat);
-        Graphics.Blit(Nebula_intermediate, intermediate, mat);
-        Graphics.Blit(intermediate, Outline_intermediate, outlineMat);
-        Graphics.Blit(Outline_intermediate, Planet_intermediate, planetRings);
-        Graphics.Blit(Planet_intermediate, destination, sunHalo);
-        Outline_intermediate.Release();
-        Nebula_intermediate.Release();
-        intermediate.Release();
-        Planet_intermediate.Release();
+        destination = end;
+        temp.Release();
+        start.Release();
+        if(end) end.Release();
     }
 
     private void MatchCameraSettings() {

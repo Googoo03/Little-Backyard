@@ -71,6 +71,9 @@ public abstract class GeneratePlane : MonoBehaviour
     //POOL MANAGER
     protected Object_Pool_Manager object_pool_manager;
 
+    //SHADER PARAMS
+    [SerializeField] protected Vector3 SunPos;
+
     protected bool foliageGenerationReturned = false;
 
     public abstract float NoiseValue(Vector3 pos, float scale);
@@ -235,7 +238,8 @@ public abstract class GeneratePlane : MonoBehaviour
 
         planetMaterial.SetVector("_Offset", new Vector4(patch.textureOffset.x, patch.textureOffset.y, 0, 0));
 
-        planetMaterial.SetVector("_SunPos", event_manager.get_sun().transform.position);
+        //if there's not an event manager present, assume test
+        planetMaterial.SetVector("_SunPos", patch.planetObject.GetComponent<Sphere>().getSunPos());
         /////////////////////////////////////////////////////////////////////
     }
 

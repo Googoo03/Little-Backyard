@@ -8,6 +8,7 @@ using System;
 using Poisson;
 using Unity.Collections;
 using UnityEditor.Rendering.LookDev;
+using UnityEngine.Assertions;
 
 
 
@@ -61,6 +62,7 @@ public class LifePlanetNoise : GeneratePlane
         tree_objs.ForEach(item => { item.SetActive(false); });
         rock_objs.ForEach(item => { item.SetActive(false); });
 
+        Assert.IsTrue(object_pool_manager, "Object Pool Manager not set");
         object_pool_manager.releasePoolObjs(ref tree_objs);
         object_pool_manager.releasePoolObjs(ref rock_objs);
     }
