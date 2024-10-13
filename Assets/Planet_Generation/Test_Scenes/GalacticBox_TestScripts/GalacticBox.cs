@@ -96,7 +96,7 @@ public class GalacticBox : MonoBehaviour
         starGenerator.setSeedPRNG((int)seed);
 
         //Generate new stars with the new seed
-        starGenerator.generatePoissonDisc3DSphere(ref starPositions, 5, 5, 16, 64);
+        starGenerator.generatePoissonDisc3DSphere(ref starPositions, 5, 40, 16, 64);
     }
 
 

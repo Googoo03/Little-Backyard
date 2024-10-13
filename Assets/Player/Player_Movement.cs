@@ -85,6 +85,7 @@ public class Player_Movement : Controllable_Entity
         InteractInput(); //check if interact button pressed
         ApplyGravity(false); //apply gravity to nearest planet
         LODCheckDistance(); //update the planet LOD if needed
+        CheckFallThroughPlanet();
     }
     private void InventoryOpenCheck()
     {

@@ -46,23 +46,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aae5766a28fc53746b3e4845ccd02b53, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uPatchCount: 1
-  vPatchCount: 1
   xVertCount: 15
   yVertCount: 15
   radius: 5
   atmosphereHeight: 0
-  seed: 42
+  atmosphereDensity: 0
+  cloudDensity: 0
+  seed: 0
   scale: 0.55
   octaves: 4
   persistance: 0.5
   lacunarity: 2
   hasRings: 0
+  hasOcean: 0
   ringShader: {fileID: 2100000, guid: 70acc38ebb9f787459fb5e85da6bfadb, type: 2}
   ringNormal: {x: 0, y: 0, z: 0}
   ringColor: {r: 0, g: 0, b: 0, a: 0}
   ringRadius: 6
   ringWidth: 0
+  sunPos: {x: 0, y: 0, z: 0}
   atmoShader: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
   event_manager: {fileID: 0}
   oceanFloor: 0.1

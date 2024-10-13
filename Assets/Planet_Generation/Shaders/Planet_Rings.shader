@@ -156,6 +156,7 @@ Shader "Custom/Planet_Rings"
                 float discriminant = (dot(an,an)*(_Width*_Width)) - (dot(_PlaneNormal,_PlaneNormal)*(c*c));
                 float t;
                 float te;
+                float eps = 0;
 
 
                 float d3;
@@ -174,15 +175,15 @@ Shader "Custom/Planet_Rings"
                     //if(terrainLevel < d4) t4 = -1;
                     
 
-                    if(t>0 && t < _Height && d3 > 0 && up.x == FLT_MAX){
+                    if(t>0 && t <= _Height+eps && d3 > 0 && up.x == FLT_MAX){
                         up = (viewDirection*d3+_WorldSpaceCameraPos);
-                    }else if(t>0 && t < _Height && down.x == FLT_MAX){
+                    }else if(t>0 && t <= _Height+eps && down.x == FLT_MAX){
                         down = d3 > 0 ? (viewDirection*d3+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
                     }
 
-                    if(t>0 && t < _Height && d4 > 0 && up.x == FLT_MAX){
+                    if(t>0 && t <= _Height+eps  && d4 > 0 && up.x == FLT_MAX){
                         up = (viewDirection*d4+_WorldSpaceCameraPos);
-                    }else if(t>0 && t < _Height && down.x == FLT_MAX){
+                    }else if(t>0 && t <= _Height+eps && down.x == FLT_MAX){
                         down = d4 > 0 ? (viewDirection*d4+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
                     }
 
@@ -209,9 +210,9 @@ Shader "Custom/Planet_Rings"
                     te= dot(_PlaneNormal,(viewDirection*e3)-(b));
                     if(terrainLevel < e3) te = -1;
 
-                    if(te>0 && te < _Height && e3 > 0 && up.x == FLT_MAX){
+                    if(te>0 && te <= _Height && e3 > 0 && up.x == FLT_MAX){
                         up = (viewDirection*e3+_WorldSpaceCameraPos);
-                    }else if(te>0 && te < _Height && down.x == FLT_MAX){
+                    }else if(te>0 && te <= _Height && down.x == FLT_MAX){
                         down = e3 > 0 ? (viewDirection*e3+_WorldSpaceCameraPos) : _WorldSpaceCameraPos;
                     }
 

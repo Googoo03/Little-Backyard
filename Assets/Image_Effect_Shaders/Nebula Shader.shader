@@ -11,6 +11,7 @@ Shader "Hidden/Nebula Shader"
         _NebulaDensity ("Nebula Density", float)  =1
         _NebulaCoeff ("Nebula Coefficients", Vector) = (0,0,0,0)
         _NebulaThreshold ("Nebula Threshold",float)  = 1
+        _DomainWarp ("Domain Warp",float) = 1.0
     }
     SubShader
     {
@@ -68,6 +69,7 @@ Shader "Hidden/Nebula Shader"
             sampler2D _BlueNoise;
             float4 _BlueNoise_ST;
             float4 _CloudTex_ST;
+            float _DomainWarp;
 
             //Nebula PARAMETERS
             float _NebulaScale;
@@ -135,9 +137,9 @@ Shader "Hidden/Nebula Shader"
                     for(;tNebula < 1.0; tNebula+= 0.1){
                         //FIX THE NORMALIZE LOCATION. RIGHT NOW TCLOUD DOESNT DO ANYTHING
                     
-                        intersectionLineNeb = (farPlanePosition-_WorldSpaceCameraPos)*(tNebula+blueNoise) + _WorldSpaceCameraPos;
-                            
-                        nebulaSample = tex3D(_CloudTex,intersectionLineNeb * (1.0/_NebulaScale) );
+                        intersectionLineNeb = (farPlanePosition-_WorldSpaceCameraPos)*((tNebula*5)+blueNoise) + _WorldSpaceCameraPos;
+                        float3 domainWarp = tex3D(_CloudTex,((intersectionLineNeb * (1.0/_NebulaScale))*2)).xyz * _DomainWarp;
+                        nebulaSample = tex3D(_CloudTex,(intersectionLineNeb * (1.0/_NebulaScale))+domainWarp );
                         nebula = (nebulaSample.r*_NebulaCoeff.x) + (nebulaSample.g*_NebulaCoeff.y) + (nebulaSample.b*_NebulaCoeff.z);
                            
                         

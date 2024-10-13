@@ -62,7 +62,8 @@ public class LifePlanetNoise : GeneratePlane
         tree_objs.ForEach(item => { item.SetActive(false); });
         rock_objs.ForEach(item => { item.SetActive(false); });
 
-        Assert.IsTrue(object_pool_manager, "Object Pool Manager not set");
+        if (!object_pool_manager) return;
+        //Assert.IsTrue(object_pool_manager, "Object Pool Manager not set");
         object_pool_manager.releasePoolObjs(ref tree_objs);
         object_pool_manager.releasePoolObjs(ref rock_objs);
     }
@@ -215,23 +216,25 @@ public class LifePlanetNoise : GeneratePlane
 
         setComputeNoiseVariables(ref simplex);
         simplex.SetBool("absValue", false);
+        simplex.SetFloat("frequency", 1f);
+        simplex.SetFloat("domainWarp", .2f);
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         
 
-        simplex.SetInt("seed", 0);
-        simplex.SetFloat("mountainStrength", 1f);
+        //simplex.SetInt("seed", seed);
+        /*simplex.SetFloat("mountainStrength", 1f);
         simplex.SetFloat("persistance", 0.95f);
         simplex.SetFloat("lacunarity", 0.25f);
-        simplex.SetFloat("frequency", 1f);
-        simplex.SetFloat("domainWarp", .2f);
-        simplex.SetInt("octaves", 3);
+        
+        simplex.SetFloat("domainWarp", .0f);
+        simplex.SetInt("octaves", 3);*/
         //simplex.SetInt("mOctaves", 1);
         //simplex.SetBool("absValue", false);
 
-        simplex.SetBool("absValue", true);
+        //simplex.SetBool("absValue", true);
 
-        simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+        //simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
         AsyncGPUReadback.Request(verts, OnCompleteReadback);
     }

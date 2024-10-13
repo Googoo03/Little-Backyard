@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using System;
@@ -53,15 +54,12 @@ public struct PlanetProperties {
 }
 
 
-
 public class Sphere : MonoBehaviour
 {
     //Assign each cube-sphere face
     
     //////////////////////////////////////
 
-    public int uPatchCount = 1;
-    public int vPatchCount = 1; //purpose is unknown
     public int xVertCount;
     public int yVertCount;
 
@@ -146,7 +144,7 @@ public class Sphere : MonoBehaviour
         hash.Append(transform.position.y);
         hash.Append(transform.position.z);
 
-        seed = (UInt64)hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
+        if(seed == 0) seed = (UInt64)hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
         ////////////////////////////////////
         
         //

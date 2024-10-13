@@ -93,7 +93,7 @@ public abstract class GeneratePlane : MonoBehaviour
     protected void setComputeNoiseVariables(ref ComputeShader shader)
     {
         shaderHandle = shader.FindKernel("CSMain");
-        shader.SetInt("seed", 0);
+        shader.SetInt("seed", (int)seed);
 
         shader.SetTexture(shaderHandle, "Result", texture);
         shader.SetBuffer(shaderHandle, "vertexBuffer", verts);

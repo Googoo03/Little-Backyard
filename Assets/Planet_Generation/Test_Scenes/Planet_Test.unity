@@ -172,11 +172,6 @@ MonoBehaviour:
   playerCamera: {fileID: 190386632}
   transparentCamera: {fileID: 0}
   oceanDepthShader: {fileID: 0}
-  nebulaMat: {fileID: 0}
-  mat: {fileID: 0}
-  planetRings: {fileID: 0}
-  sunHalo: {fileID: 0}
-  outlineMat: {fileID: 0}
   materials:
   - {fileID: 2100000, guid: 70acc38ebb9f787459fb5e85da6bfadb, type: 2}
   depthCopier: {fileID: 0}
@@ -443,12 +438,8 @@ MonoBehaviour:
   playerCamera: {fileID: 1287236246}
   transparentCamera: {fileID: 190386632}
   oceanDepthShader: {fileID: 0}
-  nebulaMat: {fileID: 0}
-  mat: {fileID: 0}
-  planetRings: {fileID: 0}
-  sunHalo: {fileID: 0}
-  outlineMat: {fileID: 0}
   materials:
+  - {fileID: 2100000, guid: 46f2cb6a277dd934690e0d8ae67cab66, type: 2}
   - {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
   - {fileID: 2100000, guid: 70acc38ebb9f787459fb5e85da6bfadb, type: 2}
   - {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
@@ -508,18 +499,28 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
+      propertyPath: seed
+      value: 100011019
+      objectReference: {fileID: 0}
+    - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+        type: 3}
       propertyPath: hasRings
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: sunPos.x
-      value: -10
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+        type: 3}
+      propertyPath: sunPos.y
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: sunPos.z
-      value: -10
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}

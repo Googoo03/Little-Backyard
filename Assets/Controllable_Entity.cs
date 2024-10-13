@@ -13,6 +13,7 @@ public abstract class Controllable_Entity : MonoBehaviour
     [SerializeField] protected Vector3 camera_offset;
     [SerializeField] protected float reach; //for interaction
     [SerializeField] protected GameObject nearbyPlanet;
+    [SerializeField] protected Sphere nearbyPlanetScript;
 
     //EVENT MANAGER
     [SerializeField] protected Event_Manager_Script event_manager;
@@ -56,6 +57,19 @@ public abstract class Controllable_Entity : MonoBehaviour
         }
     }
 
+    protected void CheckFallThroughPlanet() {
+        if (canMove && Vector3.Distance(transform.position,nearbyPlanet.transform.position) < nearbyPlanetScript.getRadius()) {
+            //reset player object if fall through planet
 
-    public void setNearbyPlanet(GameObject planet) { nearbyPlanet = planet; }
+            //get direction, normalize it. Times by a factor, set player to it.
+            Vector3 toPlanetVector = (transform.position - nearbyPlanet.transform.position).normalized;
+            toPlanetVector *= nearbyPlanetScript.getRadius() * 1.1f;
+
+            transform.position = nearbyPlanet.transform.position + toPlanetVector;
+
+        }
+    }
+
+
+    public void setNearbyPlanet(GameObject planet) { nearbyPlanet = planet; nearbyPlanetScript = nearbyPlanet.GetComponent<Sphere>(); }
 }
