@@ -44,16 +44,6 @@ public struct PatchConfig
     }
 }
 
-public struct PlanetProperties {
-    public int seed;
-    public int octaves;
-    public float persistance;
-    public float lacunarity;
-    //private AnimationCurve[] heightCurve; //SINCE WE CANT HAVE A REFERENCE TO THE HEIGHT CURVE, WE NEED AN EVALUATE FUNCTION
-    // FROM THE PLANET??
-}
-
-
 public class Sphere : MonoBehaviour
 {
     //Assign each cube-sphere face
@@ -69,10 +59,6 @@ public class Sphere : MonoBehaviour
     [SerializeField] private float cloudDensity;
 
     [SerializeField] private UInt64 seed;
-    [SerializeField] private float scale;
-    [SerializeField] private int octaves;
-    [SerializeField] private float persistance;
-    [SerializeField] private float lacunarity;
 
     [SerializeField] private bool hasRings;
     [SerializeField] private bool hasOcean;
@@ -86,6 +72,7 @@ public class Sphere : MonoBehaviour
     [SerializeField] private float ringRadius;
     [SerializeField] private float ringWidth;
     [SerializeField] private Vector3 sunPos;
+    [SerializeField] private Color atmoColor;
 
     [SerializeField] private Material atmoShader;
 
@@ -96,11 +83,9 @@ public class Sphere : MonoBehaviour
 
     public float landMultiplier;
 
-    public Texture2D regionReference;
-
     //public Color[] regions; //turn this into a 2D array and access directly?
 
-    private int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
+    [SerializeField] private int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
     public float pscale;
 
     
@@ -146,24 +131,14 @@ public class Sphere : MonoBehaviour
 
         if(seed == 0) seed = (UInt64)hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
         ////////////////////////////////////
-        
-        //
-        //hasRings = seed % 3 == 0; //rings will only appear if the seed is a multiple of 3. Is there a more sophistocated way of doing this? Sure.
-        
 
-        //MAKE A NEW WAY OF GENERATING TYPE??? UGLY TO READ??
-        //planetType = Mathf.FloorToInt((Perlin3d(px + seed, py + seed, pz + seed)*1000) % 6);
-        //planetType = Random.Range(0,6);
-
-        //set the planet type and name
-        planetType = (int)(seed % 6);
-        planetType = planetType > 2 ? (planetType > 4 ? 3 : 4) : 2;
-        planetType = 2;
+        //Planet Type override
+        planetType = planetType != -1 ? planetType : Mathf.Abs((int)seed)%6;
         transform.name = "Planet" + planetType.ToString();
 
 
         hasRings = true; //for testing purposes only
-        hasOcean = planetType == 2 ? true : false;
+        hasOcean = planetType == 2 || planetType == 0 ? true : false;
 
         atmosphereDensity = ((seed >> 8) % 256) / 256.0f;
         atmosphereDensity *= planetType == 3 ? 0.03f : 1;
@@ -188,6 +163,8 @@ public class Sphere : MonoBehaviour
 
         //create a list of points for worleyNoise
         generateWorleyPoints(25);
+
+        GenerateAtmoColor();
 
         //Spawn Ring with correct orientation. Store orientation?
         if (hasRings) GenerateRings();
@@ -217,7 +194,7 @@ public class Sphere : MonoBehaviour
             point.Normalize();
             point *= radius;
             //this should be multiplied by the radius in the future
-            point += transform.position;
+            //point += transform.position;
             
             worleyPoints.Add(point);
         }
@@ -241,8 +218,43 @@ public class Sphere : MonoBehaviour
         return;
     }
 
-    public void SetRingShader() {
+    private void GenerateAtmoColor()
+    {
+        atmoColor = new Color((seed>>2)%256,(seed >> 5)%256,(seed >> 8)%256,256);
+        atmoColor /= 256.0f;
 
+        Color baseColor = Color.black;
+
+        switch(planetType){
+            case 0:
+                baseColor = new Color(0.2f,0.2f,0.2f,1);
+                break;
+            case 1:
+                break;
+                baseColor = new Color(0.7f, 0.2f, 0.2f, 1);
+            case 2:
+                break;
+                baseColor = new Color(1f, 0.9f, 0.1f, 1);
+            case 3:
+                break;
+                
+            case 4:
+                break;
+                baseColor = new Color(1f, 0.7f, 0.1f, 1);
+            case 5:
+                break;
+            default:
+                break;
+        }
+        // A + (B-A)*t
+        atmoColor = (atmoColor - baseColor) * 0.5f + baseColor;
+        return;
+
+    }
+
+    public void SetRingShader() {
+        GameObject rings = transform.GetChild(1).gameObject;
+        rings.SetActive(false);
         ringShader.SetColor("_Color", ringColor);
         ringShader.SetVector("_PlanetPos", transform.position);
         ringShader.SetVector("_PlaneNormal", ringNormal);
@@ -254,6 +266,8 @@ public class Sphere : MonoBehaviour
 
     public void SetAtmoShader() {
         atmoShader.SetVector("_PlanetPos", transform.position);
+        if (!event_manager) atmoShader.SetVector("_SunPos", sunPos);
+        atmoShader.SetColor("_Color", atmoColor);
         atmoShader.SetFloat("_Radius", radius+0.5f);
         atmoShader.SetFloat("_CloudDensity", cloudDensity);
         atmoShader.SetFloat("_Density", atmosphereDensity);
@@ -367,42 +381,9 @@ public class Sphere : MonoBehaviour
     {
         return landMultiplier;
     }
-    /*public float getHeightArrayValue(int index)
-    {
-        //for safety you should throw an exception here if out of range;
-        return heights[index];
-    }*/
-
-    /*public Color getRegionColor(int index)
-    {
-        return regions[index];
-    }
-
-    public int getRegionLength()
-    {
-        return regions.Length;
-    }*/
-
-    public int getOctaves()
-    {
-        return octaves;
-    }
-
-    public float getLacunarity()
-    {
-        return lacunarity;
-    }
-
-    public float getPersistance()
-    {
-        return persistance;
-    }
 
     public UInt64 getSeed() {
         return seed;
-    }
-    public float getScale() {
-        return scale;
     }
 
     public float getInitialDistanceThreshold() {

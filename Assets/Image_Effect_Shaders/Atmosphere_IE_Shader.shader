@@ -244,7 +244,7 @@ Shader "Custom/Atmosphere_IE"
                         atmosphere_depth = atmosphere_depth*atmosphere_depth;
 
                         _Color2 *= saturate(abs(t4-t3))*_Color_Band*dotProduct;
-                        _Color *= saturate(abs(t4-t3)*_Color_Band*(dotProduct));
+                        _Color *= saturate(abs(t4-t3))*_Color_Band*(dotProduct);
                          fixed4 atmosphereColor = lerp(_Color,_Color2,max(0,dot(lightVector,viewDirection) * saturate(atmosphere_depth) ));
                          
                         atmosphereAlpha *= max(0,dotProduct);

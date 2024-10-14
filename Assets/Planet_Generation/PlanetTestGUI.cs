@@ -20,6 +20,7 @@ public class PlanetTestGUI : Editor
         {
             planet.SetAtmoShader();
             planet.SetRingShader();
+            
         }
     }
 

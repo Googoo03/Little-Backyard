@@ -72,7 +72,7 @@ Material:
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
-    - _DomainWarp: 0.87
+    - _DomainWarp: 0.3
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
@@ -80,8 +80,8 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _NebulaDensity: 0.23
-    - _NebulaScale: 200
-    - _NebulaThreshold: 1.01
+    - _NebulaScale: 1000
+    - _NebulaThreshold: 0.97
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _SmoothnessTextureChannel: 0

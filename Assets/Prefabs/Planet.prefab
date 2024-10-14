@@ -53,10 +53,6 @@ MonoBehaviour:
   atmosphereDensity: 0
   cloudDensity: 0
   seed: 0
-  scale: 0.55
-  octaves: 4
-  persistance: 0.5
-  lacunarity: 2
   hasRings: 0
   hasOcean: 0
   ringShader: {fileID: 2100000, guid: 70acc38ebb9f787459fb5e85da6bfadb, type: 2}
@@ -65,12 +61,13 @@ MonoBehaviour:
   ringRadius: 6
   ringWidth: 0
   sunPos: {x: 0, y: 0, z: 0}
+  atmoColor: {r: 0, g: 0, b: 0, a: 0}
   atmoShader: {fileID: 2100000, guid: fa0e645ae8804c54581b6b750788c3a4, type: 2}
   event_manager: {fileID: 0}
   oceanFloor: 0.1
   oceanMultiplier: 0.01
   landMultiplier: 0.07
-  regionReference: {fileID: 2800000, guid: abeea500f365f944ea3ff3832837474d, type: 3}
+  planetType: 1
   pscale: 0.01
   worleyPoints: []
   nextLOD: 0

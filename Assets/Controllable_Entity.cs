@@ -58,7 +58,7 @@ public abstract class Controllable_Entity : MonoBehaviour
     }
 
     protected void CheckFallThroughPlanet() {
-        if (canMove && Vector3.Distance(transform.position,nearbyPlanet.transform.position) < nearbyPlanetScript.getRadius()) {
+        if (canMove && Vector3.Distance(transform.position,nearbyPlanet.transform.position) < nearbyPlanetScript.getRadius()*0.5f) {
             //reset player object if fall through planet
 
             //get direction, normalize it. Times by a factor, set player to it.

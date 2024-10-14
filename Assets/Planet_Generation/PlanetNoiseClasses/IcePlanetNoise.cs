@@ -9,18 +9,22 @@ public class IcePlanetNoise : GeneratePlane
 {
     // Start is called before the first frame update
     public ComputeShader worley;
+    ComputeShader simplex;
 
 
     public IcePlanetNoise()
     {
         
         //set up noise parameters. surely theres a better way to do this
-        oceanFloor = 0;
-        oceanMulitplier = 0.3f;
-        landMultiplier = 0.3f;
-        octaves = 1;
+        oceanFloor = 0.2f;
+        oceanMulitplier = 0.15f;
+        landMultiplier = 0.2f;
+        octaves = 2;
+        scale = 3f;
         lacunarity = 2;
-        persistance = 0.1f;
+        persistance = 0.5f;
+        domainWarp = 0.5f;
+
         changeHeight = true;
     }
 
@@ -61,37 +65,56 @@ public class IcePlanetNoise : GeneratePlane
     {
 
         worley = (ComputeShader)Resources.Load("Worley Noise");
-        Vector3[] worleyVerts = new Vector3[vertices.Length];
+        simplex = (ComputeShader)Resources.Load("Simplex Noise");
 
+        Vector3[] verticesWorldSpace = new Vector3[vertices.Length];
+
+        //////CONVERTS RELATIVE VERTEX POINTS INTO WORLD SPACE POSITIONS
         for (int i = 0; i < vertices.Length; ++i)
         {
-            worleyVerts[i] = transform.TransformPoint(vertices[i]);
-        }
+            Vector3 pos = origin + vertices[i]; //world space
 
-        verts = new ComputeBuffer(worleyVerts.Length, sizeof(float) * 3);
-        verts.SetData(worleyVerts);
+            float xx = ((pos.x - xVertCount) / scale);
+            float yy = ((pos.y - yVertCount) / scale);
+            float zz = ((pos.z - xVertCount) / scale);
+
+            verticesWorldSpace[i] = new Vector3(xx, yy, zz);
+        }
+        /////////////////////////////////////////////////////////////////
+
+
+        verts = new ComputeBuffer(vertices.Length, sizeof(float) * 3);
+        verts.SetData(vertices);
+
+        worldVerts = new ComputeBuffer(verticesWorldSpace.Length, sizeof(float) * 3);
+        worldVerts.SetData(verticesWorldSpace);
 
         //set worley points
         List<Vector3> points = new List<Vector3>();
         points = patch.planetObject.GetComponent<Sphere>().getWorleyPoints();
 
-        setComputeNoiseVariables(ref worley);
+        //setComputeNoiseVariables(ref worley);
 
-        ComputeBuffer listPoints = new ComputeBuffer(points.Count, sizeof(float) * 3);
-        listPoints.SetData(points);
-        worley.SetBuffer(shaderHandle, "points", listPoints);
+        //ComputeBuffer listPoints = new ComputeBuffer(points.Count, sizeof(float) * 3);
+        //listPoints.SetData(points);
+        //worley.SetBuffer(shaderHandle, "points", listPoints);
 
         ///////////////////////////////////
 
 
 
-        worley.SetBool("inverse", true);
-        worley.SetBool("edgeDetect", true);
+        /*worley.SetBool("inverse", false);
+        worley.SetBool("edgeDetect", false);
         worley.SetFloat("edgeThreshold", 0.1f);
         worley.SetBool("mode", false); //set to add mode
-        worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+        worley.Dispatch(shaderHandle, xVertCount, yVertCount, 1);*/
 
-        verts.Release();
+        setComputeNoiseVariables(ref simplex);
+        simplex.SetBool("absValue", false);
+
+        simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
+
+        AsyncGPUReadback.Request(verts, OnCompleteReadback);
     }
     public override float NoiseValue(Vector3 pos, float scale)
     {

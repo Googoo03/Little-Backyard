@@ -36,6 +36,7 @@ public class LifePlanetNoise : GeneratePlane
         oceanFloor = 0.1f;
         oceanMulitplier = 0.1f;
         landMultiplier = 0.15f;
+        domainWarp = 0.2f;
 
         octaves = 5;
         scale = 3f;
@@ -216,8 +217,6 @@ public class LifePlanetNoise : GeneratePlane
 
         setComputeNoiseVariables(ref simplex);
         simplex.SetBool("absValue", false);
-        simplex.SetFloat("frequency", 1f);
-        simplex.SetFloat("domainWarp", .2f);
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         

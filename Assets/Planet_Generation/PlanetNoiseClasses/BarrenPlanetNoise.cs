@@ -26,6 +26,7 @@ public class BarrenPlanetNoise : GeneratePlane
         lacunarity = 2;
         persistance = 0.5f;
         changeHeight = true;
+        domainWarp = 1f;
 
         rock_k = 2; rock_radius = 8;
         rock_nummax = 6;
@@ -147,6 +148,7 @@ public class BarrenPlanetNoise : GeneratePlane
         worldVerts.SetData(simplexVerts);
 
         setComputeNoiseVariables(ref simplex);
+        
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
 
         /*

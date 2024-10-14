@@ -29,6 +29,7 @@ public abstract class GeneratePlane : MonoBehaviour
     protected float landMultiplier;
     protected float frequency;
     protected float amplitude;
+    protected float domainWarp;
     protected float range;
 
     protected bool changeHeight;
@@ -101,6 +102,9 @@ public abstract class GeneratePlane : MonoBehaviour
         shader.SetBuffer(shaderHandle, "vertexWorldBuffer", worldVerts);
 
         shader.SetInt("resolution", 15); //should this be dynamic
+
+        shader.SetFloat("domainWarp", domainWarp);
+        shader.SetFloat("frequency", 1f);
 
         shader.SetFloat("octaves", octaves);
         shader.SetFloat("persistance", persistance);

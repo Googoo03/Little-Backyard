@@ -126,7 +126,7 @@ Shader "Custom/Planet_Surface_Shader"
         float CliffOpacity(Input IN){
             float3 vertexPos = mul (unity_ObjectToWorld, IN.vertPos).xyz;
             float3 toPlanetVector = normalize(vertexPos-_PlanetPos);
-            float steepness = 1-dot(toPlanetVector,IN.normal);
+            float steepness = 1-dot(toPlanetVector,IN.worldNormal);
             //if(steepness > _CliffThreshold) return 1;
 
             return steepness > _CliffThreshold ? 1 : 0;

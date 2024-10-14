@@ -33,6 +33,7 @@ public class DesertPlanetNoise : GeneratePlane
         lacunarity = 2;
         persistance = 0.5f;
         changeHeight = true;
+        domainWarp = 0.2f;
 
         tree_k = 3;
         tree_radius = 8;
@@ -182,8 +183,6 @@ public class DesertPlanetNoise : GeneratePlane
         worldVerts.SetData(simplexVerts);
 
         setComputeNoiseVariables(ref simplex);
-        simplex.SetFloat("frequency", 1f);
-        simplex.SetFloat("domainWarp", .2f);
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
         ////////////////
 

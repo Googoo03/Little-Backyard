@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -251,7 +251,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!108 &859598039
 Light:
   m_ObjectHideFlags: 0
@@ -329,6 +329,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &1245842420 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+    type: 3}
+  m_PrefabInstance: {fileID: 1602747725}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1245842422 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4020168595206606, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+    type: 3}
+  m_PrefabInstance: {fileID: 1602747725}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1245842423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1245842420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a097ae434686c14e8c50c7eb9ca98c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  yawInput: 10
+  pitchInput: 0
+  rollInput: 0
 --- !u!1 &1287236244
 GameObject:
   m_ObjectHideFlags: 0
@@ -421,7 +448,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 190386629}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1245842422}
   m_LocalEulerAnglesHint: {x: 12.417, y: 0, z: 0}
 --- !u!114 &1287236248
 MonoBehaviour:
@@ -500,7 +527,7 @@ PrefabInstance:
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: seed
-      value: 100011019
+      value: 177376
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
@@ -515,12 +542,17 @@ PrefabInstance:
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: sunPos.y
-      value: 2
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: sunPos.z
-      value: 12
+      value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+        type: 3}
+      propertyPath: planetType
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
@@ -534,13 +566,20 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4020168595206606, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1287236247}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1878399322141872, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1245842423}
   m_SourcePrefab: {fileID: 100100000, guid: b3e90b7f20da6fb43b4fec489ea0efa6, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1287236247}
   - {fileID: 859598040}
   - {fileID: 1602747725}
