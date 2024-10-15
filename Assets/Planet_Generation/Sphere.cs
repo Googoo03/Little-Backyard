@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using TreeEditor;
 
 public struct PatchConfig
 {
@@ -168,25 +169,33 @@ public class Sphere : MonoBehaviour
 
         //Spawn Ring with correct orientation. Store orientation?
         if (hasRings) GenerateRings();
-        if (hasOcean)
-        {
-            transform.GetChild(0).gameObject.SetActive(true);
-            //set the ocean size
-            transform.GetChild(0).transform.localScale = Vector3.one * (radius + oceanFloor);
-            transform.GetChild(0).GetComponent<Renderer>().material.SetVector("_SunPos", sunPos);
-        }
-        else {
-            transform.GetChild(0).gameObject.SetActive(true);
-            //set the ocean size
-            transform.GetChild(0).transform.localScale = Vector3.one * (0);
-            
-        }
+        SetOceanProperties();
         
         ////////////////////////////
 
         //generate the patches when finished configuring
         GeneratePatches();
     }
+
+    private void SetOceanProperties() {
+        GameObject ocean = transform.GetChild(0).gameObject;
+        Material oceanMat = ocean.GetComponent<Renderer>().material;
+        ocean.SetActive(true);
+
+        if (hasOcean)
+        {
+            ocean.transform.localScale = Vector3.one * (radius + oceanFloor);
+            
+            Color oceanCol = planetType == 2 ? Color.blue : Color.red;
+            oceanMat.SetVector("_SunPos", sunPos);
+            oceanMat.SetColor("_Deep", oceanCol);
+            oceanMat.SetColor("_Shallow", (Color.yellow-oceanCol) * 0.7f + oceanCol);
+        }
+        else {
+            ocean.transform.localScale = Vector3.zero;
+        }
+    }
+
     private void generateWorleyPoints(int num) {
         for (int i = 0; i < num; ++i)
         {

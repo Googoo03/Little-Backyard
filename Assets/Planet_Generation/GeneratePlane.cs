@@ -4,10 +4,11 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Simplex;
 using Worley;
+using Poisson;
 using UnityEngine.Rendering;
 using Unity.Collections;
 using System;
-
+using static UnityEngine.UI.Image;
 
 public abstract class GeneratePlane : MonoBehaviour
 {
@@ -56,6 +57,13 @@ public abstract class GeneratePlane : MonoBehaviour
 
     [SerializeField] protected Mesh rock_mesh;
     [SerializeField] protected Material rock_mat;
+
+    //SCRIPTABLE OBJECT
+    //
+    //This will contain all the necessary information for foliage generation and noise parameters
+    //Will be loaded from resources by individual planet class
+    [SerializeField] protected Planet_Scriptable_Obj planet_preset;
+    [SerializeField] private List<List<GameObject>> foliage_objs = new List<List<GameObject>>();
 
     public bool generateFoliage;
     protected int tree_k;
@@ -265,7 +273,7 @@ public abstract class GeneratePlane : MonoBehaviour
         foliageGenerationReturned = true;
 
         //Generate foliage if and only if its at the lowest LOD level
-        if (generateFoliage) GenerateFoliage(ref vertices, transform.position);
+        if (generateFoliage) GenerateFoliage(ref vertices);
 
         this.gameObject.AddComponent<MeshCollider>();
 
@@ -280,6 +288,50 @@ public abstract class GeneratePlane : MonoBehaviour
     }
 
     protected abstract void DispatchNoise(ref Vector3[] vertices, Vector3 origin);
+
+    protected void GenerateFoliage(ref Vector3[] vertices) {
+
+        //This should be changed to a pointer in the future
+        List<mesh_pair> mesh_list = planet_preset.getMesh_List();
+        PoissonDisc poissonSampling = new PoissonDisc(); //used for generating foliage
+        int seed;
+        int mid_index;
+
+        for (int i = 0; i < mesh_list.Count; ++i) {
+            List<Vector3> foliage_positions = new List<Vector3>();
+
+
+            
+            mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
+            poissonSampling.setDensity(3f);
+
+
+            seed = generateUniqueSeed(vertices[mid_index] + new Vector3(i,0,0));
+            poissonSampling.setSeedPRNG(seed);
+            poissonSampling.generatePoissonDisc(ref foliage_positions, ref vertices, tree_k, xVertCount * yVertCount, xVertCount, yVertCount, mesh_list[i].poissonRadius);
+
+            List<GameObject> temp_foliage_objs = new List<GameObject>();
+            object_pool_manager.requestPoolObjs(ref temp_foliage_objs, foliage_positions.Count);
+            foliage_objs.Add(temp_foliage_objs); //Expensive, change later
+
+            for (int j = 0; j < temp_foliage_objs.Count; ++j)
+            { //add the tree positions and subsequent rotations to the matrix buffer
+
+                Vector3 lookVec = foliage_positions[i];
+                Quaternion rot = Quaternion.LookRotation(-lookVec);
+                Vector3 sca = Vector3.one * .02f;
+
+                foliage_objs[i][j].SetActive(true);
+                foliage_objs[i][j].transform.position = foliage_positions[i] + transform.position;
+                foliage_objs[i][j].transform.rotation = rot;
+                foliage_objs[i][j].transform.localScale = sca;
+                foliage_objs[i][j].GetComponent<MeshFilter>().mesh = mesh_list[i].mesh;
+                foliage_objs[i][j].GetComponent<MeshRenderer>().material = mesh_list[i].mat;
+                foliage_objs[i][j].GetComponent<Resource_Class>().setResourcePreset(mesh_list[i].resource);
+                foliage_objs[i][j].tag = "Resource";
+            }
+        }
+    }
 
     protected abstract void GenerateFoliage(ref Vector3[] vertices, Vector3 origin);
 

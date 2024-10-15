@@ -11,11 +11,11 @@ public class OceanShaderInitialization : MonoBehaviour
     [SerializeField] private float Ocean_Density;
     void Start()
     {
-        oceanMaterial = this.GetComponent<Renderer>().material;
+        /*oceanMaterial = this.GetComponent<Renderer>().material;
         //Set Material Parameters /////////////////
         oceanMaterial.SetColor("SHALLOW", Shallow_Color);
         oceanMaterial.SetColor("DEEP", Deep_Color);
-        oceanMaterial.SetFloat("_DepthCoef", Ocean_Density);
+        oceanMaterial.SetFloat("_DepthCoef", Ocean_Density);*/
     }
 
     // Update is called once per frame

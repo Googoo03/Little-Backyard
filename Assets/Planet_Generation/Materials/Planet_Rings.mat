@@ -66,7 +66,7 @@ Material:
     - _Density: 0.86
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Generate: 0
+    - _Generate: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
@@ -75,16 +75,16 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Radius: 10
+    - _Radius: 12
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _Width: 11
+    - _Width: 13
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.61328125, g: 0.07421875, b: 0.5078125, a: 0.0625}
+    - _Color: {r: 0.609375, g: 0.82421875, b: 0.3515625, a: 0.16796875}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _PlaneNormal: {r: 0.94042176, g: 0.258155, b: 0.2212757, a: 0}
-    - _PlanetPos: {r: -204.58043, g: -454.6798, b: -33.72859, a: 0}
+    - _PlaneNormal: {r: 0.6495489, g: 0.7540218, b: 0.09765945, a: 0}
+    - _PlanetPos: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

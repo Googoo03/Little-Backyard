@@ -28,10 +28,18 @@ public class LifePlanetNoise : GeneratePlane
 
     Mesh mesh;
 
+    public void Awake()
+    {
+        planet_preset = (Planet_Scriptable_Obj)Resources.Load("Planet_Presets/Life");
+    }
+
     public LifePlanetNoise()
     {
         //set up noise parameters. surely theres a better way to do this
         //perhaps load from a JSON file?
+        
+
+
 
         oceanFloor = 0.1f;
         oceanMulitplier = 0.1f;

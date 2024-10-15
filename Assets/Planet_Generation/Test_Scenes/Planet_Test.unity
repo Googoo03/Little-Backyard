@@ -527,7 +527,7 @@ PrefabInstance:
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: seed
-      value: 177376
+      value: 185487
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
@@ -552,7 +552,7 @@ PrefabInstance:
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: planetType
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
@@ -562,6 +562,11 @@ PrefabInstance:
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: ringNormal.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2848743650586428118, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
+        type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
