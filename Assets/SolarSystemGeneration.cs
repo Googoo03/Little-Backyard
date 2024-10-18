@@ -34,9 +34,6 @@ public class SolarSystemGeneration : MonoBehaviour {
     [SerializeField] private Mesh sunLoaded; //icosohedron
     [SerializeField] private Mesh sunUnloaded; //octahedron
 
-    //TESTING ONLY
-    [SerializeField] bool initialize = false;
-
     // Use this for initialization
     public void Initialize () {
 

@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 411ba0f992cbf6e4baaacf535985636c, type: 3}
-  m_Name: Life
+  m_Name: Barren
   m_EditorClassIdentifier: 
   mesh_list:
-  - mesh: {fileID: 289301614986012343, guid: 2ab07a0f5fcb3ef40bc991f732c07981, type: 3}
-    mat: {fileID: -1929036172255054197, guid: b63b09457639caf4f863dda7ff07709c, type: 3}
-    resource: {fileID: 11400000, guid: 95cbe758b85f2dc409904011fc6a7a94, type: 2}
-    poissonK: 5
-    poissonNum: 15
-    poissonRadius: 12
   - mesh: {fileID: 4013275331872712965, guid: 667a044ab7b554e449d0bdd14cf4f278, type: 3}
     mat: {fileID: 2100000, guid: 262df1ac63ce6dd4aa592a6554d7104b, type: 2}
     resource: {fileID: 11400000, guid: 4955a26a1b85ca74883a9fb42c0f9248, type: 2}
     poissonK: 2
     poissonNum: 8
-    poissonRadius: 6
+    poissonRadius: 10
+  - mesh: {fileID: -6240264390135884009, guid: eb0aac63184c346499930df66779f8e8, type: 3}
+    mat: {fileID: 2100000, guid: 54a37e98e87e3a14d9a9e9336ee243ce, type: 2}
+    resource: {fileID: 11400000, guid: 4955a26a1b85ca74883a9fb42c0f9248, type: 2}
+    poissonK: 2
+    poissonNum: 8
+    poissonRadius: 10

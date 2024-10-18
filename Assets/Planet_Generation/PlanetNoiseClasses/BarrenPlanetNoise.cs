@@ -46,78 +46,7 @@ public class BarrenPlanetNoise : GeneratePlane
 
     protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin)
     {
-        rock_mesh = (Resources.Load<GameObject>("Rock/Rock_Prefab").GetComponent<MeshFilter>().sharedMesh);
-        rock_mat = (Material)(Resources.Load("Rock/Rock_Mat"));
-
-        Mesh big_rock_mesh = (Resources.Load<GameObject>("Big_Rock/Big_Rock_Prefab").GetComponent<MeshFilter>().sharedMesh);
-        Material big_rock_mat = (Material)(Resources.Load("Big_Rock/Big_Rock_Mat"));
-
-        List<Vector3> big_rock_positions = new List<Vector3>();
-        List<Vector3> rock_positions = new List<Vector3>();
-
-        int seed;
-        int mid_index = xVertCount * (yVertCount / 2) + (xVertCount / 2); //calculates the middle index of a square array. Like, direct center of square.
-        
-
-        poissonSampling.setDensity(1.1f);
-        seed = generateUniqueSeed(vertices[mid_index]);
-        poissonSampling.setSeedPRNG(seed);
-        poissonSampling.generatePoissonDisc(ref big_rock_positions, ref vertices, 1, xVertCount * yVertCount, xVertCount, yVertCount, 12);
-
-        poissonSampling.setDensity(2f);
-        seed = generateUniqueSeed(vertices[mid_index] + new Vector3(1, 0, 0));
-        poissonSampling.setSeedPRNG(seed);
-        poissonSampling.generatePoissonDisc(ref rock_positions, ref vertices, rock_k, rock_nummax, xVertCount, yVertCount, rock_radius);
-
-        //Remove positions that do not meet criteria
-        int t = 0;
-        while (t < big_rock_positions.Count)
-        {
-            if (big_rock_positions[t].magnitude > (radius + oceanFloor * 2))
-            {
-                big_rock_positions.RemoveAt(t);
-                t--;
-            }
-            t++;
-        }
-
-
-        //Request objects from the object pool (1 frame buffer)
-        object_pool_manager.requestPoolObjs(ref big_rock_objs, big_rock_positions.Count);
-
-        for (int i = 0; i < big_rock_objs.Count; ++i)
-        { 
-
-            Vector3 lookVec = new Vector3(big_rock_positions[i].x, big_rock_positions[i].y, big_rock_positions[i].z);
-
-            Quaternion rot = Quaternion.LookRotation(lookVec);
-            Vector3 sca = Vector3.one * .02f;
-
-            big_rock_objs[i].SetActive(true);
-            big_rock_objs[i].transform.position = big_rock_positions[i] + origin;
-            big_rock_objs[i].transform.rotation = rot;
-            big_rock_objs[i].transform.localScale = sca;
-            big_rock_objs[i].GetComponent<MeshFilter>().mesh = big_rock_mesh;
-            big_rock_objs[i].GetComponent<MeshRenderer>().material = big_rock_mat;
-        }
-
-
-        object_pool_manager.requestPoolObjs(ref rock_objs, rock_positions.Count);
-
-        for (int i = 0; i < rock_objs.Count; ++i)
-        { 
-
-            Vector3 lookVec = new Vector3(rock_positions[i].x, rock_positions[i].y, rock_positions[i].z);
-
-            Quaternion rot = Quaternion.LookRotation(lookVec) * Quaternion.Euler(0, 0, UnityEngine.Random.Range(0, 180));
-            Vector3 sca = Vector3.one * .01f;
-            rock_objs[i].SetActive(true);
-            rock_objs[i].transform.position = rock_positions[i] + origin;
-            rock_objs[i].transform.rotation = rot;
-            rock_objs[i].transform.localScale = sca;
-            rock_objs[i].GetComponent<MeshFilter>().mesh = rock_mesh;
-            rock_objs[i].GetComponent<MeshRenderer>().material = rock_mat;
-        }
+        return;
     }
 
     protected override void DispatchNoise(ref Vector3[] vertices, Vector3 origin)

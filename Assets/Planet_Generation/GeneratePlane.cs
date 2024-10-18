@@ -51,12 +51,11 @@ public abstract class GeneratePlane : MonoBehaviour
 
     private GameObject parent;
 
-    //FOLIAGE PARAMETERS
-    [SerializeField] protected Mesh tree_mesh;
-    [SerializeField] protected Material tree_mat;
-
-    [SerializeField] protected Mesh rock_mesh;
-    [SerializeField] protected Material rock_mat;
+    //WIND PARTICLE SYSTEM
+    private GameObject wind_normal;
+    private GameObject wind_swirl;
+    [SerializeField] protected double timeMarker;
+    private double timeElapsed;
 
     //SCRIPTABLE OBJECT
     //
@@ -87,6 +86,11 @@ public abstract class GeneratePlane : MonoBehaviour
 
     public abstract float NoiseValue(Vector3 pos, float scale);
 
+    public void Awake()
+    {
+        
+    }
+
     protected int generateUniqueSeed(Vector3 pos) {
 
         //FIX THIS
@@ -98,6 +102,8 @@ public abstract class GeneratePlane : MonoBehaviour
         
         return hash.GetHashCode();
     }
+
+
 
     protected void setComputeNoiseVariables(ref ComputeShader shader)
     {
@@ -131,6 +137,11 @@ public abstract class GeneratePlane : MonoBehaviour
         //Find object manager script at start. Expensive.
         if(!object_pool_manager) object_pool_manager = FindObjectOfType<Object_Pool_Manager>();
 
+        //Load wind particle systems from Resources folder
+        wind_swirl = (GameObject)(Resources.Load("FX/Wind/Wind_Swirl"));
+        wind_normal = (GameObject)(Resources.Load("FX/Wind/Wind_Normal"));
+        timeElapsed = 0;
+        timeMarker += UnityEngine.Random.Range(10, 50);
 
         Generate(patch);
     }
@@ -153,8 +164,8 @@ public abstract class GeneratePlane : MonoBehaviour
         };
         texture.Create();
 
-        
 
+        planet_preset = (Planet_Scriptable_Obj)Resources.Load("Planet_Presets/" + planePatch.planetObject.name.ToString());
         mf = this.gameObject.AddComponent<MeshFilter>();
         rend = this.gameObject.AddComponent<MeshRenderer>();
         Sphere planetScript = planePatch.planetObject.GetComponent<Sphere>();
@@ -275,7 +286,7 @@ public abstract class GeneratePlane : MonoBehaviour
         //Generate foliage if and only if its at the lowest LOD level
         if (generateFoliage) GenerateFoliage(ref vertices);
 
-        this.gameObject.AddComponent<MeshCollider>();
+        gameObject.AddComponent<MeshCollider>();
 
         if (patch.LODlevel > 0)
         {
@@ -308,7 +319,7 @@ public abstract class GeneratePlane : MonoBehaviour
 
             seed = generateUniqueSeed(vertices[mid_index] + new Vector3(i,0,0));
             poissonSampling.setSeedPRNG(seed);
-            poissonSampling.generatePoissonDisc(ref foliage_positions, ref vertices, tree_k, xVertCount * yVertCount, xVertCount, yVertCount, mesh_list[i].poissonRadius);
+            poissonSampling.generatePoissonDisc(ref foliage_positions, ref vertices, mesh_list[i].poissonK, xVertCount * yVertCount, xVertCount, yVertCount, mesh_list[i].poissonRadius);
 
             List<GameObject> temp_foliage_objs = new List<GameObject>();
             object_pool_manager.requestPoolObjs(ref temp_foliage_objs, foliage_positions.Count);
@@ -317,12 +328,12 @@ public abstract class GeneratePlane : MonoBehaviour
             for (int j = 0; j < temp_foliage_objs.Count; ++j)
             { //add the tree positions and subsequent rotations to the matrix buffer
 
-                Vector3 lookVec = foliage_positions[i];
-                Quaternion rot = Quaternion.LookRotation(-lookVec);
+                Vector3 lookVec = foliage_positions[j];
+                Quaternion rot = Quaternion.LookRotation(lookVec);
                 Vector3 sca = Vector3.one * .02f;
 
                 foliage_objs[i][j].SetActive(true);
-                foliage_objs[i][j].transform.position = foliage_positions[i] + transform.position;
+                foliage_objs[i][j].transform.position = foliage_positions[j] + transform.position;
                 foliage_objs[i][j].transform.rotation = rot;
                 foliage_objs[i][j].transform.localScale = sca;
                 foliage_objs[i][j].GetComponent<MeshFilter>().mesh = mesh_list[i].mesh;
@@ -342,9 +353,21 @@ public abstract class GeneratePlane : MonoBehaviour
 
     private void Update()
     {
-        if(generateFoliage) DispatchFoliage();
-        
+        if (!generateFoliage) return;
+        DispatchFoliage();
+
+        //have a timer for the wind. Once the timer has expired, spawn a wind particle
+        timeElapsed += Time.deltaTime;
+        if (timeElapsed > timeMarker) {
+            timeElapsed = 0;
+            Vector3 pos = vertices[xVertCount * (yVertCount / 2) + (xVertCount / 2)];
+            Vector3 lookVec = pos;
+            Quaternion rot = Quaternion.LookRotation(lookVec);
+            Vector3 sca = Vector3.one * .02f;
+            Instantiate(UnityEngine.Random.Range(0, 2) == 0 ? wind_normal : wind_swirl, transform.position + pos, rot);
+        }
     }
+
 
     public Vector3 getPosition() { //returns the middle vertex position. Is used to
                                                                         //measure distance for LOD

@@ -67,7 +67,7 @@ MonoBehaviour:
   oceanFloor: 0.1
   oceanMultiplier: 0.01
   landMultiplier: 0.07
-  planetType: 2
+  planetType: 1
   pscale: 0.01
   worleyPoints: []
   nextLOD: 1

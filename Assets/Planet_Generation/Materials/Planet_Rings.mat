@@ -75,16 +75,16 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Radius: 12
+    - _Radius: 15
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _Width: 13
+    - _Width: 17
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.609375, g: 0.82421875, b: 0.3515625, a: 0.16796875}
+    - _Color: {r: 0.234375, g: 0.15234375, b: 0.390625, a: 0.671875}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _PlaneNormal: {r: 0.6495489, g: 0.7540218, b: 0.09765945, a: 0}
-    - _PlanetPos: {r: 0, g: 0, b: 0, a: 0}
+    - _PlaneNormal: {r: 0.06132511, g: 0.9855822, b: 0.15769315, a: 0}
+    - _PlanetPos: {r: -381.49164, g: 324.1349, b: -155.2469, a: 0}
   m_BuildTextureStacks: []

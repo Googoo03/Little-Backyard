@@ -135,7 +135,25 @@ public class Sphere : MonoBehaviour
 
         //Planet Type override
         planetType = planetType != -1 ? planetType : Mathf.Abs((int)seed)%6;
-        transform.name = "Planet" + planetType.ToString();
+        string name = String.Empty;
+        switch (planetType) {
+            case 0:
+                name = "Hot";
+                break;
+            case 1:
+                name = "Ice";
+                break;
+            case 2:
+                name = "Life";
+                break;
+            case 3:
+                name = "Barren";
+                break;
+            case 4:
+                name = "Desert";
+                break;
+        }
+        transform.name = name;
 
 
         hasRings = true; //for testing purposes only
