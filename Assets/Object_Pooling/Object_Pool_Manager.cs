@@ -27,18 +27,21 @@ public class Object_Pool_Manager : MonoBehaviour
 
         for (int i = 0; i < num; ++i)
         {
+            //Instantiate said object
             GameObject newObj = Instantiate(obj, Vector3.zero, Quaternion.identity);
-            newObj.transform.name = "Foliage_Object_"+i.ToString();
-            newObj.AddComponent<MeshFilter>();
-            newObj.AddComponent<MeshRenderer>();
-            newObj.AddComponent<BoxCollider>();
-            newObj.AddComponent<Resource_Class>();
 
             newObj.SetActive(false);
             newObj.transform.parent = transform;
             objPool.addPoolObj(newObj);
+
+            //Naming convention and Needed components
+            newObj.transform.name = transform.name+"_"+i.ToString();
+
+            
         }
     }
+
+
 
     public void releasePoolObjs(ref List<GameObject> list) {
         for (int i = 0; i < _requestReceipt.Count; ++i) {

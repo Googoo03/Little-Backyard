@@ -62,7 +62,12 @@ public abstract class GeneratePlane : MonoBehaviour
     //This will contain all the necessary information for foliage generation and noise parameters
     //Will be loaded from resources by individual planet class
     [SerializeField] protected Planet_Scriptable_Obj planet_preset;
+
+    //List of Resource Objects to be allocated from the object pool
     [SerializeField] private List<List<GameObject>> foliage_objs = new List<List<GameObject>>();
+
+    //List of wind objects to be allocated from the wind pool
+    [SerializeField] private List<GameObject> wind_obj = new List<GameObject>();
 
     public bool generateFoliage;
     protected int tree_k;
@@ -78,6 +83,9 @@ public abstract class GeneratePlane : MonoBehaviour
 
     //POOL MANAGER
     protected Object_Pool_Manager object_pool_manager;
+
+    //WIND POOL MANAGER
+    protected Object_Pool_Manager wind_pool_manager;
 
     //SHADER PARAMS
     [SerializeField] protected Vector3 SunPos;
@@ -135,7 +143,9 @@ public abstract class GeneratePlane : MonoBehaviour
         parent = transform.parent.gameObject;
 
         //Find object manager script at start. Expensive.
-        if(!object_pool_manager) object_pool_manager = FindObjectOfType<Object_Pool_Manager>();
+        if(!object_pool_manager) object_pool_manager = GameObject.FindWithTag("Object_Manager").GetComponent<Object_Pool_Manager>();
+
+        if(!wind_pool_manager) wind_pool_manager = GameObject.FindWithTag("Wind_Manager").GetComponent<Object_Pool_Manager>();
 
         //Load wind particle systems from Resources folder
         wind_swirl = (GameObject)(Resources.Load("FX/Wind/Wind_Swirl"));
@@ -300,6 +310,11 @@ public abstract class GeneratePlane : MonoBehaviour
 
     protected abstract void DispatchNoise(ref Vector3[] vertices, Vector3 origin);
 
+
+    protected void RequestWindObj() {
+        
+
+    }
     protected void GenerateFoliage(ref Vector3[] vertices) {
 
         //This should be changed to a pointer in the future
@@ -338,6 +353,7 @@ public abstract class GeneratePlane : MonoBehaviour
                 foliage_objs[i][j].transform.localScale = sca;
                 foliage_objs[i][j].GetComponent<MeshFilter>().mesh = mesh_list[i].mesh;
                 foliage_objs[i][j].GetComponent<MeshRenderer>().material = mesh_list[i].mat;
+                foliage_objs[i][j].GetComponent<MeshCollider>().sharedMesh = mesh_list[i].mesh;
                 foliage_objs[i][j].GetComponent<Resource_Class>().setResourcePreset(mesh_list[i].resource);
                 foliage_objs[i][j].tag = "Resource";
             }
@@ -360,11 +376,17 @@ public abstract class GeneratePlane : MonoBehaviour
         timeElapsed += Time.deltaTime;
         if (timeElapsed > timeMarker) {
             timeElapsed = 0;
+
+            wind_pool_manager.requestPoolObjs(ref wind_obj, 1);
             Vector3 pos = vertices[xVertCount * (yVertCount / 2) + (xVertCount / 2)];
             Vector3 lookVec = pos;
             Quaternion rot = Quaternion.LookRotation(lookVec);
             Vector3 sca = Vector3.one * .02f;
-            Instantiate(UnityEngine.Random.Range(0, 2) == 0 ? wind_normal : wind_swirl, transform.position + pos, rot);
+            wind_obj[0].SetActive(true);
+            wind_obj[0].transform.position = transform.position + pos;
+            wind_obj[0].transform.rotation = rot;
+            wind_obj.Remove(wind_obj[0]);
+            //Instantiate(UnityEngine.Random.Range(0, 2) == 0 ? wind_normal : wind_swirl, transform.position + pos, rot);
         }
     }
 

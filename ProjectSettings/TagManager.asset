@@ -12,6 +12,7 @@ TagManager:
   - Hold_Slot
   - Event_Manager
   - Object_Manager
+  - Wind_Manager
   layers:
   - Default
   - TransparentFX

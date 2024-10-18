@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 3136166180254397093}
   - component: {fileID: 5331653196057252754}
   - component: {fileID: 7252194876496987131}
+  - component: {fileID: 4759082899204501385}
   m_Layer: 0
   m_Name: Wind_Normal
   m_TagString: Untagged
@@ -43,7 +44,7 @@ ParticleSystem:
   serializedVersion: 8
   lengthInSec: 5
   simulationSpeed: 1
-  stopAction: 2
+  stopAction: 1
   cullingMode: 0
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
@@ -4948,3 +4949,15 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
+--- !u!114 &4759082899204501385
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4722668028608549217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c868575f2db4f944bce92fd99eacdbe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

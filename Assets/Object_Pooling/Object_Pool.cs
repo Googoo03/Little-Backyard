@@ -65,20 +65,6 @@ namespace ObjPool
                 found++;
                 
             }
-            /*for( ; i != max && found < request.Item2; ++i)
-            {
-                i %= _m; //apply wrapping
-
-                if (_pool[i].Item2) continue; //skip if activated already
-
-
-                //add to list
-                foundObjs.Add(_pool[i].Item1);
-                foundIndices.Add(i);
-
-                //increment number that is found
-                found++;
-            }*/
             
 
             if (found < request.Item2) return; //return an empty list if quota is not met

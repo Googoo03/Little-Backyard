@@ -24,6 +24,7 @@ Shader "Custom/Atmosphere_IE"
         _Radius ("Planet Radius", float) = 5
         _AtmosphereHeight ("Atmosphere Height", float) = 0.5
         _Density ("Atmosphere Density", float) = 1
+        _Blowout ("Sun Blowout", float) = 1
 
         _Samples ("Number of Samples", int) = 1
 
@@ -102,6 +103,7 @@ Shader "Custom/Atmosphere_IE"
             float4 _Color;
             float4 _Color2;
             float _Color_Band;
+            float _Blowout;
 
             float distanceToPlanet;
 
@@ -245,6 +247,9 @@ Shader "Custom/Atmosphere_IE"
 
                         _Color2 *= saturate(abs(t4-t3))*_Color_Band*dotProduct;
                         _Color *= saturate(abs(t4-t3))*_Color_Band*(dotProduct);
+                        
+                        _Color /= pow(1-dot(viewDirection,lightVector),_Blowout);
+                        _Color2 /= pow(1-dot(viewDirection,lightVector),_Blowout);
                          fixed4 atmosphereColor = lerp(_Color,_Color2,max(0,dot(lightVector,viewDirection) * saturate(atmosphere_depth) ));
                          
                         atmosphereAlpha *= max(0,dotProduct);
@@ -252,6 +257,7 @@ Shader "Custom/Atmosphere_IE"
 
 
                         col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density*atmosphereAlpha*distanceAlpha) );
+                        //col /= pow(1-dot(viewDirection,lightVector),_Blowout);
                         //col += terrainLevel > 100 ? col*dotProduct : float4(0,0,0,0);
 
                         //Calculate cloudcolor

@@ -6,12 +6,13 @@ Shader "Custom/Sun_US"
         
         _ColorA ("Color_A", Color) = (1,1,1,1)
         _ColorB ("Color_B", Color) = (1,1,1,1)
+        _Blowout ("Sun Blowout", float) = 1
         _Threshold ("Threshold", int) = 1.0
         _Displacement ("Displacement", float) = 1
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Transparent" }
         LOD 100
 
         Pass
@@ -46,6 +47,7 @@ Shader "Custom/Sun_US"
             float4 _NoiseTex_ST;
             float _Threshold;
             float _Displacement;
+            float _Blowout;
 
             v2f vert (appdata_base v)
             {
@@ -58,7 +60,7 @@ Shader "Custom/Sun_US"
                 o.worldPos = worldPos;
 
                 _NoiseTex_ST.xy += float2(_Time.x,_Time.x);
-                v.vertex *= 1-(tex3Dlod(_NoiseTex,float4(worldNormal,0)+_NoiseTex_ST).r * _Displacement);
+                //v.vertex *= 1-(tex3Dlod(_NoiseTex,float4(worldNormal,0)+_NoiseTex_ST).r * _Displacement);
                 o.vertex = UnityObjectToClipPos(v.vertex);/* * tex3D(_NoiseTex,worldNormal).r;*/
                 
                 o.screenPos = ComputeScreenPos(o.vertex);
@@ -81,7 +83,8 @@ Shader "Custom/Sun_US"
 
                 float fresnel = dot(i.worldNormal,normalize(_WorldSpaceCameraPos-i.worldPos));
 
-                fixed4 col = lerp(_ColorA,_ColorB,exp(-noiseValue*fresnel));
+                fixed4 col = _ColorB*.05;
+                col /= pow(1-fresnel,_Blowout);
                 //col.xyz *= unity_DeltaTime.z*100;
 
                 return col;

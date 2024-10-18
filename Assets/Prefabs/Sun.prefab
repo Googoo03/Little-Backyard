@@ -171,11 +171,10 @@ MonoBehaviour:
   solarsystemSpacing: 1
   Sun_Halo: {fileID: 2100000, guid: 7364f74ec0245734a82bfc99fb795b4a, type: 2}
   starColor: {r: 0, g: 0, b: 0, a: 0}
-  sunLoaded: {fileID: -789479026012231341, guid: 99e4550956fb21d4bb4afdf7a91f58e1,
+  sunLoaded: {fileID: -789479026012231341, guid: 59db8b092da367244b08934c835f6ade,
     type: 3}
   sunUnloaded: {fileID: 3635823603335089682, guid: eb7d0ac1871eb344da47d286753f985a,
     type: 3}
-  initialize: 0
 --- !u!114 &9044314076374535129
 MonoBehaviour:
   m_ObjectHideFlags: 0
