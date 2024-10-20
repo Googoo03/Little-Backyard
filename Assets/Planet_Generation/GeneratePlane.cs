@@ -161,6 +161,17 @@ public abstract class GeneratePlane : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (this == null) return;
+
+
+        foliage_objs.ForEach(list => { 
+            list.ForEach(item => { item.SetActive(false); });
+
+            if (!object_pool_manager) return;
+            object_pool_manager.releasePoolObjs(ref list);
+        }) ;
+        
+
         texture.Release();
     }
 

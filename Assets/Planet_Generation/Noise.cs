@@ -14,6 +14,8 @@ namespace Simplex
     /// </summary>
     public class Noise
     {
+
+
         public float[] Calc1D(int width, float scale)
         {
             var values = new float[width];
@@ -51,7 +53,7 @@ namespace Simplex
             return Generate(x * scale, y * scale) * 128 + 128;
         }
 
-        public float CalcPixel3D(float x, float y, float z, float scale)
+        public float CalcPixel3D(float x, float y, float z)
         {
             float value = Generate(x * scale, y * scale, z * scale) * 128 + 128;
             value /= 255;
@@ -86,6 +88,7 @@ namespace Simplex
                 _seed = value;
             }
         }
+        public float scale = 0.1f;
 
         private int _seed;
 

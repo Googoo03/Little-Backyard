@@ -44,20 +44,7 @@ public class DesertPlanetNoise : GeneratePlane
         rock_nummax = 1;
     }
 
-    private void OnDestroy()
-    {
-        if (this == null) return;
-        tree_objs.ForEach(item => { item.SetActive(false); });
-        rock_objs.ForEach(item => { item.SetActive(false); });
-        bush_objs.ForEach(item => { item.SetActive(false); });
 
-        if (object_pool_manager)
-        {
-            object_pool_manager.releasePoolObjs(ref tree_objs);
-            object_pool_manager.releasePoolObjs(ref rock_objs);
-            object_pool_manager.releasePoolObjs(ref bush_objs);
-        }
-    }
 
     protected override void DispatchFoliage() { }
 

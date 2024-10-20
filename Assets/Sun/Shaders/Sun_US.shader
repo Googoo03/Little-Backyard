@@ -5,7 +5,7 @@ Shader "Custom/Sun_US"
         _NoiseTex ("Texture", 3D) = "white" {}
         
         _ColorA ("Color_A", Color) = (1,1,1,1)
-        _ColorB ("Color_B", Color) = (1,1,1,1)
+        _Color ("Color_B", Color) = (1,1,1,1)
         _Blowout ("Sun Blowout", float) = 1
         _Threshold ("Threshold", int) = 1.0
         _Displacement ("Displacement", float) = 1
@@ -42,7 +42,7 @@ Shader "Custom/Sun_US"
             };
 
             float4 _ColorA;
-            float4 _ColorB;
+            float4 _Color;
             sampler3D _NoiseTex;
             float4 _NoiseTex_ST;
             float _Threshold;
@@ -83,7 +83,7 @@ Shader "Custom/Sun_US"
 
                 float fresnel = dot(i.worldNormal,normalize(_WorldSpaceCameraPos-i.worldPos));
 
-                fixed4 col = _ColorB*.05;
+                fixed4 col = _Color*.05;
                 col /= pow(1-fresnel,_Blowout);
                 //col.xyz *= unity_DeltaTime.z*100;
 

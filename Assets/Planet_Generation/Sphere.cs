@@ -169,7 +169,7 @@ public class Sphere : MonoBehaviour
 
         //create all 6 sides of the sphere-cube
         Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
-        initialDistanceThreshold = 4 * radius;
+        initialDistanceThreshold = 2 * radius;
         patches = new PatchConfig[]
         {
          new PatchConfig("top", Vector3.right, Vector3.forward,0, Vector2.zero,xyVert,transform.gameObject,initialDistanceThreshold,radius, Vector2.zero),

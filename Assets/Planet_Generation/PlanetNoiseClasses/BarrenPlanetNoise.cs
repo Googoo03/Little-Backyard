@@ -32,16 +32,6 @@ public class BarrenPlanetNoise : GeneratePlane
         rock_nummax = 6;
     }
 
-    private void OnDestroy()
-    {
-        if (this == null) return;
-        big_rock_objs.ForEach(item => { item.SetActive(false); });
-        rock_objs.ForEach(item => { item.SetActive(false); });
-
-        object_pool_manager.releasePoolObjs(ref big_rock_objs);
-        object_pool_manager.releasePoolObjs(ref rock_objs);
-    }
-
     protected override void DispatchFoliage() { }
 
     protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin)

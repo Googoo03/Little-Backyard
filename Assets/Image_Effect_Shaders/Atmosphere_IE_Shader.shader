@@ -239,7 +239,8 @@ Shader "Custom/Atmosphere_IE"
                         
                     
                         float3 normalVector = normalize(end_point -  _PlanetPos); 
-                        float3 lightVector = normalize(_SunPos -  _PlanetPos);
+                        float3 lightVector = normalize(_SunPos -  _WorldSpaceCameraPos);
+                        float3 cameraSunVector = normalize(_SunPos - _WorldSpaceCameraPos);
                         dotProduct = dot(lightVector,normalVector);
 
                         atmosphere_depth = length(end_point-start_point);
