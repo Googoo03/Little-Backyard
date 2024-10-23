@@ -243,8 +243,8 @@ Shader "Custom/Atmosphere_IE"
                         float3 cameraSunVector = normalize(_SunPos - _WorldSpaceCameraPos);
                         dotProduct = dot(lightVector,normalVector);
 
-                        atmosphere_depth = length(end_point-start_point);
-                        atmosphere_depth = atmosphere_depth*atmosphere_depth;
+                        atmosphere_depth = saturate(length(end_point-start_point));
+                        //atmosphere_depth = atmosphere_depth*atmosphere_depth;
 
                         _Color2 *= saturate(abs(t4-t3))*_Color_Band*dotProduct;
                         _Color *= saturate(abs(t4-t3))*_Color_Band*(dotProduct);
@@ -257,7 +257,7 @@ Shader "Custom/Atmosphere_IE"
                         //atmosphereAlpha /= cloudColor.b;
 
 
-                        col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density*atmosphereAlpha*distanceAlpha) );
+                        col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density*/*atmosphereAlpha**/distanceAlpha) );
                         //col /= pow(1-dot(viewDirection,lightVector),_Blowout);
                         //col += terrainLevel > 100 ? col*dotProduct : float4(0,0,0,0);
 

@@ -112,7 +112,7 @@ Shader "Hidden/DepthNormalsOutline"
 
                 //return col + depthDifference + normalDifference;
                 //if(_regdepth - depth > 0.1) return col;
-                return lerp(col,fixed4(0,0,0,0),(depthDifference+normalDifference)*min(1,exp(-depth*_Strength) ));
+                return lerp(col,fixed4(0,0,0,0),(depthDifference+normalDifference)*min(1,exp(-depth*(1/_Strength)) ));
             }
             ENDCG
         }
