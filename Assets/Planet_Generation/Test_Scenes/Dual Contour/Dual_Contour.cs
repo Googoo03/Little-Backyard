@@ -38,8 +38,9 @@ public class Dual_Contour : MonoBehaviour
     [SerializeField] private float lastT;
     [SerializeField] private float amplitude;
     [SerializeField] private Material mat;
+    [SerializeField] private int LOD_Level;
 
-    [SerializeField] private const float CELL_SIZE = 1;
+    [SerializeField] private float CELL_SIZE = 8;
 
     private cell[] dualGrid;
     private Vector3[] cellVerts;
@@ -100,16 +101,16 @@ public class Dual_Contour : MonoBehaviour
                 for (int z = 0; z < sizeZ; ++z)
                 {
                     dualGrid[x + sizeX * (y + sizeY * z)].vertIndex = -1;
-                    Find_Best_Vertex(function,CartesianToSphere, x, y, z);
+                    Find_Best_Vertex(function,ShellElevate, x, y, z);
                 }
             }
         }
 
-        for (int x = 1; x < sizeX - 1; ++x)
+        for (int x = 0; x < sizeX - 1; ++x)
         {
-            for (int y = 1; y < sizeY - 1; ++y)
+            for (int y = 0; y < sizeY - 1; ++y)
             {
-                for (int z = 1; z < sizeZ - 1; ++z)
+                for (int z = 0; z < sizeZ - 1; ++z)
                 {
                     CreateQuads(x, y, z);
                 }
@@ -127,120 +128,48 @@ public class Dual_Contour : MonoBehaviour
 
     }
 
-    private void Find_Best_Vertex(Func<Vector3, float> f, Func<Vector3, Vector3> spaceTransform, int x, int y, int z) {
+    private void Find_Best_Vertex(Func<Vector3,float, float> f, Func<Vector3, Vector3> spaceTransform, int x, int y, int z) {
 
 
+        //determines the "step" between vertices to cover 1 unit total
+        Vector3 step = new Vector3(1f/(sizeX-1),1f/(sizeY-1),1f/(sizeZ-1));
+        step *= (1f / (1 << LOD_Level));
+        step *= CELL_SIZE;
+
+        //sets the offset of the grid by a power of two based on the LOD level
+        Vector3 offset =  -Vector3.one* (1f / (1 << (LOD_Level+1)))*CELL_SIZE;
+        //offset += transform.position;
         //Given a spacetransform function, transform the point from a grid to said space
-        if (spaceTransform != null) { } //Vector3 position = spaceTransform(new Vector3(x, y, z));
+        //Vector3 position = spaceTransform(new Vector3(x, y, z));
 
         //We have 8 vertices, and need to store them for later use
-        Vector3 pos = new Vector3 (x, y, z);
+        Vector3 pos = offset + new Vector3(x*step.x,y*step.y,z*step.z);//new Vector3 ((x- (sizeX/2)) *CELL_SIZE, y*CELL_SIZE, (z-(sizeZ/2)) * CELL_SIZE);
+        //if (spaceTransform != null) { pos = spaceTransform(pos); }
 
         //we find evaluate the function at all four points
         //this is an opportunity for optimization in the future
-        float x0y0z0 = f(pos);
-        float x0y0z1 = f(pos + new Vector3(0,0,CELL_SIZE));
-        float x0y1z0 = f(pos + new Vector3(0,CELL_SIZE,0));
-        float x0y1z1 = f(pos + new Vector3(0,CELL_SIZE,CELL_SIZE));
-        float x1y0z0 = f(pos + new Vector3(CELL_SIZE,0,0));
-        float x1y0z1 = f(pos + new Vector3(CELL_SIZE,0,CELL_SIZE));
-        float x1y1z0 = f(pos + new Vector3(CELL_SIZE,CELL_SIZE,0));
-        float x1y1z1 = f(pos + new Vector3(CELL_SIZE,CELL_SIZE,CELL_SIZE));
+        float x0y0z0 = f(spaceTransform(pos),y);
+        float x0y0z1 = f(spaceTransform(pos + new Vector3(0,0,step.z)),y);
+        float x0y1z0 = f(spaceTransform(pos + new Vector3(0,step.y,0)),y+1);
+        float x0y1z1 = f(spaceTransform(pos + new Vector3(0,step.y,step.z)),y+1);
+        float x1y0z0 = f(spaceTransform(pos + new Vector3(step.x,0,0)),y);
+        float x1y0z1 = f(spaceTransform(pos + new Vector3(step.x,0,step.z)), y);
+        float x1y1z0 = f(spaceTransform(pos + new Vector3(step.x,step.y,0)), y + 1);
+        float x1y1z1 = f(spaceTransform(pos + new Vector3(step.x,step.y,step.z)), y + 1);
 
+        float[] vertValues = new float[8];
+        Vector3[] vertPos = new Vector3[8];
+        for (int i = 0; i < 8; ++i) {
+            vertPos[i] = spaceTransform(pos + new Vector3(step.x * ((i >> 2) & 0x01),step.y *((i >> 1) & 0x01),step.z * (i & 0x01)));
+            vertValues[i] = f(vertPos[i],y + ((i&0x02)==0x02 ? 1 : 0));
+        }
         //calculate the adapt of only the edges that cross, rather than the whole thing
         //calculate the positions of the edges itself
-        int ycount = 0;
-        int xcount = 0;
-        int zcount = 0;
-
-        float yAverageT = 0;
-        float xAverageT = 0;
-        float zAverageT = 0;
 
         Vector3 avg = Vector3.zero;
-        Vector3 orig = Vector3.zero;
         int count = 0;
 
-        //X EDGES
-        if ((x0y0z0 > 0 != x1y0z0 > 0)) {
-            avg += new Vector3(x, y, z) + adapt(x0y0z0, x1y0z0) * (new Vector3(x + CELL_SIZE, y, z) - new Vector3(x, y, z));
-            count++;
-        }
-        if ((x0y0z1 > 0 != x1y0z1 > 0))
-        {
-            orig = new Vector3(x, y, z + CELL_SIZE);
-            avg += orig + adapt(x0y0z1, x1y0z1) * (new Vector3(x + CELL_SIZE, y, z + CELL_SIZE) - orig);
-            count++;
-        }
-        if ((x0y1z0 > 0 != x1y1z0 > 0))
-        {
-            orig = new Vector3(x, y + CELL_SIZE, z);
-            avg += orig + adapt(x0y1z0, x1y1z0) * (new Vector3(x + CELL_SIZE, y + CELL_SIZE, z) - orig);
-            count++;
-        }
-        if ((x0y1z1 > 0 != x1y1z1 > 0))
-        {
-            orig = new Vector3(x, y + CELL_SIZE, z + CELL_SIZE);
-            avg += orig + adapt(x0y1z1, x1y1z1) * (new Vector3(x + CELL_SIZE, y + CELL_SIZE, z + CELL_SIZE) - orig);
-            count++;
-        }
-
-        //Y EDGES
-        if ((x0y1z0 > 0 != x0y0z0 > 0))
-        {
-            orig = new Vector3(x, y, z);
-            avg += orig + adapt(x0y0z0, x0y1z0) * (new Vector3(x, y + CELL_SIZE, z) - orig);
-            count++;
-        }
-        if ((x1y1z0 > 0 != x1y0z0 > 0))
-        {
-            orig = new Vector3(x + CELL_SIZE, y, z);
-            avg += orig + adapt(x1y0z0, x1y1z0) * (new Vector3(x + CELL_SIZE, y + CELL_SIZE, z) - orig);
-            count++;
-        }
-        if ((x0y1z1 > 0 != x0y0z1 > 0))
-        {
-            orig = new Vector3(x, y, z + CELL_SIZE);
-            avg += orig + adapt(x0y0z1, x0y1z1) * (new Vector3(x, y + CELL_SIZE, z + CELL_SIZE) - orig);
-            count++;
-        }
-        if ((x1y1z1 > 0 != x1y0z1 > 0))
-        {
-            orig = new Vector3(x + CELL_SIZE, y, z + CELL_SIZE);
-            avg += orig + adapt(x1y0z1, x1y1z1) * (new Vector3(x + CELL_SIZE, y + CELL_SIZE, z + CELL_SIZE) - orig);
-            count++;
-        }
-
-        //Z EDGES
-        if ((x0y0z1 > 0 != x0y0z0 > 0))
-        {
-            orig = new Vector3(x, y, z);
-            avg += orig + adapt(x0y0z0, x0y0z1) * (new Vector3(x, y, z + CELL_SIZE) - orig);
-            count++;
-        }
-        if ((x1y0z1 > 0 != x1y0z0 > 0))
-        {
-            orig = new Vector3(x + CELL_SIZE, y, z);
-            avg += orig + adapt(x1y0z0, x1y0z1) * (new Vector3(x + CELL_SIZE, y, z + CELL_SIZE) - orig);
-            count++;
-        }
-        if ((x0y1z1 > 0 != x0y1z0 > 0))
-        {
-            orig = new Vector3(x, y + CELL_SIZE, z);
-            avg += orig + adapt(x0y1z0, x0y1z1) * (new Vector3(x, y + CELL_SIZE, z + CELL_SIZE) - orig);
-            count++;
-        }
-        if ((x1y1z1 > 0 != x1y1z0 > 0))
-        {
-            orig = new Vector3(x + CELL_SIZE, y + CELL_SIZE, z);
-            avg += orig + adapt(x1y1z0, x1y1z1) * (new Vector3(x + CELL_SIZE, y + CELL_SIZE, z + CELL_SIZE) - orig);
-            count++;
-        }
-        avg /= Mathf.Max(1, count);
-
-        float xavg = xAverageT / Mathf.Max(xcount, 1);
-        float yavg = yAverageT / Mathf.Max(ycount, 1);
-        float zavg = zAverageT / Mathf.Max(zcount, 1);
+        //replace Vector3 with dynamic sizing
 
         //we then identify where changes in the function are (sign changes)
         bool signChange = false;
@@ -263,6 +192,46 @@ public class Dual_Contour : MonoBehaviour
 
         if (!signChange) return;
 
+        //X EDGES NEW 
+        for (int i = 0; i < 4; ++i)
+        {
+            float a = vertValues[i];
+            float b = vertValues[i | 0x04];
+            if (a > 0 != b > 0)
+            {
+                avg += vertPos[i] + adapt(a, b) * (vertPos[i | 0x04] - vertPos[i]);
+                count++;
+            }
+        }
+
+        //Y EDGES
+        int[] yindices = new int[4] { 0, 1, 4, 5 };
+        for (int i = 0; i < 4; ++i)
+        {
+            int j = yindices[i];
+            float a = vertValues[j];
+            float b = vertValues[j | 0x02];
+            if (a > 0 != b > 0)
+            {
+                avg += vertPos[j] + adapt(a, b) * (vertPos[j | 0x02] - vertPos[j]);
+                count++;
+            }
+        }
+
+        //Z EDGES
+        for (int i = 0; i < 4; ++i)
+        {
+            float a = vertValues[(i << 1)];
+            float b = vertValues[(i << 1) | 0x01];
+            if (a > 0 != b > 0)
+            {
+                avg += vertPos[i << 1] + adapt(a, b) * (vertPos[(i << 1) | 0x01] - vertPos[i << 1]);
+                count++;
+            }
+        }
+
+        avg /= Mathf.Max(1, count);
+
         //figure out what edge was crossed (axis)
 
         //Assign the sign of the edge according to how the flip occurs
@@ -274,9 +243,9 @@ public class Dual_Contour : MonoBehaviour
         bool yCross = x1y0z1 > 0 != x1y1z1 > 0;
         bool zCross = x0y1z1 > 0 != x1y1z1 > 0;
 
-        if (xCross) _newedges[0] = new Edge(new Vector3(x + CELL_SIZE, y, z + adapt(x1y0z0, x1y0z1)), simplexNoise.Compute3DGradient(x + CELL_SIZE, y, z + adapt(x1y0z0, x1y0z1)), true, !(x1y1z0 > 0) && (x1y1z1 > 0)); //need to change intersection and normal later if we want interpolation
-        if (yCross) _newedges[1] = new Edge(new Vector3(x + CELL_SIZE, y + adapt(x1y0z1, x1y1z1), z + CELL_SIZE), simplexNoise.Compute3DGradient(x + CELL_SIZE, y + adapt(x1y0z1, x1y1z1), z + CELL_SIZE), true, (x1y0z1 > 0) && !(x1y1z1 > 0));
-        if (zCross) _newedges[2] = new Edge(new Vector3(x + adapt(x0y0z1, x1y0z1), y, z + CELL_SIZE), simplexNoise.Compute3DGradient(x + adapt(x0y0z1, x1y0z1), y, z + CELL_SIZE), true, !(x0y1z1 > 0) && (x1y1z1 > 0));
+        if (xCross) _newedges[0] = new Edge(Vector3.zero, Vector3.zero, true, (vertValues[6] > 0) && !(vertValues[7] > 0)); //need to change intersection and normal later if we want interpolation
+        if (yCross) _newedges[1] = new Edge(Vector3.zero, Vector3.zero, true, !(vertValues[5] > 0) && (vertValues[7] > 0));
+        if (zCross) _newedges[2] = new Edge(Vector3.zero, Vector3.zero, true, (vertValues[3] > 0) && !(vertValues[7] > 0));
 
         Vector3 vertex = avg;
 
@@ -375,10 +344,19 @@ public class Dual_Contour : MonoBehaviour
         return new Vector3(Mathf.Cos(theta)*Mathf.Sin(phi), Mathf.Sin(theta) * Mathf.Sin(phi), Mathf.Cos(phi))*radius;
     }
 
+    private Vector3 ShellElevate(Vector3 pos)
+    {
+        //simplexNoise.Seed = 1642;
+        // Vector3 newpos = new Vector3 (pos.x,pos.y+ simplexNoise.CalcPixel3D(pos.x / 5, 0, pos.z / 5)*1, pos.z);
+        //Assert.IsTrue(newpos.x != 0);
+        Vector3 newpos = new Vector3(pos.x, pos.y, pos.z);
+        return newpos;
+    }
 
-    private float function(Vector3 pos) {
-        float domainWarp = simplexNoise.CalcPixel3D(pos.x*5, pos.y*5, pos.z *5) * 2f;
-        return 1-Mathf.Abs((simplexNoise.CalcPixel3D(pos.x +domainWarp, pos.y +domainWarp, pos.z + domainWarp)*amplitude)) + pos.y -3;
+
+    private float function(Vector3 pos, float elevation) {
+        float domainWarp = simplexNoise.CalcPixel3D(pos.x*5, 0, pos.z *5) * 2f;
+        return 1 - Mathf.Abs((simplexNoise.CalcPixel3D(pos.x + domainWarp, 0, pos.z + domainWarp) * amplitude)) + (amplitude-(pos.y));
     }
 
 

@@ -56,8 +56,8 @@ namespace Simplex
 
         public float CalcPixel3D(float x, float y, float z)
         {
-            float value = Generate(x * scale, y * scale, z * scale) * 128 + 128;
-            value /= 255;
+            float value = Generate(x * scale, y * scale, z * scale) * 256f + 256;
+            value /= 511f;
             value -= 0.5f;
             value *= 2;
             return value;
@@ -89,7 +89,7 @@ namespace Simplex
                 _seed = value;
             }
         }
-        public float scale = 0.05f;
+        public float scale = 0.01f;
 
         private int _seed;
 
