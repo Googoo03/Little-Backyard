@@ -39,6 +39,7 @@ public class Dual_Contour : MonoBehaviour
     [SerializeField] private float amplitude;
     [SerializeField] private Material mat;
     [SerializeField] private int LOD_Level;
+    [SerializeField] private Vector3 dir;
 
     [SerializeField] private float CELL_SIZE = 8;
 
@@ -101,7 +102,7 @@ public class Dual_Contour : MonoBehaviour
                 for (int z = 0; z < sizeZ; ++z)
                 {
                     dualGrid[x + sizeX * (y + sizeY * z)].vertIndex = -1;
-                    Find_Best_Vertex(function,ShellElevate, x, y, z);
+                    Find_Best_Vertex(function,CartesianToSphere, x, y, z);
                 }
             }
         }
@@ -138,30 +139,16 @@ public class Dual_Contour : MonoBehaviour
 
         //sets the offset of the grid by a power of two based on the LOD level
         Vector3 offset =  -Vector3.one* (1f / (1 << (LOD_Level+1)))*CELL_SIZE;
-        //offset += transform.position;
-        //Given a spacetransform function, transform the point from a grid to said space
-        //Vector3 position = spaceTransform(new Vector3(x, y, z));
 
         //We have 8 vertices, and need to store them for later use
-        Vector3 pos = offset + new Vector3(x*step.x,y*step.y,z*step.z);//new Vector3 ((x- (sizeX/2)) *CELL_SIZE, y*CELL_SIZE, (z-(sizeZ/2)) * CELL_SIZE);
-        //if (spaceTransform != null) { pos = spaceTransform(pos); }
+        Vector3 pos = offset + new Vector3(x*step.x,y*step.y,z*step.z);
 
-        //we find evaluate the function at all four points
-        //this is an opportunity for optimization in the future
-        float x0y0z0 = f(spaceTransform(pos),y);
-        float x0y0z1 = f(spaceTransform(pos + new Vector3(0,0,step.z)),y);
-        float x0y1z0 = f(spaceTransform(pos + new Vector3(0,step.y,0)),y+1);
-        float x0y1z1 = f(spaceTransform(pos + new Vector3(0,step.y,step.z)),y+1);
-        float x1y0z0 = f(spaceTransform(pos + new Vector3(step.x,0,0)),y);
-        float x1y0z1 = f(spaceTransform(pos + new Vector3(step.x,0,step.z)), y);
-        float x1y1z0 = f(spaceTransform(pos + new Vector3(step.x,step.y,0)), y + 1);
-        float x1y1z1 = f(spaceTransform(pos + new Vector3(step.x,step.y,step.z)), y + 1);
 
         float[] vertValues = new float[8];
         Vector3[] vertPos = new Vector3[8];
         for (int i = 0; i < 8; ++i) {
             vertPos[i] = spaceTransform(pos + new Vector3(step.x * ((i >> 2) & 0x01),step.y *((i >> 1) & 0x01),step.z * (i & 0x01)));
-            vertValues[i] = f(vertPos[i],y + ((i&0x02)==0x02 ? 1 : 0));
+            vertValues[i] = f(transform.position + pos + new Vector3(step.x * ((i >> 2) & 0x01), step.y * ((i >> 1) & 0x01), step.z * (i & 0x01)), y + ((i&0x02)==0x02 ? 1 : 0));
         }
         //calculate the adapt of only the edges that cross, rather than the whole thing
         //calculate the positions of the edges itself
@@ -177,18 +164,18 @@ public class Dual_Contour : MonoBehaviour
 
 
         //set sign change if any edge is crossed
-        signChange |= (x0y0z0 > 0) != (x1y0z0 > 0);
-        signChange |= (x0y0z0 > 0) != (x0y0z1 > 0);
-        signChange |= (x1y0z1 > 0) != (x0y0z1 > 0);
-        signChange |= (x1y0z1 > 0) != (x1y0z0 > 0);
-        signChange |= (x1y0z0 > 0) != (x1y1z0 > 0);
-        signChange |= (x0y0z1 > 0) != (x0y1z1 > 0);
-        signChange |= (x0y0z0 > 0) != (x0y1z0 > 0);
-        signChange |= (x1y0z1 > 0) != (x1y1z1 > 0);
-        signChange |= (x1y1z0 > 0) != (x1y1z1 > 0);
-        signChange |= (x0y1z1 > 0) != (x1y1z1 > 0);
-        signChange |= (x0y1z0 > 0) != (x0y1z1 > 0);
-        signChange |= (x0y1z0 > 0) != (x1y1z0 > 0);
+        signChange |= (vertValues[0] > 0) != (vertValues[4] > 0);
+        signChange |= (vertValues[0] > 0) != (vertValues[1] > 0);
+        signChange |= (vertValues[5] > 0) != (vertValues[1] > 0);
+        signChange |= (vertValues[5] > 0) != (vertValues[4] > 0);
+        signChange |= (vertValues[4] > 0) != (vertValues[6] > 0);
+        signChange |= (vertValues[1] > 0) != (vertValues[3] > 0);
+        signChange |= (vertValues[0] > 0) != (vertValues[2] > 0);
+        signChange |= (vertValues[5] > 0) != (vertValues[7] > 0);
+        signChange |= (vertValues[6] > 0) != (vertValues[7] > 0);
+        signChange |= (vertValues[3] > 0) != (vertValues[7] > 0);
+        signChange |= (vertValues[2] > 0) != (vertValues[3] > 0);
+        signChange |= (vertValues[2] > 0) != (vertValues[6] > 0);
 
         if (!signChange) return;
 
@@ -239,9 +226,9 @@ public class Dual_Contour : MonoBehaviour
         //The normals shouldn't have x,y,z as their parameters, but should instead reflect
         //the positions of the intermediate point on the edge.
 
-        bool xCross = x1y1z0 > 0 != x1y1z1 > 0;
-        bool yCross = x1y0z1 > 0 != x1y1z1 > 0;
-        bool zCross = x0y1z1 > 0 != x1y1z1 > 0;
+        bool xCross = vertValues[6] > 0 != vertValues[7] > 0;
+        bool yCross = vertValues[5] > 0 != vertValues[7] > 0;
+        bool zCross = vertValues[3] > 0 != vertValues[7] > 0;
 
         if (xCross) _newedges[0] = new Edge(Vector3.zero, Vector3.zero, true, (vertValues[6] > 0) && !(vertValues[7] > 0)); //need to change intersection and normal later if we want interpolation
         if (yCross) _newedges[1] = new Edge(Vector3.zero, Vector3.zero, true, !(vertValues[5] > 0) && (vertValues[7] > 0));
@@ -334,14 +321,10 @@ public class Dual_Contour : MonoBehaviour
 
     private Vector3 CartesianToSphere(Vector3 pos) {
 
-        float radius = 10;
+        //Given a grid position, convert the point into a shell point
 
-        float phi = Mathf.Acos(pos.z/radius);
-        float theta = Mathf.Atan(pos.y/pos.x);
-        
+        return pos;
 
-        
-        return new Vector3(Mathf.Cos(theta)*Mathf.Sin(phi), Mathf.Sin(theta) * Mathf.Sin(phi), Mathf.Cos(phi))*radius;
     }
 
     private Vector3 ShellElevate(Vector3 pos)
@@ -349,7 +332,7 @@ public class Dual_Contour : MonoBehaviour
         //simplexNoise.Seed = 1642;
         // Vector3 newpos = new Vector3 (pos.x,pos.y+ simplexNoise.CalcPixel3D(pos.x / 5, 0, pos.z / 5)*1, pos.z);
         //Assert.IsTrue(newpos.x != 0);
-        Vector3 newpos = new Vector3(pos.x, pos.y, pos.z);
+        Vector3 newpos = new Vector3(pos.x, pos.y + simplexNoise.CalcPixel3D((transform.position.x +pos.x) / 2, 0, (transform.position.z + pos.z) / 2)*20, pos.z);
         return newpos;
     }
 
