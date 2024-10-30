@@ -8,15 +8,11 @@ using UnityEngine.Assertions;
 
 
 public struct Edge {
-    public Vector3 intersection;
-    public Vector3 normal;
     public bool crossed;
     public bool sign;
 
-    public Edge(Vector3 _intersection, Vector3 _normal, bool _crossed, bool _sign) {
+    public Edge(bool _crossed, bool _sign) {
         crossed = _crossed;
-        intersection = _intersection;
-        normal = _normal;
         sign = _sign;
     }
 };
@@ -39,7 +35,7 @@ public class Dual_Contour : MonoBehaviour
     [SerializeField] private float amplitude;
     [SerializeField] private Material mat;
     [SerializeField] private int LOD_Level;
-    [SerializeField] private Vector3 dir;
+    [SerializeField] private int dir;
 
     [SerializeField] private float CELL_SIZE = 8;
 
@@ -129,16 +125,16 @@ public class Dual_Contour : MonoBehaviour
 
     }
 
-    private void Find_Best_Vertex(Func<Vector3,float, float> f, Func<Vector3, Vector3> spaceTransform, int x, int y, int z) {
+    private void Find_Best_Vertex(Func<Vector3,float, float> f, Func<Vector3,int, Vector3> spaceTransform, int x, int y, int z) {
 
 
         //determines the "step" between vertices to cover 1 unit total
-        Vector3 step = new Vector3(1f/(sizeX-1),1f/(sizeY-1),1f/(sizeZ-1));
+        Vector3 step = new Vector3(1f/(sizeX),1f/(sizeY),1f/(sizeZ));
         step *= (1f / (1 << LOD_Level));
         step *= CELL_SIZE;
 
         //sets the offset of the grid by a power of two based on the LOD level
-        Vector3 offset =  -Vector3.one* (1f / (1 << (LOD_Level+1)))*CELL_SIZE;
+        Vector3 offset = -Vector3.one* (1f / (1 << (LOD_Level+1)))*(CELL_SIZE);
 
         //We have 8 vertices, and need to store them for later use
         Vector3 pos = offset + new Vector3(x*step.x,y*step.y,z*step.z);
@@ -147,8 +143,8 @@ public class Dual_Contour : MonoBehaviour
         float[] vertValues = new float[8];
         Vector3[] vertPos = new Vector3[8];
         for (int i = 0; i < 8; ++i) {
-            vertPos[i] = spaceTransform(pos + new Vector3(step.x * ((i >> 2) & 0x01),step.y *((i >> 1) & 0x01),step.z * (i & 0x01)));
-            vertValues[i] = f(transform.position + pos + new Vector3(step.x * ((i >> 2) & 0x01), step.y * ((i >> 1) & 0x01), step.z * (i & 0x01)), y + ((i&0x02)==0x02 ? 1 : 0));
+            vertPos[i] = spaceTransform(pos + new Vector3(step.x * ((i >> 2) & 0x01),step.y *((i >> 1) & 0x01),step.z * (i & 0x01)),y);
+            vertValues[i] = f(transform.position + vertPos[i], y + ((i&2)==2 ? 1 : 0));
         }
         //calculate the adapt of only the edges that cross, rather than the whole thing
         //calculate the positions of the edges itself
@@ -230,9 +226,9 @@ public class Dual_Contour : MonoBehaviour
         bool yCross = vertValues[5] > 0 != vertValues[7] > 0;
         bool zCross = vertValues[3] > 0 != vertValues[7] > 0;
 
-        if (xCross) _newedges[0] = new Edge(Vector3.zero, Vector3.zero, true, (vertValues[6] > 0) && !(vertValues[7] > 0)); //need to change intersection and normal later if we want interpolation
-        if (yCross) _newedges[1] = new Edge(Vector3.zero, Vector3.zero, true, !(vertValues[5] > 0) && (vertValues[7] > 0));
-        if (zCross) _newedges[2] = new Edge(Vector3.zero, Vector3.zero, true, (vertValues[3] > 0) && !(vertValues[7] > 0));
+        if (xCross) _newedges[0] = new Edge(true, (vertValues[6] > 0) && !(vertValues[7] > 0)); //need to change intersection and normal later if we want interpolation
+        if (yCross) _newedges[1] = new Edge(true, !(vertValues[5] > 0) && (vertValues[7] > 0));
+        if (zCross) _newedges[2] = new Edge(true, (vertValues[3] > 0) && !(vertValues[7] > 0));
 
         Vector3 vertex = avg;
 
@@ -319,11 +315,27 @@ public class Dual_Contour : MonoBehaviour
         }
     }
 
-    private Vector3 CartesianToSphere(Vector3 pos) {
+    private Vector3 CartesianToSphere(Vector3 pos,int elevation) {
 
         //Given a grid position, convert the point into a shell point
+        //dir contains the u and v direction, which are masks for the x and z positions.
+        Vector3 step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
+        step *= (1f / (1 << LOD_Level));
+        step *= CELL_SIZE;
 
-        return pos;
+
+        int uSign = ((dir & 0x80) != 0) ? 1: -1;
+        int vSign = ((dir & 0x08) != 0) ? 1 : -1;
+        Vector3 uaxis = new Vector3(((dir >> 6) & 0x01), (dir >> 5) & 0x01, (dir >> 4) & 0x01) * (uSign);
+        Vector3 vaxis = new Vector3(((dir >> 2) & 0x01), (dir >> 1) & 0x01, (dir) & 0x01) * (vSign);
+        Vector3 wAxis = Vector3.Cross(vaxis, uaxis);
+        float radius = CELL_SIZE/2;
+
+        //no idea why the step.x / 2. Why would it need to be pushed back half a unit? BECAUSE THE QUADS ARE CENTERED BY DEFAULT
+        Vector3 newpos = uaxis*pos.x + vaxis*pos.z + wAxis*(radius-step.x/2);
+
+        return newpos.normalized*(radius+(elevation*step.y));
+        //return newpos;
 
     }
 
@@ -338,8 +350,9 @@ public class Dual_Contour : MonoBehaviour
 
 
     private float function(Vector3 pos, float elevation) {
-        float domainWarp = simplexNoise.CalcPixel3D(pos.x*5, 0, pos.z *5) * 2f;
-        return 1 - Mathf.Abs((simplexNoise.CalcPixel3D(pos.x + domainWarp, 0, pos.z + domainWarp) * amplitude)) + (amplitude-(pos.y));
+        /*float domainWarp = simplexNoise.CalcPixel3D(pos.x*5, pos.y*5, pos.z *5) * 2f;
+        return 1 - Mathf.Abs((simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y+domainWarp, pos.z + domainWarp) * amplitude))+(amplitude-elevation);*/
+        return (simplexNoise.CalcPixel3D(pos.x,pos.y,pos.z)) + (amplitude-elevation);
     }
 
 
