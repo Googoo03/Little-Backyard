@@ -149,7 +149,7 @@ Transform:
   m_GameObject: {fileID: 33484946}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 186, y: 0, z: 268.4}
+  m_LocalPosition: {x: 186, y: -36, z: 50}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -173,7 +173,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a097ae434686c14e8c50c7eb9ca98c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  yawInput: 10
+  yawInput: 0
   pitchInput: 0
   rollInput: 0
 --- !u!1 &87121798
@@ -221,16 +221,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sizeX: 20
+  sizeX: 100
   sizeY: 20
-  sizeZ: 20
+  sizeZ: 100
   T: 1
   lastT: 1
-  amplitude: 1
+  amplitude: 6
   mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
   LOD_Level: 0
   dir: 202
-  CELL_SIZE: 1
+  CELL_SIZE: 75
 --- !u!4 &87121803
 Transform:
   m_ObjectHideFlags: 0
@@ -291,16 +291,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sizeX: 20
+  sizeX: 100
   sizeY: 20
-  sizeZ: 20
+  sizeZ: 100
   T: 1
   lastT: 1
-  amplitude: 1
+  amplitude: 6
   mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
   LOD_Level: 0
   dir: 33
-  CELL_SIZE: 1
+  CELL_SIZE: 75
 --- !u!4 &154273065
 Transform:
   m_ObjectHideFlags: 0
@@ -453,16 +453,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sizeX: 20
+  sizeX: 100
   sizeY: 20
-  sizeZ: 20
+  sizeZ: 100
   T: 1
   lastT: 1
-  amplitude: 1
+  amplitude: 6
   mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
   LOD_Level: 0
   dir: 74
-  CELL_SIZE: 1
+  CELL_SIZE: 75
 --- !u!4 &701328227
 Transform:
   m_ObjectHideFlags: 0
@@ -638,16 +638,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sizeX: 20
+  sizeX: 100
   sizeY: 20
-  sizeZ: 20
+  sizeZ: 100
   T: 1
   lastT: 1
-  amplitude: 1
+  amplitude: 6
   mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
   LOD_Level: 0
   dir: 73
-  CELL_SIZE: 1
+  CELL_SIZE: 75
 --- !u!4 &920746115
 Transform:
   m_ObjectHideFlags: 0
@@ -708,16 +708,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sizeX: 20
+  sizeX: 100
   sizeY: 20
-  sizeZ: 20
+  sizeZ: 100
   T: 1
   lastT: 1
-  amplitude: 1
+  amplitude: 6
   mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
   LOD_Level: 0
   dir: 41
-  CELL_SIZE: 1
+  CELL_SIZE: 75
 --- !u!4 &967040424
 Transform:
   m_ObjectHideFlags: 0
@@ -872,16 +872,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sizeX: 20
+  sizeX: 100
   sizeY: 20
-  sizeZ: 20
+  sizeZ: 100
   T: 1
   lastT: 1
-  amplitude: 1
+  amplitude: 6
   mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
   LOD_Level: 0
   dir: 201
-  CELL_SIZE: 1
+  CELL_SIZE: 75
 --- !u!4 &2079772189
 Transform:
   m_ObjectHideFlags: 0

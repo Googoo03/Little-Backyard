@@ -135,7 +135,7 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _PlanetType: 4.99
+    - _PlanetType: 2.99
     - _RegionMultiplier: 1
     - _SandLevel: 0.3
     - _SmoothnessTextureChannel: 0
@@ -151,7 +151,7 @@ Material:
     - _Ocean: {r: 0.56856954, g: 0.78113204, b: 0.42888564, a: 1}
     - _Offset: {r: 0, g: 0, b: 0, a: 0}
     - _PlanetPos: {r: 31.06755, g: 300, b: 10.62083, a: 0}
-    - _SunPos: {r: 50, g: 50.77, b: 50, a: 1}
+    - _SunPos: {r: 0, g: 0, b: 5000, a: 1}
     - _Tile: {r: 1, g: 1, b: 0, a: 0}
     - _Tiling: {r: 1, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -143,8 +143,8 @@ public class Dual_Contour : MonoBehaviour
         float[] vertValues = new float[8];
         Vector3[] vertPos = new Vector3[8];
         for (int i = 0; i < 8; ++i) {
-            vertPos[i] = spaceTransform(pos + new Vector3(step.x * ((i >> 2) & 0x01),step.y *((i >> 1) & 0x01),step.z * (i & 0x01)),y);
-            vertValues[i] = f(transform.position + vertPos[i], y + ((i&2)==2 ? 1 : 0));
+            vertPos[i] = spaceTransform(pos + new Vector3(step.x * ((i >> 2) & 0x01),step.y *((i >> 1) & 0x01),step.z * (i & 0x01)), y + ((i & 2) == 2 ? 1 : 0));
+            vertValues[i] = f(transform.position + vertPos[i]/*pos + new Vector3(step.x * ((i >> 2) & 0x01), step.y * ((i >> 1) & 0x01), step.z * (i & 0x01))*/, y + ((i&2)==2 ? 1 : 0));
         }
         //calculate the adapt of only the edges that cross, rather than the whole thing
         //calculate the positions of the edges itself
@@ -230,7 +230,7 @@ public class Dual_Contour : MonoBehaviour
         if (yCross) _newedges[1] = new Edge(true, !(vertValues[5] > 0) && (vertValues[7] > 0));
         if (zCross) _newedges[2] = new Edge(true, (vertValues[3] > 0) && !(vertValues[7] > 0));
 
-        Vector3 vertex = avg;
+        Vector3 vertex = vertPos[0];//avg;
 
         vertices.Add(vertex); //vertex should be at the center of the cell
                               //set cell struct to include vertex index
@@ -252,24 +252,42 @@ public class Dual_Contour : MonoBehaviour
         if (dualGrid[index].vertIndex == -1) return;
 
         //This only checks one orientation of the quad. Need to flip flop indices based on how intersection occurs
-
+        bool notSatisfy = false;
 
         if (dualGrid[index].edges[0].crossed) {
             //Make a quad from neighboring x cells
             if (dualGrid[index].edges[0].sign)
             {
+                notSatisfy = false;
+                notSatisfy |= dualGrid[index].vertIndex == -1;
+                notSatisfy |= dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex == -1;
+                notSatisfy |= dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
+                notSatisfy |= dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
 
 
-                indices.Add(dualGrid[index].vertIndex);
-                indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
-                indices.Add(dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)].vertIndex); //these indices might be screwed up
-                indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
+
+                if (!notSatisfy) {
+                    indices.Add(dualGrid[index].vertIndex);
+                    indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
+                    indices.Add(dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)].vertIndex); //these indices might be screwed up
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
+                }
             }
             else {
-                indices.Add(dualGrid[index].vertIndex);
-                indices.Add(dualGrid[(x + sizeX * ((y + 1) + sizeY * z))].vertIndex);
-                indices.Add(dualGrid[((x + 1) + sizeX * ((y + 1) + sizeY * z))].vertIndex);
-                indices.Add(dualGrid[((x + 1) + sizeX * (y + sizeY * z))].vertIndex);
+
+                notSatisfy = false;
+                notSatisfy |= dualGrid[index].vertIndex == -1;
+                notSatisfy |= dualGrid[(x) + sizeX * ((y+1) + sizeY * z)].vertIndex == -1;
+                notSatisfy |= dualGrid[(x+1) + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
+                notSatisfy |= dualGrid[(x+1) + sizeX * ((y) + sizeY * z)].vertIndex == -1;
+
+                if (!notSatisfy)
+                {
+                    indices.Add(dualGrid[index].vertIndex);
+                    indices.Add(dualGrid[(x + sizeX * ((y + 1) + sizeY * z))].vertIndex);
+                    indices.Add(dualGrid[((x + 1) + sizeX * ((y + 1) + sizeY * z))].vertIndex);
+                    indices.Add(dualGrid[((x + 1) + sizeX * (y + sizeY * z))].vertIndex);
+                }
 
             }
         }
@@ -278,16 +296,37 @@ public class Dual_Contour : MonoBehaviour
             //Make a quad from neighboring y cells
             if (dualGrid[index].edges[1].sign)
             {
-                indices.Add(dualGrid[index].vertIndex);
-                indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
-                indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))].vertIndex); //these indices might be screwed up
-                indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
+                notSatisfy = false;
+                notSatisfy |= dualGrid[index].vertIndex == -1;
+                notSatisfy |= dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex == -1;
+                notSatisfy |= dualGrid[(x + 1) + sizeX * ((y) + sizeY * (z+1))].vertIndex == -1;
+                notSatisfy |= dualGrid[x + sizeX * ((y) + sizeY * (z+1))].vertIndex == -1;
+
+                
+
+                if (!notSatisfy)
+                {
+                    indices.Add(dualGrid[index].vertIndex);
+                    indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
+                    indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))].vertIndex); //these indices might be screwed up
+                    indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
+                }
             }
             else {
-                indices.Add(dualGrid[index].vertIndex);
-                indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
-                indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))].vertIndex);
-                indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
+
+                notSatisfy = false;
+                notSatisfy |= dualGrid[index].vertIndex == -1;
+                notSatisfy |= dualGrid[(x) + sizeX * (y + sizeY * (z+1))].vertIndex == -1;
+                notSatisfy |= dualGrid[(x + 1) + sizeX * ((y) + sizeY * (z+1))].vertIndex == -1;
+                notSatisfy |= dualGrid[(x+1) + sizeX * ((y) + sizeY * z)].vertIndex == -1;
+
+                if (!notSatisfy)
+                {
+                    indices.Add(dualGrid[index].vertIndex);
+                    indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
+                    indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))].vertIndex);
+                    indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
+                }
 
             }
         }
@@ -296,21 +335,39 @@ public class Dual_Contour : MonoBehaviour
             //Make a quad from neighboring z cells
             if (dualGrid[index].edges[2].sign)
             {
-                indices.Add(dualGrid[index].vertIndex);
-                indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
-                indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))].vertIndex);
-                indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
+
+                notSatisfy = false;
+                notSatisfy |= dualGrid[index].vertIndex == -1;
+                notSatisfy |= dualGrid[(x) + sizeX * ((y+1) + sizeY * z)].vertIndex == -1;
+                notSatisfy |= dualGrid[(x) + sizeX * ((y + 1) + sizeY * (z+1))].vertIndex == -1;
+                notSatisfy |= dualGrid[x + sizeX * ((y) + sizeY * (z + 1))].vertIndex == -1;
+
+                if (!notSatisfy)
+                {
+                    indices.Add(dualGrid[index].vertIndex);
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))].vertIndex);
+                    indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
+                }
 
 
 
             }
             else {
 
+                notSatisfy = false;
+                notSatisfy |= dualGrid[index].vertIndex == -1;
+                notSatisfy |= dualGrid[(x) + sizeX * (y + sizeY * (z + 1))].vertIndex == -1;
+                notSatisfy |= dualGrid[(x) + sizeX * ((y+1) + sizeY * (z + 1))].vertIndex == -1;
+                notSatisfy |= dualGrid[x + sizeX * ((y+1) + sizeY * z)].vertIndex == -1;
 
-                indices.Add(dualGrid[index].vertIndex);
-                indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
-                indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))].vertIndex); //these indices might be screwed up
-                indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
+                if (!notSatisfy)
+                {
+                    indices.Add(dualGrid[index].vertIndex);
+                    indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))].vertIndex); //these indices might be screwed up
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
+                }
             }
         }
     }
@@ -350,9 +407,17 @@ public class Dual_Contour : MonoBehaviour
 
 
     private float function(Vector3 pos, float elevation) {
+
+        Vector3 step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
+        step *= (1f / (1 << LOD_Level));
+        step *= CELL_SIZE;
         /*float domainWarp = simplexNoise.CalcPixel3D(pos.x*5, pos.y*5, pos.z *5) * 2f;
+        if(elevation == 0) { return 1; }
         return 1 - Mathf.Abs((simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y+domainWarp, pos.z + domainWarp) * amplitude))+(amplitude-elevation);*/
-        return (simplexNoise.CalcPixel3D(pos.x,pos.y,pos.z)) + (amplitude-elevation);
+        if (elevation >= sizeY-1) { return -1; }
+        if (elevation <= 1) { return 1; }
+        //simplexNoise.setScale(0.005f + (elevation*step.y*0.1f));
+        return (simplexNoise.CalcPixel3D(pos.x,pos.y,pos.z)*amplitude);
     }
 
 

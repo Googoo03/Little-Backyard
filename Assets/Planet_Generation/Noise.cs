@@ -89,9 +89,13 @@ namespace Simplex
                 _seed = value;
             }
         }
-        public float scale = 0.01f;
+        public float scale = 0.02f;
 
         private int _seed;
+
+        public void setScale(float _scale) {
+            scale = _scale;
+        }
 
         /// <summary>
         /// 1D simplex noise
