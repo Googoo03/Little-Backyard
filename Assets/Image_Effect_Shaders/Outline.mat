@@ -63,7 +63,7 @@ Material:
     m_Floats:
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _DepthBias: 21.5
+    - _DepthBias: 1000
     - _DepthMult: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
@@ -73,13 +73,13 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _NormalBias: 1
-    - _NormalMult: 0.5
+    - _NormalMult: 3.38
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _Strength: 0.58
+    - _Strength: 113.94
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:

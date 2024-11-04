@@ -14,6 +14,7 @@ Shader "Custom/Atmosphere_IE"
         _CloudDensity ("Cloud Density Coeff",float) = 1
         _CloudFalloff ("CLoud Falloff Coeff",float) = 1
         _CloudCoeff ("Cloud Coefficients",Vector) = (0,0,0,0)
+        _CloudSpeed ("Cloud Speed", float) = 1
         _DomainWarp ("Domain Warp",float) = 1.0
 
         _PlanetPos ("Planet Position", Vector) = (0,0,0,0)
@@ -121,6 +122,7 @@ Shader "Custom/Atmosphere_IE"
             float _CloudFalloff;
             float4 _CloudColor;
             float4 _CloudCoeff;
+            float _CloudSpeed;
             float _DomainWarp;
 
             //Nebula PARAMETERS
@@ -257,12 +259,12 @@ Shader "Custom/Atmosphere_IE"
                         //atmosphereAlpha /= cloudColor.b;
 
 
-                        col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density/**atmosphereAlpha*distanceAlpha*/) );
+                        col = lerp( fixed4(atmosphereColor.xyz,atmosphereAlpha),noColor,exp(-atmosphere_depth * _Density*atmosphereAlpha*distanceAlpha) );
                         //col /= pow(1-dot(viewDirection,lightVector),_Blowout);
                         //col += terrainLevel > 100 ? col*dotProduct : float4(0,0,0,0);
 
                         //Calculate cloudcolor
-                        _CloudTex_ST.x += _Time.x / 10.0;
+                        _CloudTex_ST.z += _Time.x * _CloudSpeed;
 
                         
                         float tCloud = 0.0;

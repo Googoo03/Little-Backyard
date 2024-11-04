@@ -89,7 +89,7 @@ namespace Simplex
                 _seed = value;
             }
         }
-        public float scale = 0.02f;
+        public float scale = 0.05f;
 
         private int _seed;
 

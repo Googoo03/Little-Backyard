@@ -7,6 +7,7 @@ Shader "Custom/Voxel_Test"
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
         _Glossiness ("Smoothness", Range(0,1)) = 0.5
         _Metallic ("Metallic", Range(0,1)) = 0.0
+        _SeaLevel ("Sea Level", float) = 0
     }
     SubShader
     {
@@ -35,6 +36,7 @@ Shader "Custom/Voxel_Test"
         };
         fixed4 _Color;
         fixed4 _ColorSide;
+        float _SeaLevel;
 
         void vert(inout appdata_full vertexData, out Input o) {
 
@@ -54,9 +56,11 @@ Shader "Custom/Voxel_Test"
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
+            
             // Albedo comes from a texture tinted by color
-            float dotProduct = max(dot(IN.worldNormal,float3(0,1,0)),0);
+            float dotProduct = max(dot(IN.normal,float3(0,1,0)),0);
             fixed4 c = lerp(_ColorSide,_Color,dotProduct);
+            c = lerp(_Color, float4(0,0,1,1),IN.vertPos.y < _SeaLevel);
             o.Albedo = c.rgb;
         }
         ENDCG
