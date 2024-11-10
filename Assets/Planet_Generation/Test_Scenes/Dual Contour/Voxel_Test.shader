@@ -61,6 +61,7 @@ Shader "Custom/Voxel_Test"
             float dotProduct = max(dot(IN.normal,float3(0,1,0)),0);
             fixed4 c = lerp(_ColorSide,_Color,dotProduct);
             c = lerp(_Color, float4(0,0,1,1),IN.vertPos.y < _SeaLevel);
+            c *= max(-IN.worldNormal.z,IN.worldNormal.y);
             o.Albedo = c.rgb;
         }
         ENDCG

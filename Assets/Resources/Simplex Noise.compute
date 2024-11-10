@@ -353,23 +353,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         amplitude *= persistance;
         frequency *= lacunarity;
     }
-    
-    /*if (absValue)
-    {
-        float amplitude = 1;
-        float frequency = 1;
-        for (int i = 0; i < mOctaves; ++i)
-        {
-            result += 1 - ((CalcPixel3D(vertexPos, frequency)) * amplitude);
-            amplitude *= persistance;
-            frequency *= lacunarity;
-        }
-    }*/
-    //oceanMultiplier *= absValue ? 0 : 1;
+
     result = (absValue) ? (1 - (abs(result)) * mountainStrength) : result;
     result *= (result > seaLevel) ? landMultiplier : oceanMultiplier;
     Result[id.xy] += result;
-    
-    //(vertexData.normal * r.x * (distortionScale) );
+
     vertexBuffer[index] += (normalize(vertexBuffer[index]) * result); //normally this would be normal * result but the vertex position should be identical for a sphere.
 }

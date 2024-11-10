@@ -1,0 +1,223 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+
+RWTexture2D<float4> SimplexTex;
+
+RWStructuredBuffer<float3> vertexBuffer;
+RWStructuredBuffer<uint> dualGrid;
+float3 global;
+float3 dimensions;
+int LOD_Level;
+float CELL_SIZE;
+bool block_voxel;
+
+
+struct Edge
+{
+
+    bool crossed;
+    bool sign;
+};
+
+
+struct cell
+{
+
+    int vertIndex;
+    Edge edges[3];
+
+};
+
+float adapt(float x0, float x1){    return (-x0) / (x1 - x0);}
+
+float3 Grid(float3 pos, int elevation) { return pos;}
+
+float function(int3 pos, float elevation)
+{
+
+    /*float3 step = float3(1f / (dimensions.x), 1f / (dimensions.y), 1f / (dimensions.z));
+    step *= (1f / (1 << LOD_Level));
+    step *= CELL_SIZE;
+*/
+    int index = (int) (pos.x + dimensions.x * (pos.y + dimensions.y * pos.z));
+
+    if (elevation >= dimensions.y - 1)
+    {
+        return -1;
+    }
+    if (elevation <= 1)
+    {
+        return 1;
+    }
+    int Ground = dimensions.y / 2;
+    int amplitude = 3;
+
+    float value = (1.0 - abs(SimplexTex[pos.xy].r)) * amplitude + Ground - elevation;
+
+    return value;
+}
+
+void Find_Best_Vertex(int x, int y, int z, int index)
+{
+
+
+            //determines the "step" between vertices to cover 1 unit total
+    float3 step = float3(1.0 / (dimensions.x), 1.0 / (dimensions.y), 1.0 / (dimensions.z));
+    step *= (1.0 / (1 << LOD_Level));
+    step *= CELL_SIZE;
+
+            //sets the offset of the grid by a power of two based on the LOD level
+    float3 offset = float3(-1,-1,-1) * (1.0 / (1 << (LOD_Level + 1))) * (CELL_SIZE);
+
+            //We have 8 vertices, and need to store them for later use
+    float3 pos = offset + float3(x * step.x, y * step.y, z * step.z);
+
+
+    float vertValues[8];
+    float3 vertPos[8];
+    int i = 0;
+    for (; i < 8; ++i)
+    {
+        vertPos[i] = Grid(pos + float3(step.x * ((i >> 2) & 0x01), step.y * ((i >> 1) & 0x01), step.z * (i & 0x01)), y + ((i & 2) == 2 ? 1 : 0));
+        
+        //beware the function calls for an int3 but vertpos is a float
+        vertValues[i] = function(global + vertPos[i], y + ((i & 2) == 2 ? 1 : 0));
+    }
+            //calculate the adapt of only the edges that cross, rather than the whole thing
+            //calculate the positions of the edges itself
+
+
+    //set sign change if any edge is crossed
+    int signChange = false;
+    signChange |= (vertValues[0] > 0) != (vertValues[4] > 0);
+    signChange |= (vertValues[0] > 0) != (vertValues[1] > 0);
+    signChange |= (vertValues[5] > 0) != (vertValues[1] > 0);
+    signChange |= (vertValues[5] > 0) != (vertValues[4] > 0);
+    signChange |= (vertValues[4] > 0) != (vertValues[6] > 0);
+    signChange |= (vertValues[1] > 0) != (vertValues[3] > 0);
+    signChange |= (vertValues[0] > 0) != (vertValues[2] > 0);
+    signChange |= (vertValues[5] > 0) != (vertValues[7] > 0);
+    signChange |= (vertValues[6] > 0) != (vertValues[7] > 0);
+    signChange |= (vertValues[3] > 0) != (vertValues[7] > 0);
+    signChange |= (vertValues[2] > 0) != (vertValues[3] > 0);
+    signChange |= (vertValues[2] > 0) != (vertValues[6] > 0);
+
+    if (!signChange)
+        return;
+    
+    
+    float3 avg = float3(0, 0, 0);
+    int count = 0;
+
+            //X EDGES NEW 
+    for (i = 0; i < 4; ++i)
+    {
+        float a = vertValues[i];
+        float b = vertValues[i | 0x04];
+        if (a > 0 != b > 0)
+        {
+            avg += vertPos[i] + adapt(a, b) * (vertPos[i | 0x04] - vertPos[i]);
+            count++;
+        }
+    }
+
+            //Y EDGES
+    int yindices[] = {0, 1, 4, 5};
+    
+    for (i = 0; i < 4; ++i)
+    {
+        int j = yindices[i];
+        float a = vertValues[j];
+        float b = vertValues[j | 0x02];
+        if (a > 0 != b > 0)
+        {
+            avg += vertPos[j] + adapt(a, b) * (vertPos[j | 0x02] - vertPos[j]);
+            count++;
+        }
+    }
+
+            //Z EDGES
+    for (i = 0; i < 4; ++i)
+    {
+        float a = vertValues[(i << 1)];
+        float b = vertValues[(i << 1) | 0x01];
+        if (a > 0 != b > 0)
+        {
+            avg += vertPos[i << 1] + adapt(a, b) * (vertPos[(i << 1) | 0x01] - vertPos[i << 1]);
+            count++;
+        }
+    }
+
+    avg /= count > 1 ? count : 1;
+
+            //figure out what edge was crossed (axis)
+
+            //Assign the sign of the edge according to how the flip occurs
+
+            //The normals shouldn't have x,y,z as their parameters, but should instead reflect
+            //the positions of the intermediate point on the edge.
+
+    bool xCross = vertValues[6] > 0 != vertValues[7] > 0;
+    bool yCross = vertValues[5] > 0 != vertValues[7] > 0;
+    bool zCross = vertValues[3] > 0 != vertValues[7] > 0;
+
+    Edge _newedges[3]; //0 is reserved for x, 1 for y, 2 for z
+    
+    
+    if (xCross)
+    {
+        _newedges[0].crossed = true;
+        _newedges[0].sign = (vertValues[6] > 0) && !(vertValues[7] > 0); // = new Edge(true, (vertValues[6] > 0) && !(vertValues[7] > 0)); //need to change intersection and normal later if we want interpolation
+    }
+    if (yCross)
+    {
+        _newedges[1].crossed = true;
+        _newedges[1].sign = !(vertValues[5] > 0) && (vertValues[7] > 0);
+
+    }
+    if (zCross)
+    {
+        _newedges[2].crossed = true;
+        _newedges[2].sign = (vertValues[3] > 0) && !(vertValues[7] > 0);
+
+    }
+
+    float3 vertex = block_voxel ? vertPos[0] : avg;
+
+    //int index = (int) (x + dimensions.x * (y + dimensions.y * z));
+    vertexBuffer[index] = vertex; //should this be index?
+    //vertices.Add(vertex); //vertex should be at the center of the cell
+                                  //set cell struct to include vertex index
+    uint dualgrid_representation = 0x0;
+    dualgrid_representation |= _newedges[0].crossed ? 0x80000000 : 0x0; //likely a more efficient way of doing this
+    dualgrid_representation |= _newedges[0].sign ? 0x40000000 : 0x0;
+    dualgrid_representation |= _newedges[1].crossed ? 0x20000000 : 0x0;
+    dualgrid_representation |= _newedges[1].sign ? 0x10000000 : 0x0;
+    dualgrid_representation |= _newedges[2].crossed ? 0x08000000 : 0x0;
+    dualgrid_representation |= _newedges[2].sign ? 0x04000000 : 0x0;
+    dualgrid_representation |= index;
+    
+    dualGrid[index] = dualgrid_representation;
+
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+    
+    
+    //Compute starting and ending indices here
+    
+    //Compute vertex positions
+    
+    //Compute quad indices
+    
+    //Since memory is shared, no need to transform the vertex indices
+
+    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+}

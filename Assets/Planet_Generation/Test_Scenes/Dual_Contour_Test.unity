@@ -185,7 +185,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 87121803}
-  - component: {fileID: 87121802}
   - component: {fileID: 87121801}
   m_Layer: 0
   m_Name: Dual Contour Front
@@ -209,37 +208,6 @@ MonoBehaviour:
   yawInput: 10
   pitchInput: 0
   rollInput: 0
---- !u!114 &87121802
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 87121798}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sizeX: 20
-  sizeY: 20
-  sizeZ: 20
-  T: 1
-  lastT: 1
-  amplitude: 2
-  mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
-  LOD_Level: 0
-  dir: 202
-  CELL_SIZE: 75
-  Ground: 15
-  cellVerts: []
-  m: {fileID: 0}
-  mf: {fileID: 0}
-  rend: {fileID: 0}
-  vertices: []
-  normals: []
-  uvs: []
-  indices: 
 --- !u!4 &87121803
 Transform:
   m_ObjectHideFlags: 0
@@ -264,7 +232,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 154273065}
-  - component: {fileID: 154273064}
   - component: {fileID: 154273063}
   m_Layer: 0
   m_Name: Dual Contour Right
@@ -288,37 +255,6 @@ MonoBehaviour:
   yawInput: 10
   pitchInput: 0
   rollInput: 0
---- !u!114 &154273064
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 154273060}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sizeX: 20
-  sizeY: 20
-  sizeZ: 20
-  T: 1
-  lastT: 1
-  amplitude: 2
-  mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
-  LOD_Level: 0
-  dir: 33
-  CELL_SIZE: 75
-  Ground: 15
-  cellVerts: []
-  m: {fileID: 0}
-  mf: {fileID: 0}
-  rend: {fileID: 0}
-  vertices: []
-  normals: []
-  uvs: []
-  indices: 
 --- !u!4 &154273065
 Transform:
   m_ObjectHideFlags: 0
@@ -441,7 +377,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 701328227}
-  - component: {fileID: 701328226}
   - component: {fileID: 701328225}
   m_Layer: 0
   m_Name: Dual Contour Back
@@ -465,37 +400,6 @@ MonoBehaviour:
   yawInput: 10
   pitchInput: 0
   rollInput: 0
---- !u!114 &701328226
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 701328222}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sizeX: 20
-  sizeY: 20
-  sizeZ: 20
-  T: 1
-  lastT: 1
-  amplitude: 2
-  mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
-  LOD_Level: 0
-  dir: 74
-  CELL_SIZE: 75
-  Ground: 15
-  cellVerts: []
-  m: {fileID: 0}
-  mf: {fileID: 0}
-  rend: {fileID: 0}
-  vertices: []
-  normals: []
-  uvs: []
-  indices: 
 --- !u!4 &701328227
 Transform:
   m_ObjectHideFlags: 0
@@ -682,7 +586,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 920746115}
-  - component: {fileID: 920746114}
   - component: {fileID: 920746113}
   m_Layer: 0
   m_Name: Dual Contour Bottom
@@ -706,37 +609,6 @@ MonoBehaviour:
   yawInput: 10
   pitchInput: 0
   rollInput: 0
---- !u!114 &920746114
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 920746110}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sizeX: 20
-  sizeY: 20
-  sizeZ: 20
-  T: 1
-  lastT: 1
-  amplitude: 2
-  mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
-  LOD_Level: 0
-  dir: 73
-  CELL_SIZE: 75
-  Ground: 15
-  cellVerts: []
-  m: {fileID: 0}
-  mf: {fileID: 0}
-  rend: {fileID: 0}
-  vertices: []
-  normals: []
-  uvs: []
-  indices: 
 --- !u!4 &920746115
 Transform:
   m_ObjectHideFlags: 0
@@ -761,7 +633,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 967040424}
-  - component: {fileID: 967040423}
   - component: {fileID: 967040422}
   m_Layer: 0
   m_Name: Dual Contour Left
@@ -785,37 +656,6 @@ MonoBehaviour:
   yawInput: 10
   pitchInput: 0
   rollInput: 0
---- !u!114 &967040423
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 967040419}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sizeX: 20
-  sizeY: 20
-  sizeZ: 20
-  T: 1
-  lastT: 1
-  amplitude: 2
-  mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
-  LOD_Level: 0
-  dir: 41
-  CELL_SIZE: 75
-  Ground: 15
-  cellVerts: []
-  m: {fileID: 0}
-  mf: {fileID: 0}
-  rend: {fileID: 0}
-  vertices: []
-  normals: []
-  uvs: []
-  indices: 
 --- !u!4 &967040424
 Transform:
   m_ObjectHideFlags: 0
@@ -1016,7 +856,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2079772189}
-  - component: {fileID: 2079772188}
   - component: {fileID: 2079772187}
   m_Layer: 0
   m_Name: Dual Contour Top
@@ -1040,37 +879,6 @@ MonoBehaviour:
   yawInput: 10
   pitchInput: 0
   rollInput: 0
---- !u!114 &2079772188
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2079772184}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60fd14f544a217146a29d253bf4e815b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sizeX: 20
-  sizeY: 20
-  sizeZ: 20
-  T: 1
-  lastT: 1
-  amplitude: 2
-  mat: {fileID: 2100000, guid: 9b4b4d03b404a8a488de3248b264ac3d, type: 2}
-  LOD_Level: 0
-  dir: 201
-  CELL_SIZE: 75
-  Ground: 15
-  cellVerts: []
-  m: {fileID: 0}
-  mf: {fileID: 0}
-  rend: {fileID: 0}
-  vertices: []
-  normals: []
-  uvs: []
-  indices: 
 --- !u!4 &2079772189
 Transform:
   m_ObjectHideFlags: 0
