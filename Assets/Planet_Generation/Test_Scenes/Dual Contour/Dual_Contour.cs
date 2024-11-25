@@ -226,6 +226,8 @@ namespace DualContour
             dualGrid[index].vertIndex = vertices.Count - 1;
         }
 
+        
+
         private void CreateQuads(int x, int y, int z)
         {
             int index = (int)(x + sizeX * (y + sizeY * z));

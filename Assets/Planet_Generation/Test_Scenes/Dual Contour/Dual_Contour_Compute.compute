@@ -1,38 +1,21 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
-RWTexture2D<float4> Result;
-
 RWTexture2D<float4> SimplexTex;
 
 RWStructuredBuffer<float3> vertexBuffer;
-RWStructuredBuffer<uint> dualGrid;
+RWStructuredBuffer<int> dualGrid;
+RWStructuredBuffer<uint> indices;
 float3 global;
 float3 dimensions;
-int LOD_Level;
+int LOD_Level = 0;
 float CELL_SIZE;
-bool block_voxel;
+bool block_voxel = false;
+
+groupshared int vertIndex = 0;
 
 
-struct Edge
-{
-
-    bool crossed;
-    bool sign;
-};
-
-
-struct cell
-{
-
-    int vertIndex;
-    Edge edges[3];
-
-};
-
-float adapt(float x0, float x1){    return (-x0) / (x1 - x0);}
+float adapt(float x0, float x1){    return x1 == x0 ? 0 : (-x0) / (x1 - x0);}
 
 float3 Grid(float3 pos, int elevation) { return pos;}
 
@@ -45,7 +28,7 @@ float function(int3 pos, float elevation)
 */
     int index = (int) (pos.x + dimensions.x * (pos.y + dimensions.y * pos.z));
 
-    if (elevation >= dimensions.y - 1)
+    if (elevation >= (float)dimensions.y - 1)
     {
         return -1;
     }
@@ -56,12 +39,12 @@ float function(int3 pos, float elevation)
     int Ground = dimensions.y / 2;
     int amplitude = 3;
 
-    float value = (1.0 - abs(SimplexTex[pos.xy].r)) * amplitude + Ground - elevation;
+    float value = /*(1.0 - /*abs(SimplexTex[pos.xy].r)) * amplitude +*/Ground - elevation; // + SimplexTex[pos.xy].r;
 
     return value;
 }
 
-void Find_Best_Vertex(int x, int y, int z, int index)
+void Find_Best_Vertex(int x, int y, int z)
 {
 
 
@@ -164,60 +147,175 @@ void Find_Best_Vertex(int x, int y, int z, int index)
     bool xCross = vertValues[6] > 0 != vertValues[7] > 0;
     bool yCross = vertValues[5] > 0 != vertValues[7] > 0;
     bool zCross = vertValues[3] > 0 != vertValues[7] > 0;
-
-    Edge _newedges[3]; //0 is reserved for x, 1 for y, 2 for z
+    uint newedge = 0;
     
     
     if (xCross)
     {
-        _newedges[0].crossed = true;
-        _newedges[0].sign = (vertValues[6] > 0) && !(vertValues[7] > 0); // = new Edge(true, (vertValues[6] > 0) && !(vertValues[7] > 0)); //need to change intersection and normal later if we want interpolation
+        newedge |= /*0x00000020;*/ 1 << 5;
+        newedge |= ((vertValues[6] > 0) && !(vertValues[7] > 0)) << 4; //? 0x00000010 : 0x00000000;
+        //_newedges[0].crossed = true;
+        //_newedges[0].sign = (vertValues[6] > 0) && !(vertValues[7] > 0); // = new Edge(true, (vertValues[6] > 0) && !(vertValues[7] > 0)); //need to change intersection and normal later if we want interpolation
     }
     if (yCross)
     {
-        _newedges[1].crossed = true;
-        _newedges[1].sign = !(vertValues[5] > 0) && (vertValues[7] > 0);
-
+        //_newedges[1].crossed = true;
+        //_newedges[1].sign = !(vertValues[5] > 0) && (vertValues[7] > 0);
+        
+        newedge |= 1 << 3;
+        newedge |= (!(vertValues[5] > 0) && (vertValues[7] > 0)) << 2;
     }
     if (zCross)
     {
-        _newedges[2].crossed = true;
-        _newedges[2].sign = (vertValues[3] > 0) && !(vertValues[7] > 0);
+        //_newedges[2].crossed = true;
+        //_newedges[2].sign = (vertValues[3] > 0) && !(vertValues[7] > 0);
+        
+        newedge |= 1 << 1;
+        newedge |= ((vertValues[3] > 0) && !(vertValues[7] > 0));
 
     }
 
     float3 vertex = block_voxel ? vertPos[0] : avg;
 
-    //int index = (int) (x + dimensions.x * (y + dimensions.y * z));
-    vertexBuffer[index] = vertex; //should this be index?
-    //vertices.Add(vertex); //vertex should be at the center of the cell
-                                  //set cell struct to include vertex index
-    uint dualgrid_representation = 0x0;
-    dualgrid_representation |= _newedges[0].crossed ? 0x80000000 : 0x0; //likely a more efficient way of doing this
-    dualgrid_representation |= _newedges[0].sign ? 0x40000000 : 0x0;
-    dualgrid_representation |= _newedges[1].crossed ? 0x20000000 : 0x0;
-    dualgrid_representation |= _newedges[1].sign ? 0x10000000 : 0x0;
-    dualgrid_representation |= _newedges[2].crossed ? 0x08000000 : 0x0;
-    dualgrid_representation |= _newedges[2].sign ? 0x04000000 : 0x0;
-    dualgrid_representation |= index;
+    uint index = (uint) (x + dimensions.x * (y + dimensions.y * z));
     
-    dualGrid[index] = dualgrid_representation;
+
+    uint dualgrid_representation = 0x0;
+    dualgrid_representation |= newedge;
+    
+    dualgrid_representation |= (index << 6);
+    
+    
+    //INSTEAD OF INDEX, USE HOW MANY VERTICES THERE ARE SO FAR.
+    //HOW TO DO SO? USE A COMPARE-ADD-SWAP OPERATOR TO INCREMENT
+    //THE AMOUNT OF VERTICES BETWEEN THREADS.
+    
+    //THEN, USE ANOTHER COMPARE-ADD-SWAP (OR A LOCK) TO SET DUALGRID
+    //TO THE CORRECT VERTEX INDEX
+    int oldIndex = vertIndex;
+    InterlockedAdd(vertIndex,1,oldIndex);
+    
+    dualGrid[index] |= (newedge | (oldIndex << 6));
+    vertexBuffer[index] = vertex; //vertex; //should this be index?
 
 }
 
-[numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CreateQuads(int x, int y, int z)
+{
+    
+    int index = (int) (x + dimensions.x * (y + dimensions.y * z));
+    uint dualGrid_index = dualGrid[index];
+
+    if ((dualGrid_index & 0x20) == 0x20) //if edge[0].crossed
+        {
+                //Make a quad from neighboring x cells
+        if ((dualGrid_index & 0x10) == 0x10) //if edge[0].sign
+        {
+            
+        //IF BOTH VERTS AND DUALGRID ARE INDEXED THE SAME THEN JUST REFERENCE VERTS
+            
+            
+            indices[4 * index] = dualGrid[index] >> 6;
+            indices[4 * index + 1] = dualGrid[(x + 1) + dimensions.x * (y + dimensions.y * z)] >> 6;
+            indices[4 * index + 2] = dualGrid[(x + 1) + dimensions.x * ((y + 1) + dimensions.y * z)] >> 6;
+            indices[4 * index + 3] = dualGrid[x + dimensions.x * ((y + 1) + dimensions.y * z)] >> 6;
+        }
+        else
+        {
+            indices[4 * index] = dualGrid[index] >> 6;
+            indices[4 * index + 1] = dualGrid[(x + dimensions.x * ((y + 1) + dimensions.y * z))] >> 6;
+            indices[4 * index + 2] = dualGrid[((x + 1) + dimensions.x * ((y + 1) + dimensions.y * z))] >> 6;
+            indices[4 * index + 3] = dualGrid[((x + 1) + dimensions.x * (y + dimensions.y * z))] >> 6;
+            
+        }
+    }
+    if ((dualGrid_index & 0x8) == 0x8)
+    {
+        //indices[index] = 512;
+            //Make a quad from neighboring y cells
+        if ((dualGrid_index & 0x4) == 0x4)
+        {
+            indices[4 * index] = dualGrid[index] >> 6;
+            indices[4 * index + 1] = dualGrid[(x + 1) + dimensions.x * (y + dimensions.y * z)] >> 6;
+            indices[4 * index + 2] = dualGrid[(x + 1) + dimensions.x * (y + dimensions.y * (z + 1))] >> 6;
+            indices[4 * index + 3] = dualGrid[x + dimensions.x * (y + dimensions.y * (z + 1))] >> 6;
+        }
+        else
+        {
+                
+            indices[4 * index] = dualGrid[index] >> 6;
+            indices[4 * index + 3] = (dualGrid[(x + 1) + dimensions.x * (y + dimensions.y * z)] >> 6);
+            indices[4 * index + 2] = (dualGrid[(x + 1) + dimensions.x * (y + dimensions.y * (z + 1))] >> 6);
+            indices[4 * index + 1] = (dualGrid[x + dimensions.x * (y + dimensions.y * (z + 1))] >> 6);
+                
+        }
+    }
+    if ((dualGrid_index & 0x2) == 0x2)
+    {
+                //Make a quad from neighboring z cells
+        if ((dualGrid_index & 0x1) == 0x1)
+        {
+            indices[4 * index] = dualGrid[index] >> 6;
+            indices[4 * index + 1] = dualGrid[x + dimensions.x * ((y + 1) + dimensions.y * z)] >> 6;
+            indices[4 * index + 2] = dualGrid[x + dimensions.x * ((y + 1) + dimensions.y * (z + 1))] >> 6;
+            indices[4 * index + 3] = dualGrid[x + dimensions.x * (y + dimensions.y * (z + 1))] >> 6;
+        }
+        else
+        {
+            indices[4 * index] = dualGrid[index] >> 6;
+            indices[4 * index + 1] = dualGrid[x + dimensions.x * (y + dimensions.y * (z + 1))] >> 6;
+            indices[4 * index + 2] = dualGrid[x + dimensions.x * ((y + 1) + dimensions.y * (z + 1))] >> 6;
+            indices[4 * index + 3] = dualGrid[x + dimensions.x * ((y + 1) + dimensions.y * z)] >> 6;
+        }
+    }
+}
+
+[numthreads(32,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID, uint3 gid : SV_GroupThreadID)
 {
     // TODO: insert actual code here!
     
-    
+    //start index
+    int3 s_index = int3(ceil(dimensions.x / 32.0) * gid.x, 0, 0);
+    int3 e_index = int3((ceil(dimensions.x / 32.0) * (gid.x + 1)) - 1, dimensions.y, dimensions.z);
     //Compute starting and ending indices here
     
     //Compute vertex positions
+    for (int x = s_index.x; x < e_index.x; ++x)
+    {
+        for (int y = s_index.y; y < e_index.y; ++y)
+        {
+            for (int z = s_index.z; z < e_index.z; ++z)
+            {
+                Find_Best_Vertex(x, y, z);
+            }
+        }
+    }
+    //Barrier here
+    GroupMemoryBarrierWithGroupSync();
+    
+    //DO CONDENSE VERTICES BEFORE INDICES. SINCE IN SERIAL IMPLEMENTATION
+    //THE DUALGRID REFERENCES THE VERTICES ARRAY, WHICH IS A CONDENSED ARRAY.
+    
+    //
     
     //Compute quad indices
+    /*for (x = s_index.x; x < e_index.x; ++x)
+    {
+        for (int y = s_index.y; y < e_index.y; ++y)
+        {
+            for (int z = s_index.z; z < e_index.z; ++z)
+            {
+                //compute quad
+                CreateQuads(x, y, z);
+
+            }
+        }
+    }*/
+    
+    //the indices array is assumed to be 4*length(vertexBuffer)
+    
+    //both arrays will be condensed in the cpu
     
     //Since memory is shared, no need to transform the vertex indices
-
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
 }
