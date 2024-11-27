@@ -444,13 +444,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb02d08da42ed4d42a12d08e8d278421, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scale: {x: 64, y: 64, z: 64}
+  scale: {x: 32, y: 32, z: 32}
   length: 20
   block_voxel: 1
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
+  ind_serial_arr: 
   DC_Compute: {fileID: 7200000, guid: 30c5af2b2028d2c4ba13ffbd7352a059, type: 3}
+  Simplex: {fileID: 7200000, guid: 8f757f5a121ce7240ac1b7d61a3103c6, type: 3}
   verts_arr: []
   ind_arr: 
+  dual_arr: 
+  blueNoise_Test: {fileID: 0}
   blueNoise: {fileID: 2800000, guid: f149fd00606ad6c4dbd02d12a19c9ffc, type: 3}
 --- !u!4 &710602846
 Transform:

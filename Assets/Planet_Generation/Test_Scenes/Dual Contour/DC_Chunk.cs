@@ -28,12 +28,15 @@ public class DC_Chunk : MonoBehaviour
 
     //COMPUTE SHADER
     [SerializeField] private ComputeShader DC_Compute;
+    [SerializeField] private ComputeShader Simplex;
+
     ComputeBuffer verts;
     ComputeBuffer dualGrid;
     ComputeBuffer ind;
     [SerializeField] private Vector3[] verts_arr;
     [SerializeField] private uint[] ind_arr;
-    [SerializeField] private uint[] dual_arr;
+    [SerializeField] private int[] dual_arr;
+    [SerializeField] private RenderTexture blueNoise_Test;
 
     [SerializeField] private Texture2D blueNoise;
     Stopwatch computeStopWatch = new Stopwatch();
@@ -64,17 +67,7 @@ public class DC_Chunk : MonoBehaviour
         //Initialize and generate vertices and quads
         dc = new Dual_Contour(transform.position, scale, length, block_voxel);
         dc.Generate(ref vertices, ref indices);
-
-        /*m.vertices = vertices.ToArray();
-        m.normals = normals;
-        m.uv = uvs;
-        m.SetIndices(indices, MeshTopology.Quads, 0);
-        m.RecalculateBounds();
-        m.RecalculateNormals();*/
-
         rend.material = mat;
-
-
 
         stopwatch.Stop();
         UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
@@ -87,21 +80,36 @@ public class DC_Chunk : MonoBehaviour
         
 
         verts = new ComputeBuffer(scale.x*scale.y*scale.z, sizeof(float) * 3);
-        dualGrid = new ComputeBuffer(scale.x * scale.y * scale.z, sizeof(UInt32));
-        ind = new ComputeBuffer(scale.x * scale.y * scale.z * 4, sizeof(UInt32));
+        dualGrid = new ComputeBuffer(scale.x * scale.y * scale.z, sizeof(Int32));
+        //ind = new ComputeBuffer(scale.x * scale.y * scale.z * 4, sizeof(UInt32));
 
         int shaderHandle = DC_Compute.FindKernel("CSMain");
+        int simplex_handle = Simplex.FindKernel("CSMain");
 
         DC_Compute.SetBuffer(shaderHandle, "vertexBuffer", verts);
         DC_Compute.SetVector("dimensions", (Vector3)scale);
         DC_Compute.SetInt("CELL_SIZE", length);
         DC_Compute.SetVector("global", transform.position);
         DC_Compute.SetBuffer(shaderHandle, "dualGrid", dualGrid);
-        DC_Compute.SetBuffer(shaderHandle, "indices", ind);
+        //DC_Compute.SetBuffer(shaderHandle, "indices", ind);
 
-        RenderTexture blueNoise_Test = new RenderTexture(scale.x, scale.y, 0, RenderTextureFormat.RFloat) { enableRandomWrite = true };
+        blueNoise_Test = new RenderTexture(scale.x, scale.z, 0, RenderTextureFormat.RFloat) { enableRandomWrite = true };
+        Graphics.Blit(blueNoise, blueNoise_Test);
 
-        DC_Compute.SetTexture(shaderHandle, "SimplexTex", blueNoise);
+        /*Simplex.SetFloat("mountainStrength", 1f);
+        Simplex.SetFloat("persistance", 0.95f);
+        Simplex.SetFloat("lacunarity", 0.25f);
+        
+        Simplex.SetFloat("domainWarp", .0f);
+        Simplex.SetInt("octaves", 3);
+        Simplex.SetTexture(simplex_handle, "Result", blueNoise_Test);
+
+        Simplex.Dispatch(simplex_handle, scale.x, scale.y, 1);
+        AsyncGPUReadbackRequest simplexdone = AsyncGPUReadback.Request(blueNoise_Test);
+
+        //while (!simplexdone.done) { }*/
+
+        DC_Compute.SetTexture(shaderHandle, "SimplexTex", blueNoise_Test);
 
         computeStopWatch.Start();
 
@@ -118,6 +126,13 @@ public class DC_Chunk : MonoBehaviour
 
     private void MeshHelper() {
         AssignIndices();
+
+        verts.Release(); dualGrid.Release(); //ind.Release();
+
+        
+
+        computeStopWatch.Stop();
+        UnityEngine.Debug.Log("Compute took " + computeStopWatch.ElapsedMilliseconds.ToString() + " milliseconds");
 
         if (m) m.Clear();
         m = mf.sharedMesh = new Mesh();
@@ -150,12 +165,13 @@ public class DC_Chunk : MonoBehaviour
 
     protected void DualGridReadback(AsyncGPUReadbackRequest request)
     {
-        NativeArray<uint> _dual;
-        _dual = request.GetData<uint>();
+        NativeArray<int> _dual;
+        _dual = request.GetData<int>();
 
-        dual_arr = new uint[scale.x * scale.y * scale.z];
+        dual_arr = new int[scale.x * scale.y * scale.z];
         _dual.CopyTo(dual_arr);
 
+        //dualGrid.Release();
         //dual_arr = condense_generic<uint>(ref dual_arr, 0);
         requestCount++;
         if (requestCount >= 2) MeshHelper();
@@ -178,11 +194,6 @@ public class DC_Chunk : MonoBehaviour
         UnityEngine.Debug.Log("Compute took " + computeStopWatch.ElapsedMilliseconds.ToString() + " milliseconds");
 
         return;
-    }
-
-    private void indexVerticesParallel(ref Vector3[] vertices, ref int[] indices)
-    {
-
     }
 
     private Vector3[] condense(ref Vector3[] old, Vector3 nullVal) {
@@ -222,74 +233,66 @@ public class DC_Chunk : MonoBehaviour
 
     void CreateQuad(int x, int y, int z)
     {
-        //IF WE DONT WANT TO USE A LIST, THEN WE HAVE TO KEEP TRACK OF THE ITERATOR
-
-        //WELL DO THAT LATER THOUGH, THE GOAL IS TO GET THIS WORKING FIRST
-
-
         int index = (int)(x + scale.x * (y + scale.y * z));
-        uint dualGrid_index = dual_arr[index];
+        int dualGrid_index = dual_arr[index];
+
+        //if (dualGrid_index < 0) return;
 
         if ((dualGrid_index & 0x20) == 0x20) //if edge[0].crossed
         {
             //Make a quad from neighboring x cells
             if ((dualGrid_index & 0x10) == 0x10) //if edge[0].sign
             {
-
-                //IF BOTH VERTS AND DUALGRID ARE INDEXED THE SAME THEN JUST REFERENCE VERTS
-
-
-                ind_serial_arr.Add((int)dual_arr[index] >> 6);
-                ind_serial_arr.Add((int)dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6);
-                ind_serial_arr.Add((int)dual_arr[(x + 1) + scale.x * ((y + 1) + scale.y * z)] >> 6);
-                ind_serial_arr.Add((int)dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                ind_serial_arr.Add(dual_arr[index] >> 6);
+                ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6);
+                ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
             }
             else
             {
-                ind_serial_arr.Add((int)dual_arr[index] >> 6);
-                ind_serial_arr.Add((int)dual_arr[(x + scale.x * ((y + 1) + scale.y * z))] >> 6);
-                ind_serial_arr.Add((int)dual_arr[((x + 1) + scale.x * ((y + 1) + scale.y * z))] >> 6);
-                ind_serial_arr.Add((int)dual_arr[((x + 1) + scale.x * (y + scale.y * z))] >> 6);
+                ind_serial_arr.Add(dual_arr[index] >> 6);
+                ind_serial_arr.Add(dual_arr[(x + scale.x * ((y + 1) + scale.y * z))] >> 6);
+                ind_serial_arr.Add(dual_arr[((x + 1) + scale.x * ((y + 1) + scale.y * z))] >> 6);
+                ind_serial_arr.Add(dual_arr[((x + 1) + scale.x * (y + scale.y * z))] >> 6);
 
             }
         }
-        if ((dualGrid_index & 0x8) == 0x8)
+        if ((dualGrid_index & 0x08) == 0x08)
         {
-            //indices[index] = 512;
             //Make a quad from neighboring y cells
-            if ((dualGrid_index & 0x4) == 0x4)
+            if ((dualGrid_index & 0x04) == 0x04)
             {
-                ind_serial_arr.Add((int)dual_arr[index] >> 6);
-                ind_serial_arr.Add((int)dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6);
-                ind_serial_arr.Add((int)dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6);
-                ind_serial_arr.Add((int)dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
+                ind_serial_arr.Add(dual_arr[index] >> 6);
+                ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6);
+                ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6);
+                ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
             }
             else
             {
 
-                ind_serial_arr.Add((int)dual_arr[index] >> 6);
-                ind_serial_arr.Add((int)(dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6));
-                ind_serial_arr.Add((int)(dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6));
-                ind_serial_arr.Add((int)(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6));
+                ind_serial_arr.Add(dual_arr[index] >> 6);
+                ind_serial_arr.Add((dual_arr[(x) + scale.x * (y + scale.y * (z+1))] >> 6));
+                ind_serial_arr.Add((dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6));
+                ind_serial_arr.Add((dual_arr[(x+1) + scale.x * (y + scale.y * z)] >> 6));
 
             }
         }
-        if ((dualGrid_index & 0x2) == 0x2)
+        if ((dualGrid_index & 0x02) == 0x02)
         {
             //Make a quad from neighboring z cells
-            if ((dualGrid_index & 0x1) == 0x1)
+            if ((dualGrid_index & 0x01) == 0x01)
             {
-                ind_serial_arr.Add((int)dual_arr[index] >> 6);
-                ind_serial_arr.Add((int)dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
-                ind_serial_arr.Add((int)dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6);
-                ind_serial_arr.Add((int)dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
+                ind_serial_arr.Add(dual_arr[index] >> 6);
+                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6);
+                ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
             }
             else
             {
-                ind_serial_arr.Add((int)dual_arr[index] >> 6);
-                ind_serial_arr.Add((int)dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
-                ind_serial_arr.Add((int)dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6);
-                ind_serial_arr.Add((int)dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                ind_serial_arr.Add(dual_arr[index] >> 6);
+                ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
+                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6);
+                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
             }
         }
     }
