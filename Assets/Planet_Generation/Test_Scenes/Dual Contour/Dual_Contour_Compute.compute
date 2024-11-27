@@ -10,24 +10,20 @@ float3 global;
 float3 dimensions;
 int LOD_Level = 0;
 float CELL_SIZE;
-bool block_voxel = true;
+bool block_voxel;
+
+float3 step;
+float3 offset;
 
 groupshared int vertIndex = 0;
 
 
-float adapt(float x0, float x1){    return x1 == x0 ? 0 : (-x0) / (x1 - x0);}
+inline float adapt(float x0, float x1){    return x1 == x0 ? 0 : (-x0) / (x1 - x0);}
 
 float3 Grid(float3 pos, int elevation) { return pos;}
 
-float function(int3 pos, float elevation)
+float function(float3 pos, float elevation, int3 index)
 {
-
-    /*float3 step = float3(1f / (dimensions.x), 1f / (dimensions.y), 1f / (dimensions.z));
-    step *= (1f / (1 << LOD_Level));
-    step *= CELL_SIZE;
-*/
-    int index = (int) (pos.x + dimensions.x * (pos.y + dimensions.y * pos.z));
-
     if (elevation >= (float)dimensions.y - 1)
     {
         return -1;
@@ -37,25 +33,18 @@ float function(int3 pos, float elevation)
         return 1;
     }
 
-    int Ground = dimensions.y / 2;
-    int amplitude = 3;
+    float Ground = dimensions.y / 2;
+    float amplitude = 10;
+    
+    float3 newInd = float3(pos.x / step.x, 0, pos.z / step.z);
 
-    float value = /*(1.0 - /*abs(SimplexTex[pos.xy].r)) * amplitude +*/Ground - elevation + ((int) pos.x % 2 == 0 || (int) pos.z % 2 == 0); //SimplexTex[pos.xz].r;
+    float value = Ground - elevation + (SimplexTex[newInd.xz].r)*amplitude;
 
     return value;
 }
 
 void Find_Best_Vertex(int x, int y, int z)
 {
-
-    uint index = (uint) (x + dimensions.x * (y + dimensions.y * z));
-            //determines the "step" between vertices to cover 1 unit total
-    float3 step = float3(1.0 / (dimensions.x), 1.0 / (dimensions.y), 1.0 / (dimensions.z));
-    step *= (1.0 / (1 << LOD_Level));
-    step *= CELL_SIZE;
-
-            //sets the offset of the grid by a power of two based on the LOD level
-    float3 offset = float3(-1,-1,-1) * (1.0 / (1 << (LOD_Level + 1))) * (CELL_SIZE);
 
             //We have 8 vertices, and need to store them for later use
     float3 pos = offset + float3(x * step.x, y * step.y, z * step.z);
@@ -68,7 +57,7 @@ void Find_Best_Vertex(int x, int y, int z)
         vertPos[i] = Grid(pos + float3(step.x * ((i >> 2) & 0x01), step.y * ((i >> 1) & 0x01), step.z * (i & 0x01)), y + ((i & 2) == 2 ? 1 : 0));
         
         //beware the function calls for an int3 but vertpos is a float
-        vertValues[i] = function(global + vertPos[i], y + ((i & 2) == 2 ? 1 : 0));
+        vertValues[i] = function(vertPos[i], y + ((i & 2) == 2 ? 1 : 0), int3(x,y,z));
     }
             //calculate the adapt of only the edges that cross, rather than the whole thing
             //calculate the positions of the edges itself
@@ -76,6 +65,12 @@ void Find_Best_Vertex(int x, int y, int z)
 
     //set sign change if any edge is crossed
     int signChange = false;
+    bool xCross;
+
+    bool yCross;
+
+    bool zCross;
+    
     signChange |= (vertValues[0] > 0) != (vertValues[4] > 0);
     signChange |= (vertValues[0] > 0) != (vertValues[1] > 0);
     signChange |= (vertValues[5] > 0) != (vertValues[1] > 0);
@@ -83,9 +78,9 @@ void Find_Best_Vertex(int x, int y, int z)
     signChange |= (vertValues[4] > 0) != (vertValues[6] > 0);
     signChange |= (vertValues[1] > 0) != (vertValues[3] > 0);
     signChange |= (vertValues[0] > 0) != (vertValues[2] > 0);
-    signChange |= (vertValues[5] > 0) != (vertValues[7] > 0);
-    signChange |= (vertValues[6] > 0) != (vertValues[7] > 0);
-    signChange |= (vertValues[3] > 0) != (vertValues[7] > 0);
+    signChange |= yCross = (vertValues[5] > 0) != (vertValues[7] > 0);
+    signChange |= xCross = (vertValues[6] > 0) != (vertValues[7] > 0);
+    signChange |= zCross = (vertValues[3] > 0) != (vertValues[7] > 0);
     signChange |= (vertValues[2] > 0) != (vertValues[3] > 0);
     signChange |= (vertValues[2] > 0) != (vertValues[6] > 0);
 
@@ -143,11 +138,7 @@ void Find_Best_Vertex(int x, int y, int z)
 
             //The normals shouldn't have x,y,z as their parameters, but should instead reflect
             //the positions of the intermediate point on the edge.
-
-    bool xCross = vertValues[6] > 0 != vertValues[7] > 0;
-    bool yCross = vertValues[5] > 0 != vertValues[7] > 0;
-    bool zCross = vertValues[3] > 0 != vertValues[7] > 0;
-    uint newedge = 0;
+    int newedge = 0;
     
     
     if (xCross)
@@ -166,30 +157,42 @@ void Find_Best_Vertex(int x, int y, int z)
         newedge |= ((vertValues[3] > 0) && !(vertValues[7] > 0));
     }
 
-    //float3 vertex = block_voxel ? vertPos[0] : avg;
-    float3 vertex = vertPos[0];
+    float3 vertex = block_voxel ? vertPos[0] : avg;
+    //float3 vertex = vertPos[0];
 
     int oldIndex = vertIndex;
     InterlockedAdd(vertIndex,1,oldIndex);
     //oldIndex++;
     //oldIndex = max(oldIndex, 0);
     //oldIndex = min(dimensions.x * dimensions.y * dimensions.z, oldIndex);
+    uint index = (uint) (x + dimensions.x * (y + dimensions.y * z));
+    
     
     dualGrid[index] = (newedge | ((oldIndex) << 6));
     vertexBuffer[oldIndex] = vertex;
 
 }
 
-[numthreads(2,1,1)]
+[numthreads(4,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID, uint3 gid : SV_GroupThreadID)
 {
     // TODO: insert actual code here!
     
-    //start index
-    int3 s_index = int3(ceil(dimensions.x / 2.0) * gid.x, 0, 0);
-    int3 e_index = int3((ceil(dimensions.x / 2.0) * (gid.x + 1)), dimensions.y, dimensions.z);
-    //Compute starting and ending indices here
+    //determines the "step" between vertices to cover 1 unit total
+    step = float3(1.0 / (dimensions.x), 1.0 / (dimensions.y), 1.0 / (dimensions.z));
+    step *= (1.0 / (1 << LOD_Level));
+    step *= CELL_SIZE;
+                
+
+    //sets the offset of the grid by a power of two based on the LOD level
+    float3 offset = float3(-1, -1, -1) * (1.0 / (1 << (LOD_Level + 1))) * (CELL_SIZE);
     
+    
+    //start index
+    int3 s_index = int3(ceil(dimensions.x / 4.0) * gid.x, 0, 0);
+    int3 e_index = int3((ceil(dimensions.x / 4.0) * (gid.x + 1)), dimensions.y, dimensions.z);
+    //Compute starting and ending indices here
+
     //Compute vertex positions
     for (int x = s_index.x; x < e_index.x; ++x)
     {
@@ -197,7 +200,7 @@ void CSMain (uint3 id : SV_DispatchThreadID, uint3 gid : SV_GroupThreadID)
         {
             for (int z = s_index.z; z < e_index.z; ++z)
             {
-                //dualGrid[(x + dimensions.x * (y + dimensions.y * z))] = -1;
+                dualGrid[(x + dimensions.x * (y + dimensions.y * z))] = -1;
                 Find_Best_Vertex(x, y, z);
             }
         }

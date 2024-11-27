@@ -64,7 +64,7 @@ Material:
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DepthBias: 1000
-    - _DepthMult: 1
+    - _DepthMult: 3.36
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1

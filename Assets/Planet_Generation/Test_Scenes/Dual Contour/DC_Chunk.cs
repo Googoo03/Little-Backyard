@@ -80,7 +80,7 @@ public class DC_Chunk : MonoBehaviour
         
 
         verts = new ComputeBuffer(scale.x*scale.y*scale.z, sizeof(float) * 3);
-        dualGrid = new ComputeBuffer(scale.x * scale.y * scale.z, sizeof(Int32));
+        dualGrid = new ComputeBuffer(scale.x * scale.y * scale.z, sizeof(int));
         //ind = new ComputeBuffer(scale.x * scale.y * scale.z * 4, sizeof(UInt32));
 
         int shaderHandle = DC_Compute.FindKernel("CSMain");
@@ -91,10 +91,12 @@ public class DC_Chunk : MonoBehaviour
         DC_Compute.SetInt("CELL_SIZE", length);
         DC_Compute.SetVector("global", transform.position);
         DC_Compute.SetBuffer(shaderHandle, "dualGrid", dualGrid);
+        DC_Compute.SetBool("block_voxel", block_voxel);
         //DC_Compute.SetBuffer(shaderHandle, "indices", ind);
 
         blueNoise_Test = new RenderTexture(scale.x, scale.z, 0, RenderTextureFormat.RFloat) { enableRandomWrite = true };
         Graphics.Blit(blueNoise, blueNoise_Test);
+        Graphics.SetRenderTarget(null);
 
         /*Simplex.SetFloat("mountainStrength", 1f);
         Simplex.SetFloat("persistance", 0.95f);
@@ -236,24 +238,46 @@ public class DC_Chunk : MonoBehaviour
         int index = (int)(x + scale.x * (y + scale.y * z));
         int dualGrid_index = dual_arr[index];
 
-        //if (dualGrid_index < 0) return;
+        bool notSatisfy;
+
+        if (dualGrid_index == -1) return;
 
         if ((dualGrid_index & 0x20) == 0x20) //if edge[0].crossed
         {
             //Make a quad from neighboring x cells
             if ((dualGrid_index & 0x10) == 0x10) //if edge[0].sign
             {
-                ind_serial_arr.Add(dual_arr[index] >> 6);
-                ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6);
-                ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * ((y + 1) + scale.y * z)] >> 6);
-                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                notSatisfy = false;
+                notSatisfy |= dual_arr[index] >> 6 == -1;
+                notSatisfy |= dual_arr[(x + 1) + scale.x * (y + scale.y * z)]>> 6 == -1;
+                notSatisfy |= dual_arr[(x + 1) + scale.x * ((y + 1) + scale.y * z)]>> 6 == -1;
+                notSatisfy |= dual_arr[x + scale.x * ((y + 1) + scale.y * z)]>> 6 == -1;
+
+                if (!notSatisfy)
+                {
+                    ind_serial_arr.Add(dual_arr[index] >> 6);
+                    ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6);
+                    ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                    ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                }
+                else { UnityEngine.Debug.Log(dual_arr[index].ToString()); }
             }
             else
             {
-                ind_serial_arr.Add(dual_arr[index] >> 6);
-                ind_serial_arr.Add(dual_arr[(x + scale.x * ((y + 1) + scale.y * z))] >> 6);
-                ind_serial_arr.Add(dual_arr[((x + 1) + scale.x * ((y + 1) + scale.y * z))] >> 6);
-                ind_serial_arr.Add(dual_arr[((x + 1) + scale.x * (y + scale.y * z))] >> 6);
+                notSatisfy = false;
+                notSatisfy |= dual_arr[index] >> 6 == -1;
+                notSatisfy |= dual_arr[(x + scale.x * ((y + 1) + scale.y * z))] >> 6 == -1;
+                notSatisfy |= dual_arr[((x + 1) + scale.x * ((y + 1) + scale.y * z))] >> 6 == -1;
+                notSatisfy |= dual_arr[((x + 1) + scale.x * (y + scale.y * z))] >> 6 == -1;
+
+                if (!notSatisfy)
+                {
+                    ind_serial_arr.Add(dual_arr[index] >> 6);
+                    ind_serial_arr.Add(dual_arr[(x + scale.x * ((y + 1) + scale.y * z))] >> 6);
+                    ind_serial_arr.Add(dual_arr[((x + 1) + scale.x * ((y + 1) + scale.y * z))] >> 6);
+                    ind_serial_arr.Add(dual_arr[((x + 1) + scale.x * (y + scale.y * z))] >> 6);
+                }
+                else { UnityEngine.Debug.Log(dual_arr[index].ToString()); }
 
             }
         }
@@ -262,18 +286,37 @@ public class DC_Chunk : MonoBehaviour
             //Make a quad from neighboring y cells
             if ((dualGrid_index & 0x04) == 0x04)
             {
-                ind_serial_arr.Add(dual_arr[index] >> 6);
-                ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6);
-                ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6);
-                ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
+                notSatisfy = false;
+                notSatisfy |= (dual_arr[index] >> 6) == -1;
+                notSatisfy |= (dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6) == -1;
+                notSatisfy |= (dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6) == -1;
+                notSatisfy |= (dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6) == -1;
+
+                if (!notSatisfy)
+                {
+                    ind_serial_arr.Add(dual_arr[index] >> 6);
+                    ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6);
+                    ind_serial_arr.Add(dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6);
+                    ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
+                }
+                //else { UnityEngine.Debug.Log(dual_arr[index].ToString() + " pos"); }
             }
             else
             {
+                notSatisfy = false;
+                notSatisfy |= (dual_arr[index] >> 6) == -1;
+                notSatisfy |= ((dual_arr[(x) + scale.x * (y + scale.y * (z + 1))] >> 6)) == -1;
+                notSatisfy |= ((dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6)) == -1;
+                notSatisfy |= ((dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6)) == -1;
 
-                ind_serial_arr.Add(dual_arr[index] >> 6);
-                ind_serial_arr.Add((dual_arr[(x) + scale.x * (y + scale.y * (z+1))] >> 6));
-                ind_serial_arr.Add((dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6));
-                ind_serial_arr.Add((dual_arr[(x+1) + scale.x * (y + scale.y * z)] >> 6));
+                if (!notSatisfy)
+                {
+                    ind_serial_arr.Add(dual_arr[index] >> 6);
+                    ind_serial_arr.Add((dual_arr[(x    ) + scale.x * (y + scale.y * (z + 1))] >> 6));
+                    ind_serial_arr.Add((dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6));
+                    ind_serial_arr.Add((dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6));
+                }
+                else { UnityEngine.Debug.Log(dual_arr[index].ToString() + " neg"); }
 
             }
         }
@@ -282,17 +325,35 @@ public class DC_Chunk : MonoBehaviour
             //Make a quad from neighboring z cells
             if ((dualGrid_index & 0x01) == 0x01)
             {
-                ind_serial_arr.Add(dual_arr[index] >> 6);
-                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
-                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6);
-                ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
+                notSatisfy = false;
+                notSatisfy |= (dual_arr[index] >> 6) == -1;
+                notSatisfy |= (dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6) == -1;
+                notSatisfy |= (dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6) == -1;
+                notSatisfy |= (dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6) == -1;
+
+                if (!notSatisfy)
+                {
+                    ind_serial_arr.Add(dual_arr[index] >> 6);
+                    ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                    ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6);
+                    ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
+                }
             }
             else
             {
-                ind_serial_arr.Add(dual_arr[index] >> 6);
-                ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
-                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6);
-                ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                notSatisfy = false;
+                notSatisfy |= (dual_arr[index] >> 6) == -1;
+                notSatisfy |= (dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6) == -1;
+                notSatisfy |= (dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6) == -1;
+                notSatisfy |= (dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6) == -1;
+
+                if (!notSatisfy)
+                {
+                    ind_serial_arr.Add(dual_arr[index] >> 6);
+                    ind_serial_arr.Add(dual_arr[x + scale.x * (y + scale.y * (z + 1))] >> 6);
+                    ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * (z + 1))] >> 6);
+                    ind_serial_arr.Add(dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6);
+                }
             }
         }
     }
