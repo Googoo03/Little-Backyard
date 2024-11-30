@@ -5,6 +5,7 @@ using UnityEngine;
 using System.Diagnostics;
 using Simplex;
 using UnityEngine.Assertions;
+using UnityEngine.UIElements;
 
 
 namespace DualContour
@@ -49,11 +50,19 @@ namespace DualContour
 
         [SerializeField] private float Ground;
 
+        //GLOBAL VARS
+        Vector3 step;
+        Vector3 offset;
+
+        //VOXEL DATA
+        UInt16[] voxel_data;
 
         List<Vector3> vertices;
         List<int> indices;
 
-        private cell[] dualGrid;
+        private int[] dualGrid;
+        private Vector3[] cellpos;
+        private float[] cellvalues;
 
         //NOISE FUNCTIONS TEMPORARY
         Noise simplexNoise = new Noise();
@@ -71,14 +80,25 @@ namespace DualContour
             Ground = 2;
             amplitude = 5;
             block_voxel = mode;
+
+            //determines the "step" between vertices to cover 1 unit total
+            step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
+            step *= (1f / (1 << LOD_Level));
+            step *= CELL_SIZE;
+
+            //sets the offset of the grid by a power of two based on the LOD level
+            offset = -Vector3.one * (1f / (1 << (LOD_Level + 1))) * (CELL_SIZE);
         }
 
-        public void Generate(ref List<Vector3> verts, ref List<int> ind)
+        public void Generate(ref List<Vector3> verts, ref List<int> ind, ref UInt16[] v_data)
         {
             //initialize both the dual grid and the vertex grid
-            dualGrid = new cell[(sizeX) * (sizeY) * sizeZ];
-            indices = ind;
+            dualGrid = new int[(sizeX) * (sizeY) * sizeZ];
+            cellpos = new Vector3[(sizeX) * (sizeY) * sizeZ];
+            cellvalues = new float[(sizeX) * (sizeY) * sizeZ];
+            voxel_data = new UInt16[(sizeX) * (sizeY) * sizeZ];
 
+            indices = ind;
             vertices = verts;
 
             for (int x = 0; x < sizeX; ++x)
@@ -87,39 +107,49 @@ namespace DualContour
                 {
                     for (int z = 0; z < sizeZ; ++z)
                     {
-                        dualGrid[x + sizeX * (y + sizeY * z)].vertIndex = -1;
-                        Find_Best_Vertex(function, Grid, x, y, z);
+                        //v_data[x + sizeX * (y + sizeY * z)] = (ushort)((x + sizeX * (y + sizeY * z)) % (65535));
+                        InitializeCell(function,Grid,x,y,z);
                     }
                 }
             }
 
-            for (int x = 0; x < sizeX - 1; ++x)
+            for (int x = 0; x < sizeX-1; ++x)
             {
-                for (int y = 0; y < sizeY - 1; ++y)
+                for (int y = 0; y < sizeY-1; ++y)
                 {
-                    for (int z = 0; z < sizeZ - 1; ++z)
+                    for (int z = 0; z < sizeZ-1; ++z)
                     {
-                        CreateQuads(x, y, z);
+                        dualGrid[x + sizeX * (y + sizeY * z)] = -1;
+                        Find_Best_Vertex(x, y, z);
                     }
                 }
             }
 
-            verts = vertices;
-            ind = indices;
+            for (int x = 0; x < sizeX - 2; ++x)
+            {
+                for (int y = 0; y < sizeY - 2; ++y)
+                {
+                    for (int z = 0; z < sizeZ - 2; ++z)
+                    {
+                        CreateQuad(x, y, z);
+                    }
+                }
+            }
 
+            v_data = voxel_data;
         }
 
-        private void Find_Best_Vertex(Func<Vector3, float, float> f, Func<Vector3, int, Vector3> spaceTransform, int x, int y, int z)
+        private void InitializeCell(Func<Vector3, float, float> f, Func<Vector3, int, Vector3> spaceTransform, int x, int y, int z) {
+            uint index = (uint)(x + sizeX * (y + sizeY * z));
+            Vector3 pos = offset + new Vector3(x * step.x, y * step.y, z * step.z);
+
+            cellpos[index] = spaceTransform(pos, y);
+            cellvalues[index] = f(global + cellpos[index], y);
+        }
+
+        private void Find_Best_Vertex(int x, int y, int z)
         {
-
-
-            //determines the "step" between vertices to cover 1 unit total
-            Vector3 step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
-            step *= (1f / (1 << LOD_Level));
-            step *= CELL_SIZE;
-
-            //sets the offset of the grid by a power of two based on the LOD level
-            Vector3 offset = -Vector3.one * (1f / (1 << (LOD_Level + 1))) * (CELL_SIZE);
+            uint index = (uint)(x + sizeX * (y + sizeY * z));
 
             //We have 8 vertices, and need to store them for later use
             Vector3 pos = offset + new Vector3(x * step.x, y * step.y, z * step.z);
@@ -129,8 +159,14 @@ namespace DualContour
             Vector3[] vertPos = new Vector3[8];
             for (int i = 0; i < 8; ++i)
             {
+                /*
                 vertPos[i] = spaceTransform(pos + new Vector3(step.x * ((i >> 2) & 0x01), step.y * ((i >> 1) & 0x01), step.z * (i & 0x01)), y + ((i & 2) == 2 ? 1 : 0));
                 vertValues[i] = f(global + vertPos[i], y + ((i & 2) == 2 ? 1 : 0));
+                */
+
+                vertPos[i] = cellpos[( (x + ((i >> 2) & 0x01)) + sizeX * ((y + ((i >> 1) & 0x01)) + sizeY * (z + (i & 0x01)) ) ) ];
+                vertValues[i] = cellvalues[((x + ((i >> 2) & 0x01)) + sizeX * ((y + ((i >> 1) & 0x01)) + sizeY * (z + (i & 0x01))))];
+
             }
             //calculate the adapt of only the edges that cross, rather than the whole thing
             //calculate the positions of the edges itself
@@ -142,8 +178,9 @@ namespace DualContour
 
             //we then identify where changes in the function are (sign changes)
             bool signChange = false;
-            Edge[] _newedges = new Edge[3]; //0 is reserved for x, 1 for y, 2 for z
-
+            bool xCross;
+            bool yCross;
+            bool zCross;
 
             //set sign change if any edge is crossed
             signChange |= (vertValues[0] > 0) != (vertValues[4] > 0);
@@ -153,9 +190,9 @@ namespace DualContour
             signChange |= (vertValues[4] > 0) != (vertValues[6] > 0);
             signChange |= (vertValues[1] > 0) != (vertValues[3] > 0);
             signChange |= (vertValues[0] > 0) != (vertValues[2] > 0);
-            signChange |= (vertValues[5] > 0) != (vertValues[7] > 0);
-            signChange |= (vertValues[6] > 0) != (vertValues[7] > 0);
-            signChange |= (vertValues[3] > 0) != (vertValues[7] > 0);
+            signChange |= yCross = (vertValues[5] > 0) != (vertValues[7] > 0);
+            signChange |= xCross = (vertValues[6] > 0) != (vertValues[7] > 0);
+            signChange |= zCross = (vertValues[3] > 0) != (vertValues[7] > 0);
             signChange |= (vertValues[2] > 0) != (vertValues[3] > 0);
             signChange |= (vertValues[2] > 0) != (vertValues[6] > 0);
 
@@ -199,7 +236,7 @@ namespace DualContour
                 }
             }
 
-            avg /= Mathf.Max(1, count);
+            avg /= count > 1 ? count : 1;//Mathf.Max(1, count);
 
             //figure out what edge was crossed (axis)
 
@@ -208,152 +245,156 @@ namespace DualContour
             //The normals shouldn't have x,y,z as their parameters, but should instead reflect
             //the positions of the intermediate point on the edge.
 
-            bool xCross = vertValues[6] > 0 != vertValues[7] > 0;
-            bool yCross = vertValues[5] > 0 != vertValues[7] > 0;
-            bool zCross = vertValues[3] > 0 != vertValues[7] > 0;
+            int newedge = 0;
 
-            if (xCross) _newedges[0] = new Edge(true, (vertValues[6] > 0) && !(vertValues[7] > 0)); //need to change intersection and normal later if we want interpolation
-            if (yCross) _newedges[1] = new Edge(true, !(vertValues[5] > 0) && (vertValues[7] > 0));
-            if (zCross) _newedges[2] = new Edge(true, (vertValues[3] > 0) && !(vertValues[7] > 0));
+            if (xCross)
+            {
+                newedge |= 1 << 5;
+                newedge |= (((vertValues[6] > 0) && !(vertValues[7] > 0)) ? 1 : 0) << 4;
+            }
+            if (yCross)
+            {
+                newedge |= 1 << 3;
+                newedge |= ((!(vertValues[5] > 0) && (vertValues[7] > 0)) ? 1 : 0) << 2;
+            }
+            if (zCross)
+            {
+                newedge |= 1 << 1;
+                newedge |= ((vertValues[3] > 0) && !(vertValues[7] > 0)) ? 1 : 0;
+            }
 
-            Vector3 vertex =  block_voxel ? vertPos[0] : avg;
+            Vector3 vertex = block_voxel ? vertPos[0] : avg;
 
-            vertices.Add(vertex); //vertex should be at the center of the cell
-                                  //set cell struct to include vertex index
+            vertices.Add(vertex);
 
-            int index = (int)(x + sizeX * (y + sizeY * z));
-            dualGrid[index].edges = _newedges;
-            dualGrid[index].vertIndex = vertices.Count - 1;
+            //This should reference a biome texture and current elevation
+            UInt16 voxelData = (ushort)UnityEngine.Random.Range(0, 65535);
+            voxel_data[index] = (y <= Ground+2) ? (ushort)1 : (ushort)0;
+
+            dualGrid[index] = (newedge | ((vertices.Count-1) << 6) | (voxelData << 21));
+            
         }
 
-        
-
-        private void CreateQuads(int x, int y, int z)
+        void CreateQuad(int x, int y, int z)
         {
             int index = (int)(x + sizeX * (y + sizeY * z));
-            if (dualGrid[index].vertIndex == -1) return;
+            int dualGrid_index = dualGrid[index];
 
-            //This only checks one orientation of the quad. Need to flip flop indices based on how intersection occurs
-            bool notSatisfy = false;
+            bool notSatisfy;
 
-            if (dualGrid[index].edges[0].crossed)
+            if (dualGrid_index == -1) return;
+
+            if ((dualGrid_index & 0x20) == 0x20) //if edge[0].crossed
             {
                 //Make a quad from neighboring x cells
-                if (dualGrid[index].edges[0].sign)
+                if ((dualGrid_index & 0x10) == 0x10) //if edge[0].sign
                 {
                     notSatisfy = false;
-                    notSatisfy |= dualGrid[index].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
-                    notSatisfy |= dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
-
-
+                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF) == -1;
 
                     if (!notSatisfy)
                     {
-                        indices.Add(dualGrid[index].vertIndex);
-                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
-                        indices.Add(dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)].vertIndex); //these indices might be screwed up
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
+                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
                     }
+                    else { UnityEngine.Debug.Log(dualGrid[index].ToString()); }
                 }
                 else
                 {
-
                     notSatisfy = false;
-                    notSatisfy |= dualGrid[index].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x) + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x + 1) + sizeX * ((y) + sizeY * z)].vertIndex == -1;
+                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[(x + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[((x + 1) + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[((x + 1) + sizeX * (y + sizeY * z))] >> 6 & 0x7FFF) == -1;
 
                     if (!notSatisfy)
                     {
-                        indices.Add(dualGrid[index].vertIndex);
-                        indices.Add(dualGrid[(x + sizeX * ((y + 1) + sizeY * z))].vertIndex);
-                        indices.Add(dualGrid[((x + 1) + sizeX * ((y + 1) + sizeY * z))].vertIndex);
-                        indices.Add(dualGrid[((x + 1) + sizeX * (y + sizeY * z))].vertIndex);
+                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[(x + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[((x + 1) + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[((x + 1) + sizeX * (y + sizeY * z))] >> 6 & 0x7FFF);
                     }
+                    else { UnityEngine.Debug.Log(dualGrid[index].ToString()); }
 
                 }
             }
-            if (dualGrid[index].edges[1].crossed)
+            if ((dualGrid_index & 0x08) == 0x08)
             {
                 //Make a quad from neighboring y cells
-                if (dualGrid[index].edges[1].sign)
+                if ((dualGrid_index & 0x04) == 0x04)
                 {
                     notSatisfy = false;
-                    notSatisfy |= dualGrid[index].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x + 1) + sizeX * ((y) + sizeY * (z + 1))].vertIndex == -1;
-                    notSatisfy |= dualGrid[x + sizeX * ((y) + sizeY * (z + 1))].vertIndex == -1;
-
-
+                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
 
                     if (!notSatisfy)
                     {
-                        indices.Add(dualGrid[index].vertIndex);
-                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
-                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))].vertIndex); //these indices might be screwed up
-                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
+                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
                     }
+                    //else { UnityEngine.Debug.Log(dualGrid[index].ToString() + " pos"); }
                 }
                 else
                 {
-
                     notSatisfy = false;
-                    notSatisfy |= dualGrid[index].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x) + sizeX * (y + sizeY * (z + 1))].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x + 1) + sizeX * ((y) + sizeY * (z + 1))].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x + 1) + sizeX * ((y) + sizeY * z)].vertIndex == -1;
+                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= ((dualGrid[(x) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF)) == -1;
+                    notSatisfy |= ((dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF)) == -1;
+                    notSatisfy |= ((dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF)) == -1;
 
                     if (!notSatisfy)
                     {
-                        indices.Add(dualGrid[index].vertIndex);
-                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
-                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))].vertIndex);
-                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)].vertIndex);
+                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                        indices.Add((dualGrid[(x) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF));
+                        indices.Add((dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF));
+                        indices.Add((dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF));
                     }
+                    else { UnityEngine.Debug.Log(dualGrid[index].ToString() + " neg"); }
 
                 }
             }
-            if (dualGrid[index].edges[2].crossed)
+            if ((dualGrid_index & 0x02) == 0x02)
             {
                 //Make a quad from neighboring z cells
-                if (dualGrid[index].edges[2].sign)
+                if ((dualGrid_index & 0x01) == 0x01)
                 {
-
                     notSatisfy = false;
-                    notSatisfy |= dualGrid[index].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x) + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x) + sizeX * ((y + 1) + sizeY * (z + 1))].vertIndex == -1;
-                    notSatisfy |= dualGrid[x + sizeX * ((y) + sizeY * (z + 1))].vertIndex == -1;
+                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
 
                     if (!notSatisfy)
                     {
-                        indices.Add(dualGrid[index].vertIndex);
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))].vertIndex);
-                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
+                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
                     }
-
-
-
                 }
                 else
                 {
-
                     notSatisfy = false;
-                    notSatisfy |= dualGrid[index].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x) + sizeX * (y + sizeY * (z + 1))].vertIndex == -1;
-                    notSatisfy |= dualGrid[(x) + sizeX * ((y + 1) + sizeY * (z + 1))].vertIndex == -1;
-                    notSatisfy |= dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex == -1;
+                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
+                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF) == -1;
 
                     if (!notSatisfy)
                     {
-                        indices.Add(dualGrid[index].vertIndex);
-                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))].vertIndex);
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))].vertIndex); //these indices might be screwed up
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)].vertIndex);
+                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
                     }
                 }
             }
@@ -373,7 +414,7 @@ namespace DualContour
 
             int uSign = ((dir & 0x80) != 0) ? 1 : -1;
             int vSign = ((dir & 0x08) != 0) ? 1 : -1;
-            Vector3 uaxis = new Vector3(((dir >> 6) & 0x01), (dir >> 5) & 0x01, (dir >> 4) & 0x01) * (uSign);
+            Vector3 uaxis = new Vector3(((dir >> 6 & 0x7FFF) & 0x01), (dir >> 5) & 0x01, (dir >> 4) & 0x01) * (uSign);
             Vector3 vaxis = new Vector3(((dir >> 2) & 0x01), (dir >> 1) & 0x01, (dir) & 0x01) * (vSign);
             Vector3 wAxis = Vector3.Cross(vaxis, uaxis);
             float radius = CELL_SIZE / 2;
@@ -399,11 +440,9 @@ namespace DualContour
         private float function(Vector3 pos, float elevation)
         {
 
-            Vector3 step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
-            step *= (1f / (1 << LOD_Level));
-            step *= CELL_SIZE;
+           
             float domainWarp = simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
-            float cave = simplexNoise.CalcPixel3D(pos.x * 2, pos.y * 2, pos.z * 2) * elevation / (sizeY * 0.5f);
+            //float cave = simplexNoise.CalcPixel3D(pos.x * 2, pos.y * 2, pos.z * 2) * elevation / (sizeY * 0.5f);
 
             if (elevation >= sizeY - 1) { return -1; }
             if (elevation <= 1) { return 1; }
@@ -420,8 +459,6 @@ namespace DualContour
         //returns the interpolation t value for points x0 and x1 where sign(x0) != sign(x1)
         private float adapt(float x0, float x1)
         {
-            //Assert.IsTrue(x0 > 0 != x1 > 0);
-
             return (-x0) / (x1 - x0);
         }
     }

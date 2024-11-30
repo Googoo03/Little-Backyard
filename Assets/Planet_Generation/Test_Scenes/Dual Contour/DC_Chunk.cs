@@ -24,6 +24,10 @@ public class DC_Chunk : MonoBehaviour
     private Vector3[] normals;
     private Vector2[] uvs;
     private List<int> indices = new List<int>();
+    private UInt16[] voxel_data;
+
+    [SerializeField]private Texture3D tex;
+
     [SerializeField] private List<int> ind_serial_arr = new List<int>();
 
     //COMPUTE SHADER
@@ -41,6 +45,8 @@ public class DC_Chunk : MonoBehaviour
     [SerializeField] private Texture2D blueNoise;
     Stopwatch computeStopWatch = new Stopwatch();
 
+    /////////////////////////////////////////////////////
+
 
     //GPU Readbacks
     AsyncGPUReadbackRequest dualGridReadbackRequest;
@@ -49,10 +55,6 @@ public class DC_Chunk : MonoBehaviour
 
     private void Start()
     {
-        //Testing purposes
-        //ind_serial_arr = new int[4 * scale.x * scale.y * scale.z];
-
-
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
 
@@ -66,14 +68,32 @@ public class DC_Chunk : MonoBehaviour
 
         //Initialize and generate vertices and quads
         dc = new Dual_Contour(transform.position, scale, length, block_voxel);
-        dc.Generate(ref vertices, ref indices);
-        rend.material = mat;
+        dc.Generate(ref vertices, ref indices, ref voxel_data);
+
+        CreateDataTexture();
 
         stopwatch.Stop();
         UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
 
-        InitComputeShader();
+        mat.SetTexture("_VoxelData",tex);
+        rend.material = mat;
+
+        m.vertices = vertices.ToArray();
+        m.normals = normals;
+        m.uv = uvs;
+        m.SetIndices(indices, MeshTopology.Quads, 0);
+        m.RecalculateBounds();
+        m.RecalculateNormals();
     }
+
+    private void CreateDataTexture() {
+        tex = new Texture3D(scale.x, scale.y, scale.z, TextureFormat.R16, false);
+        tex.filterMode = FilterMode.Point;
+        tex.SetPixelData(voxel_data, 0, 0);
+        tex.Apply();
+    }
+
+
 
     private void InitComputeShader() {
 
@@ -97,19 +117,6 @@ public class DC_Chunk : MonoBehaviour
         blueNoise_Test = new RenderTexture(scale.x, scale.z, 0, RenderTextureFormat.RFloat) { enableRandomWrite = true };
         Graphics.Blit(blueNoise, blueNoise_Test);
         Graphics.SetRenderTarget(null);
-
-        /*Simplex.SetFloat("mountainStrength", 1f);
-        Simplex.SetFloat("persistance", 0.95f);
-        Simplex.SetFloat("lacunarity", 0.25f);
-        
-        Simplex.SetFloat("domainWarp", .0f);
-        Simplex.SetInt("octaves", 3);
-        Simplex.SetTexture(simplex_handle, "Result", blueNoise_Test);
-
-        Simplex.Dispatch(simplex_handle, scale.x, scale.y, 1);
-        AsyncGPUReadbackRequest simplexdone = AsyncGPUReadback.Request(blueNoise_Test);
-
-        //while (!simplexdone.done) { }*/
 
         DC_Compute.SetTexture(shaderHandle, "SimplexTex", blueNoise_Test);
 

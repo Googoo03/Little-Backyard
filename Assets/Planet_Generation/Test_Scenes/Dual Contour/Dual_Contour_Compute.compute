@@ -38,7 +38,7 @@ float function(float3 pos, float elevation, int3 index)
     
     float3 newInd = float3(pos.x / step.x, 0, pos.z / step.z);
 
-    float value = Ground - elevation + (SimplexTex[newInd.xz].r)*amplitude;
+    float value = Ground - elevation + (1.0 - abs((SimplexTex[newInd.xz].r))) * amplitude;
 
     return value;
 }
