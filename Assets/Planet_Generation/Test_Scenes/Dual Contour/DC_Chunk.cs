@@ -70,6 +70,11 @@ public class DC_Chunk : MonoBehaviour
         dc = new Dual_Contour(transform.position, scale, length, block_voxel);
         dc.Generate(ref vertices, ref indices, ref voxel_data);
 
+        uvs = new Vector2[vertices.Count];
+        for (int i = 0; i < vertices.Count; ++i) {
+            uvs[i] = new Vector2(vertices[i].x, vertices[i].z);
+        }
+
         CreateDataTexture();
 
         stopwatch.Stop();
@@ -80,10 +85,16 @@ public class DC_Chunk : MonoBehaviour
 
         m.vertices = vertices.ToArray();
         m.normals = normals;
+
+
+        //IF WE WANT TEXTURES, WE HAVE TO CALCULATE THE UVS MANUALLY
         m.uv = uvs;
+        ////////////////////////////////////////////////////////////
+
         m.SetIndices(indices, MeshTopology.Quads, 0);
         m.RecalculateBounds();
         m.RecalculateNormals();
+                
     }
 
     private void CreateDataTexture() {

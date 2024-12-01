@@ -107,17 +107,18 @@ namespace DualContour
                 {
                     for (int z = 0; z < sizeZ; ++z)
                     {
-                        //v_data[x + sizeX * (y + sizeY * z)] = (ushort)((x + sizeX * (y + sizeY * z)) % (65535));
                         InitializeCell(function,Grid,x,y,z);
                     }
                 }
             }
 
-            for (int x = 0; x < sizeX-1; ++x)
+
+            //This computes all the vertices except the edge cases (quite literally)
+            for (int x = 0; x < sizeX; ++x)
             {
-                for (int y = 0; y < sizeY-1; ++y)
+                for (int y = 0; y < sizeY; ++y)
                 {
-                    for (int z = 0; z < sizeZ-1; ++z)
+                    for (int z = 0; z < sizeZ; ++z)
                     {
                         dualGrid[x + sizeX * (y + sizeY * z)] = -1;
                         Find_Best_Vertex(x, y, z);
@@ -125,11 +126,11 @@ namespace DualContour
                 }
             }
 
-            for (int x = 0; x < sizeX - 2; ++x)
+            for (int x = 0; x < sizeX - 1; ++x)
             {
-                for (int y = 0; y < sizeY - 2; ++y)
+                for (int y = 0; y < sizeY - 1; ++y)
                 {
-                    for (int z = 0; z < sizeZ - 2; ++z)
+                    for (int z = 0; z < sizeZ - 1; ++z)
                     {
                         CreateQuad(x, y, z);
                     }
@@ -151,22 +152,19 @@ namespace DualContour
         {
             uint index = (uint)(x + sizeX * (y + sizeY * z));
 
-            //We have 8 vertices, and need to store them for later use
-            Vector3 pos = offset + new Vector3(x * step.x, y * step.y, z * step.z);
-
 
             float[] vertValues = new float[8];
             Vector3[] vertPos = new Vector3[8];
+
+            int xPos, yPos, zPos;
+
             for (int i = 0; i < 8; ++i)
             {
-                /*
-                vertPos[i] = spaceTransform(pos + new Vector3(step.x * ((i >> 2) & 0x01), step.y * ((i >> 1) & 0x01), step.z * (i & 0x01)), y + ((i & 2) == 2 ? 1 : 0));
-                vertValues[i] = f(global + vertPos[i], y + ((i & 2) == 2 ? 1 : 0));
-                */
-
-                vertPos[i] = cellpos[( (x + ((i >> 2) & 0x01)) + sizeX * ((y + ((i >> 1) & 0x01)) + sizeY * (z + (i & 0x01)) ) ) ];
-                vertValues[i] = cellvalues[((x + ((i >> 2) & 0x01)) + sizeX * ((y + ((i >> 1) & 0x01)) + sizeY * (z + (i & 0x01))))];
-
+                xPos = x == sizeX - 1 ? (x - ((i >> 2) & 0x01)) : (x + ((i >> 2) & 0x01));
+                yPos = y == sizeY - 1 ? (y - ((i >> 1) & 0x01)) : (y + ((i >> 1) & 0x01));
+                zPos = z == sizeZ - 1 ? (z - (i & 0x01)) : (z + (i & 0x01));
+                vertPos[i] = cellpos[( xPos + sizeX * (yPos + sizeY * zPos ) ) ];
+                vertValues[i] = cellvalues[(xPos + sizeX * (yPos + sizeY * zPos) ) ];
             }
             //calculate the adapt of only the edges that cross, rather than the whole thing
             //calculate the positions of the edges itself
@@ -268,7 +266,7 @@ namespace DualContour
             vertices.Add(vertex);
 
             //This should reference a biome texture and current elevation
-            UInt16 voxelData = (ushort)UnityEngine.Random.Range(0, 65535);
+            UInt16 voxelData = 0;// (ushort)UnityEngine.Random.Range(0, 65535);
             voxel_data[index] = (y <= Ground+2) ? (ushort)1 : (ushort)0;
 
             dualGrid[index] = (newedge | ((vertices.Count-1) << 6) | (voxelData << 21));
