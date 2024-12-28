@@ -6,6 +6,7 @@ using System.Diagnostics;
 using Simplex;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
+using UnityEditor.PackageManager.Requests;
 
 
 namespace DualContour
@@ -30,6 +31,13 @@ namespace DualContour
 
     };
 
+    enum BLOCKID : ushort { 
+        GRASS = 0,
+        STONE = 1,
+        COPPER_ORE = 2,
+        IRON_ORE = 3
+    }
+
 
     public class Dual_Contour
     {
@@ -49,6 +57,13 @@ namespace DualContour
         [SerializeField] private float CELL_SIZE;
 
         [SerializeField] private float Ground;
+
+        //Testing
+
+        [SerializeField] private GameObject cube;
+        public void setCube(GameObject c) {
+            cube = c;
+        }
 
         //GLOBAL VARS
         Vector3 step;
@@ -88,18 +103,45 @@ namespace DualContour
 
             //sets the offset of the grid by a power of two based on the LOD level
             offset = -Vector3.one * (1f / (1 << (LOD_Level + 1))) * (CELL_SIZE);
+
+            
         }
 
-        public void Generate(ref List<Vector3> verts, ref List<int> ind, ref UInt16[] v_data)
+        private float function(Vector3 pos, float elevation)
         {
-            //initialize both the dual grid and the vertex grid
-            dualGrid = new int[(sizeX) * (sizeY) * sizeZ];
+
+
+            float domainWarp = simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
+
+            if (elevation >= sizeY - 1) { return -1; }
+            if (elevation <= 1) { return 1; }
+
+            float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp))) * amplitude + Ground - elevation;
+
+            return value;
+        }
+
+        private ushort DetermineVoxelData(Vector3 pos, int elevation)
+        {
+            float oreVal = simplexNoise.CalcPixel3D(pos.x * 3, pos.y * 3, pos.z * 3) * 2f;
+            //Ground/Stone pass
+            BLOCKID val = BLOCKID.GRASS;
+            //These should include IDs for the given blocks by enumeration, rather than the plain ids themselves
+            val = elevation < Ground ? BLOCKID.STONE : BLOCKID.GRASS;
+
+            //Ore pass
+            val = oreVal > 0.8f && val == BLOCKID.STONE ? BLOCKID.COPPER_ORE : val;
+            val = oreVal < 0.3f && val == BLOCKID.STONE ? BLOCKID.IRON_ORE : val;
+
+            //Other passes once the time comes
+            return (ushort)val;
+        }
+
+        public void InitializeGrid() {
             cellpos = new Vector3[(sizeX) * (sizeY) * sizeZ];
             cellvalues = new float[(sizeX) * (sizeY) * sizeZ];
+            dualGrid = new int[(sizeX) * (sizeY) * sizeZ];
             voxel_data = new UInt16[(sizeX) * (sizeY) * sizeZ];
-
-            indices = ind;
-            vertices = verts;
 
             for (int x = 0; x < sizeX; ++x)
             {
@@ -107,10 +149,20 @@ namespace DualContour
                 {
                     for (int z = 0; z < sizeZ; ++z)
                     {
-                        InitializeCell(function,Grid,x,y,z);
+                        InitializeCell(function, Grid, x, y, z);
                     }
                 }
             }
+        }
+
+        public void Generate(ref List<Vector3> verts, ref List<int> ind, ref UInt16[] v_data)
+        {
+            //initialize both the dual grid and the vertex grid
+
+            indices = ind;
+            vertices = verts;
+
+            
 
 
             //This computes all the vertices except the edge cases (quite literally)
@@ -140,12 +192,46 @@ namespace DualContour
             v_data = voxel_data;
         }
 
+        public void UpdateDC(ref List<List<Vector3>> points) {
+            //Given a list of update points, that are assumed to be in range.
+
+            //Find the index of said points.
+            points.ForEach(item => {
+
+                Vector3 localPos = (item[0] - global - offset); //undo transformation to get grid position
+
+                if (item[0].y == 0) return;
+
+                int y = item[1].y < 0 ? Mathf.CeilToInt((localPos.y * (sizeY / CELL_SIZE))) : Mathf.FloorToInt((localPos.y * (sizeY / CELL_SIZE)));
+
+                int x = Mathf.RoundToInt((localPos.x * (sizeX / CELL_SIZE)));
+                int z = Mathf.RoundToInt((localPos.z * (sizeZ / CELL_SIZE)));
+
+                //cube.transform.position = new Vector3(x, y, z)+offset;
+                UpdateCellValueEntry(x, y, z);
+            });
+
+            //Change the corresponding dualgrid entries
+            //Add/remove vertex indices as necessary
+
+            //Reassign indices
+        }
+
+        private void UpdateCellValueEntry(int x, int y, int z) {
+            if (x < 0 || x > sizeX || y < 1 || y > sizeY || z < 0 || z > sizeZ) return;
+
+            cellvalues[(uint)(x + sizeX * (y + sizeY * z))] = -1;
+            //cant directly affect the dualgrid. Will lead to excess vertices.
+        }
+        //////////////////////////////////////////////////////////////////////////////
+
         private void InitializeCell(Func<Vector3, float, float> f, Func<Vector3, int, Vector3> spaceTransform, int x, int y, int z) {
             uint index = (uint)(x + sizeX * (y + sizeY * z));
             Vector3 pos = offset + new Vector3(x * step.x, y * step.y, z * step.z);
 
             cellpos[index] = spaceTransform(pos, y);
             cellvalues[index] = f(global + cellpos[index], y);
+            voxel_data[index] = (ushort)DetermineVoxelData(global + cellpos[index], y);
         }
 
         private void Find_Best_Vertex(int x, int y, int z)
@@ -267,7 +353,10 @@ namespace DualContour
 
             //This should reference a biome texture and current elevation
             UInt16 voxelData = 0;// (ushort)UnityEngine.Random.Range(0, 65535);
-            voxel_data[index] = (y <= Ground+2) ? (ushort)1 : (ushort)0;
+
+
+            //voxel data, if we want to add more functionality, should be determined by the noise function, not by the vertex function
+            //voxel_data[index] = (y <= Ground+2) ? (ushort)1 : (ushort)0;
 
             dualGrid[index] = (newedge | ((vertices.Count-1) << 6) | (voxelData << 21));
             
@@ -278,8 +367,6 @@ namespace DualContour
             int index = (int)(x + sizeX * (y + sizeY * z));
             int dualGrid_index = dualGrid[index];
 
-            bool notSatisfy;
-
             if (dualGrid_index == -1) return;
 
             if ((dualGrid_index & 0x20) == 0x20) //if edge[0].crossed
@@ -287,37 +374,20 @@ namespace DualContour
                 //Make a quad from neighboring x cells
                 if ((dualGrid_index & 0x10) == 0x10) //if edge[0].sign
                 {
-                    notSatisfy = false;
-                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF) == -1;
+                    
+                    indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
 
-                    if (!notSatisfy)
-                    {
-                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[(x + 1) + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
-                    }
-                    else { UnityEngine.Debug.Log(dualGrid[index].ToString()); }
                 }
                 else
                 {
-                    notSatisfy = false;
-                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[(x + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[((x + 1) + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[((x + 1) + sizeX * (y + sizeY * z))] >> 6 & 0x7FFF) == -1;
-
-                    if (!notSatisfy)
-                    {
-                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[(x + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[((x + 1) + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[((x + 1) + sizeX * (y + sizeY * z))] >> 6 & 0x7FFF);
-                    }
-                    else { UnityEngine.Debug.Log(dualGrid[index].ToString()); }
+                    
+                    indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[(x + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[((x + 1) + sizeX * ((y + 1) + sizeY * z))] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[((x + 1) + sizeX * (y + sizeY * z))] >> 6 & 0x7FFF);
 
                 }
             }
@@ -326,37 +396,18 @@ namespace DualContour
                 //Make a quad from neighboring y cells
                 if ((dualGrid_index & 0x04) == 0x04)
                 {
-                    notSatisfy = false;
-                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
-
-                    if (!notSatisfy)
-                    {
-                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
-                    }
-                    //else { UnityEngine.Debug.Log(dualGrid[index].ToString() + " pos"); }
+                    
+                    indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
                 }
                 else
                 {
-                    notSatisfy = false;
-                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= ((dualGrid[(x) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF)) == -1;
-                    notSatisfy |= ((dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF)) == -1;
-                    notSatisfy |= ((dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF)) == -1;
-
-                    if (!notSatisfy)
-                    {
-                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
-                        indices.Add((dualGrid[(x) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF));
-                        indices.Add((dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF));
-                        indices.Add((dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF));
-                    }
-                    else { UnityEngine.Debug.Log(dualGrid[index].ToString() + " neg"); }
+                    indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                    indices.Add((dualGrid[(x) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF));
+                    indices.Add((dualGrid[(x + 1) + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF));
+                    indices.Add((dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF));
 
                 }
             }
@@ -365,35 +416,17 @@ namespace DualContour
                 //Make a quad from neighboring z cells
                 if ((dualGrid_index & 0x01) == 0x01)
                 {
-                    notSatisfy = false;
-                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
-
-                    if (!notSatisfy)
-                    {
-                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
-                    }
+                    indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
                 }
                 else
                 {
-                    notSatisfy = false;
-                    notSatisfy |= (dualGrid[index] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF) == -1;
-                    notSatisfy |= (dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF) == -1;
-
-                    if (!notSatisfy)
-                    {
-                        indices.Add(dualGrid[index] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
-                    }
+                    indices.Add(dualGrid[index] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[x + sizeX * (y + sizeY * (z + 1))] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
                 }
             }
         }
@@ -435,23 +468,7 @@ namespace DualContour
         }
 
 
-        private float function(Vector3 pos, float elevation)
-        {
-
-           
-            float domainWarp = simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
-            //float cave = simplexNoise.CalcPixel3D(pos.x * 2, pos.y * 2, pos.z * 2) * elevation / (sizeY * 0.5f);
-
-            if (elevation >= sizeY - 1) { return -1; }
-            if (elevation <= 1) { return 1; }
-            //simplexNoise.setScale(0.005f + (elevation*step.y*0.1f));
-
-            //pos = (pos - global).normalized * CELL_SIZE / 2 + global;
-            float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp))) * amplitude + Ground - elevation;
-            //value = cave > 0.5f ? -1 : value;
-
-            return value;
-        }
+        
 
 
         //returns the interpolation t value for points x0 and x1 where sign(x0) != sign(x1)

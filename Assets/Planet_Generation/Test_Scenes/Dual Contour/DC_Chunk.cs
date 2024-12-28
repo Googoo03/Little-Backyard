@@ -16,10 +16,14 @@ public class DC_Chunk : MonoBehaviour
 
     [SerializeField] private Material mat;
 
+    //Test Cube
+    [SerializeField] private GameObject cube;
+
     //MESH DETAILS
     private Mesh m;
     private MeshFilter mf;
     private MeshRenderer rend;
+    private MeshCollider coll;
     private List<Vector3> vertices = new List<Vector3>();
     private Vector3[] normals;
     private Vector2[] uvs;
@@ -58,6 +62,16 @@ public class DC_Chunk : MonoBehaviour
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
 
+        dc = new Dual_Contour(transform.position, scale, length, block_voxel);
+        dc.setCube(cube);
+        dc.InitializeGrid();
+        GenerateDCMesh();
+
+        stopwatch.Stop();
+        UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
+    }
+
+    private void GenerateDCMesh() {
         if (!rend) rend = this.gameObject.AddComponent<MeshRenderer>();
 
 
@@ -66,21 +80,23 @@ public class DC_Chunk : MonoBehaviour
         if (m) m.Clear();
         m = mf.sharedMesh = new Mesh();
 
+        //Initialize vertex and indices lists
+        vertices.Clear();
+        indices.Clear();
+
         //Initialize and generate vertices and quads
-        dc = new Dual_Contour(transform.position, scale, length, block_voxel);
+        
         dc.Generate(ref vertices, ref indices, ref voxel_data);
 
         uvs = new Vector2[vertices.Count];
-        for (int i = 0; i < vertices.Count; ++i) {
+        for (int i = 0; i < vertices.Count; ++i)
+        {
             uvs[i] = new Vector2(vertices[i].x, vertices[i].z);
         }
 
         CreateDataTexture();
 
-        stopwatch.Stop();
-        UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
-
-        mat.SetTexture("_VoxelData",tex);
+        mat.SetTexture("_VoxelData", tex);
         rend.material = mat;
 
         m.vertices = vertices.ToArray();
@@ -94,7 +110,29 @@ public class DC_Chunk : MonoBehaviour
         m.SetIndices(indices, MeshTopology.Quads, 0);
         m.RecalculateBounds();
         m.RecalculateNormals();
-                
+
+        if (!coll)
+        {
+            coll = this.gameObject.AddComponent<MeshCollider>();
+        }
+        else {
+            coll.sharedMesh = null;
+            coll.sharedMesh = mf.sharedMesh;
+        }
+
+    }
+
+    public void UpdateChunk(ref List<List<Vector3>> points) {
+        //convert vector3 to local xyz vertex position
+
+        //add to changes list
+
+        //How should we assign changes?
+        //Should just be changing the index value. Simple, easy
+        //Should change the dual grid index
+        //Reassign indices
+        dc.UpdateDC(ref points);
+        GenerateDCMesh();
     }
 
     private void CreateDataTexture() {
@@ -112,7 +150,6 @@ public class DC_Chunk : MonoBehaviour
 
         verts = new ComputeBuffer(scale.x*scale.y*scale.z, sizeof(float) * 3);
         dualGrid = new ComputeBuffer(scale.x * scale.y * scale.z, sizeof(int));
-        //ind = new ComputeBuffer(scale.x * scale.y * scale.z * 4, sizeof(UInt32));
 
         int shaderHandle = DC_Compute.FindKernel("CSMain");
         int simplex_handle = Simplex.FindKernel("CSMain");
@@ -123,7 +160,6 @@ public class DC_Chunk : MonoBehaviour
         DC_Compute.SetVector("global", transform.position);
         DC_Compute.SetBuffer(shaderHandle, "dualGrid", dualGrid);
         DC_Compute.SetBool("block_voxel", block_voxel);
-        //DC_Compute.SetBuffer(shaderHandle, "indices", ind);
 
         blueNoise_Test = new RenderTexture(scale.x, scale.z, 0, RenderTextureFormat.RFloat) { enableRandomWrite = true };
         Graphics.Blit(blueNoise, blueNoise_Test);

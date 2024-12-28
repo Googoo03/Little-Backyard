@@ -281,7 +281,7 @@ Shader "Custom/Atmosphere_IE"
                         float3 startCloud = end_point;
                         //float cloudAlpha = 1.0;
 
-                        for(;tCloud < 5.0; tCloud += 1.0/15.0){
+                        for(;tCloud < 5.0; tCloud += 1.0/30.0){
                             //FIX THE NORMALIZE LOCATION. RIGHT NOW TCLOUD DOESNT DO ANYTHING
                             iterator++;
                             intersectionLine = normalize(ray_direction)*(tCloud+blueNoise) + start_point;

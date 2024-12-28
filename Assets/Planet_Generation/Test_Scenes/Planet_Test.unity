@@ -123,6 +123,51 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &104301786
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 104301788}
+  - component: {fileID: 104301787}
+  m_Layer: 0
+  m_Name: Wind_Manager_Test
+  m_TagString: Wind_Manager
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &104301787
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 104301786}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8115707a1bfbaf94888aa2b3d4998bda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  obj: {fileID: 0}
+--- !u!4 &104301788
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 104301786}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 23, y: 6, z: 13}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &190386628
 GameObject:
   m_ObjectHideFlags: 0
@@ -472,6 +517,51 @@ MonoBehaviour:
   - {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
+--- !u!1 &1529359888
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1529359890}
+  - component: {fileID: 1529359889}
+  m_Layer: 0
+  m_Name: Object_Manager_Test
+  m_TagString: Object_Manager
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1529359889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1529359888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8115707a1bfbaf94888aa2b3d4998bda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  obj: {fileID: 0}
+--- !u!4 &1529359890
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1529359888}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 23, y: 6, z: 13}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1602747725
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -527,7 +617,7 @@ PrefabInstance:
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: seed
-      value: 185487
+      value: 180644
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
@@ -557,7 +647,7 @@ PrefabInstance:
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
       propertyPath: planetType
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 114283037876710812, guid: b3e90b7f20da6fb43b4fec489ea0efa6,
         type: 3}
@@ -593,3 +683,5 @@ SceneRoots:
   m_Roots:
   - {fileID: 859598040}
   - {fileID: 1602747725}
+  - {fileID: 1529359890}
+  - {fileID: 104301788}

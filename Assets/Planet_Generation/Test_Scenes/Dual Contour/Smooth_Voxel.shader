@@ -1,18 +1,13 @@
-Shader "Custom/Voxel_Test"
+Shader "Custom/Smooth_Voxel"
 {
     Properties
     {
         _Color ("Color", Color) = (1,1,1,1)
-        _ColorSide ("Side Color", Color) = (1,1,1,1)
         _MainTex ("Albedo (RGB)", 2DArray) = "white" {}
-        _Tile ("Tiling", Vector) = (0,0,0,0)
-        _VoxelData ("Voxel Data", 3D) = "white" {}
-        _HeightMap ("Height Map", 2D) = "white" {}
         _Glossiness ("Smoothness", Range(0,1)) = 0.5
         _Metallic ("Metallic", Range(0,1)) = 0.0
-        _SeaLevel ("Sea Level", float) = 0
-        _Scale ("VoxelScale",float) = 0
-        _CELL_SIZE("Cell Size", float) = 0
+        _SideCol ("Side Color", Color) = (1,1,1,1)
+        _Tile ("Tiling", Vector) = (0,0,0,0)
     }
     SubShader
     {
@@ -21,12 +16,10 @@ Shader "Custom/Voxel_Test"
 
         CGPROGRAM
         // Physically based Standard lighting model, and enable shadows on all light types
-        #pragma surface surf Standard fullforwardshadows vertex:vert addshadow
-        #pragma target 3.5
-        #pragma require 2darray
+        #pragma surface surf Standard fullforwardshadows
 
-        #include "UnityCG.cginc"
-
+        // Use shader model 3.0 target, to get nicer looking lighting
+        #pragma target 3.0
 
         struct Input
         {
@@ -41,13 +34,11 @@ Shader "Custom/Voxel_Test"
             float2 uv_MainTex;
             INTERNAL_DATA
         };
+
+        half _Glossiness;
+        half _Metallic;
         fixed4 _Color;
-        sampler2D _HeightMap;
-        sampler3D _VoxelData;
-        fixed4 _ColorSide;
-        float _SeaLevel;
-        float _Scale;
-        float _CELL_SIZE;
+        fixed4 _SideCol;
 
         void vert(inout appdata_full vertexData, out Input o) {
 
@@ -59,7 +50,7 @@ Shader "Custom/Voxel_Test"
             //o.normal = vertexData.normal;
             o.vertPos = vertexData.vertex.xyz;//mul (unity_ObjectToWorld, vertexData.vertex).xyz;
             o.worldNormal = WorldNormalVector (IN, o.normal);
-            //o.uv = vertexData.texcoord.xy;
+
 
             float4 oVertex = UnityObjectToClipPos(vertexData.vertex);
 
@@ -74,24 +65,16 @@ Shader "Custom/Voxel_Test"
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
-            
+            // Albedo comes from a texture tinted by color
             float3 dpdx = ddx(IN.worldPos);
 	        float3 dpdy = ddy(IN.worldPos);
 	        IN.normal = normalize(cross(dpdy, dpdx));
 
-            float voxel = tex3D(_VoxelData,float3(0.5,0.5,0.5)+(IN.vertPos.xyz/_CELL_SIZE) * _Scale ).r * 65535;
-
-            //float4 col = voxel > 0 ? float4(1,1,0,1) : _Color;
-
-            //(IN.vertPos.xyz/_CELL_SIZE) * _Scale         ----This gives [-0.5, 0.5]. We want 0, dimension
-
-            float4 col = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3(IN.uv_MainTex * _Tile.xy, 2*voxel));
-            float4 col_side_x = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3((float2(0.5,0.5)+(IN.vertPos.xy/_CELL_SIZE * _Scale)) * 32, 2*voxel + 1));
-            float4 col_side_z = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3((float2(0.5,0.5)+(IN.vertPos.zy/_CELL_SIZE * _Scale)) * 32, 2*voxel + 1));
+            float4 col = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3(IN.uv_MainTex * _Tile.xy, 0));
 
             // Albedo comes from a texture tinted by color
             float dotProduct = max(dot(IN.normal,float3(0,1,0)),0);
-            fixed4 c = col * abs(IN.normal.y*IN.normal.y) + col_side_x * abs(IN.normal.z*IN.normal.z) + col_side_z * abs(IN.normal.x*IN.normal.x);//lerp(_ColorSide,col,pow(dotProduct,4));
+            fixed4 c = dotProduct > 0.5 ? col : _SideCol;
 
             o.Albedo = c.rgb;
         }
