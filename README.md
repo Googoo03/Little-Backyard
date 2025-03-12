@@ -24,4 +24,7 @@ One of the detailing features that I wanted in Little Backyard was the ability t
 
 This means the entire play space that the player can interact with must fit within floating point error boundaries. This puts a barrier on how large the planets can be without encountering either floating point errors or solar systems interfering with each other. There are ideas to get around this, but nothing of the sort has been implemented as of yet.
 
+### Demo Video
+
+[![Watch the Demo](https://github.com/user-attachments/assets/98fae1f5-7689-48ff-83c5-d8932e42e49e)](https://youtu.be/OuMUYvi9r6k)
 
