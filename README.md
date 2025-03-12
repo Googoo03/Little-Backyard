@@ -28,3 +28,9 @@ This means the entire play space that the player can interact with must fit with
 
 [![Watch the Demo](https://github.com/user-attachments/assets/98fae1f5-7689-48ff-83c5-d8932e42e49e)](https://youtu.be/OuMUYvi9r6k)
 
+### Looking Forward
+
+There is a significant bottleneck in game design, this being the 2D nature of the terrain. Because there is only a manipulated plane, there becomes no possibility of cave systems or overhangs. This can be remedied with a voxel engine, of which I have made a prototype in this following demo. After playing around with the shaders, I have realized there is potential for a secondary city-building game that surrounds this mechanic. Future updates regarding this algorithm will follow soon.
+
+[![Watch the Demo](https://github.com/user-attachments/assets/65b60358-30e5-41e5-b924-347026c8f37b)](https://youtu.be/EpPYONP5dHw)
+
