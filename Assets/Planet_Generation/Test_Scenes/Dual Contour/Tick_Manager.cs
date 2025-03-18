@@ -1,7 +1,10 @@
 using DualContour;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using chunk_events;
+using System;
 
 public class Tick_Manager : MonoBehaviour
 {
@@ -9,10 +12,21 @@ public class Tick_Manager : MonoBehaviour
     private float elapsedTime = 0.0f;
 
     //Testing
-    [SerializeField] private DC_Chunk chunk;
+    [SerializeField] private List<DC_Chunk> chunks;
+    [SerializeField ]private Dictionary<int,int> chunk_hashmap = new Dictionary<int,int>();
 
     //Event queue
-    private Queue<List<Vector3>> events = new Queue<List<Vector3>>();
+    private Queue<chunk_event> events = new Queue<chunk_event>();
+
+    private void Start()
+    {
+        for (int i = 0; i < chunks.Count; ++i)
+        {
+            var item = chunks[i];
+            chunk_hashmap.Add(item.GetInstanceID(), i);
+        }
+    }
+
 
     // Update is called once per frame
     void Update()
@@ -21,19 +35,41 @@ public class Tick_Manager : MonoBehaviour
         if (elapsedTime >= timeToNextFrame) Tick();
     }
 
-    public void pushEvent(List<Vector3> ev) {
+    public void pushEvent(chunk_event ev) {
         events.Enqueue(ev);
     }
 
     private void Tick() {
-        //chunk.
-        List<List<Vector3>> points = new List<List<Vector3>>();
 
-        while (events.Count > 0)
-        {
-            List<Vector3> currentEvent = events.Dequeue();
-            points.Add(currentEvent);
+
+        List<chunk_event> points = events.ToList();
+
+        if (points.Count == 0) return;
+
+        points.Sort((chunk_event a, chunk_event b) => a.id.CompareTo(b.id));
+
+        //2 pointer trick
+        int begin = 0;
+        int i = chunk_hashmap[points.ElementAt(0).id];//points.ElementAt(0).id;
+        int end = 0;
+
+        //need a way to identify which chunk we're clicking on.
+        while (end < points.Count) {
+            if (points.ElementAt(end).id != points.ElementAt(begin).id || end == points.Count-1) {
+                List<chunk_event> subevent = points.GetRange(begin, end == points.Count-1 ? end-begin : (end-1)-begin);
+                chunks[i].UpdateChunk(ref subevent);
+
+                begin = end;
+                i = chunk_hashmap[points.ElementAt(begin).id];
+            }
+            end++;
         }
-        if(points.Count > 0) chunk.UpdateChunk(ref points);
+        //right now we have a list of events and which chunk we're in. We should sort based on id.
+        //Then have points be a list of events tied to a specific chunk, then update all at once.
+        events.Clear();
+    }
+
+    public int findChunk(int id) {
+        return chunks.Find(i => i.transform.GetInstanceID() == id).GetInstanceID();
     }
 }

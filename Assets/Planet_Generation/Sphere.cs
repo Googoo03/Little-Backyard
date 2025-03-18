@@ -102,6 +102,10 @@ public class Sphere : MonoBehaviour
     private void Update()
     {
         //////////THIS AND THE UPDATE FUNCTION ARE ONLY FOR TESTING PURPOSES, MEANT TO BE REMOVED LATER
+        ///
+        if (Input.GetKeyDown(KeyCode.DownArrow)) prevLOD = true;
+        if (Input.GetKeyDown(KeyCode.UpArrow)) nextLOD= true;
+
         if (nextLOD)
         {
             nextLODLevel();
@@ -169,7 +173,7 @@ public class Sphere : MonoBehaviour
 
         //create all 6 sides of the sphere-cube
         Vector2Int xyVert = new Vector2Int(xVertCount, yVertCount);
-        initialDistanceThreshold = 2 * radius;
+        initialDistanceThreshold = 4 * radius;
         patches = new PatchConfig[]
         {
          new PatchConfig("top", Vector3.right, Vector3.forward,0, Vector2.zero,xyVert,transform.gameObject,initialDistanceThreshold,radius, Vector2.zero),

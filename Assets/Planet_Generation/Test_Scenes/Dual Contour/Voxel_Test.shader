@@ -79,8 +79,8 @@ Shader "Custom/Voxel_Test"
 	        float3 dpdy = ddy(IN.worldPos);
 	        IN.normal = normalize(cross(dpdy, dpdx));
 
-            float voxel = tex3D(_VoxelData,float3(0.5,0.5,0.5)+(IN.vertPos.xyz/_CELL_SIZE) * _Scale ).r * 65535;
-
+            float voxel = tex3D(_VoxelData,float3(0.5,0.5,0.5)+(IN.vertPos.xyz/_CELL_SIZE) * _Scale).r * 65535;
+            //voxel = (int)voxel == 15 ? tex3D(_VoxelData,float3(0.5,0.5,0.5)+(IN.vertPos.xyz/_CELL_SIZE) * _Scale ).r * 65535 : voxel;
             //float4 col = voxel > 0 ? float4(1,1,0,1) : _Color;
 
             //(IN.vertPos.xyz/_CELL_SIZE) * _Scale         ----This gives [-0.5, 0.5]. We want 0, dimension

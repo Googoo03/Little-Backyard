@@ -7,6 +7,7 @@ using Simplex;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEditor.PackageManager.Requests;
+using chunk_events;
 
 
 namespace DualContour
@@ -35,7 +36,8 @@ namespace DualContour
         GRASS = 0,
         STONE = 1,
         COPPER_ORE = 2,
-        IRON_ORE = 3
+        IRON_ORE = 3,
+        AIR = 15
     }
 
 
@@ -121,12 +123,17 @@ namespace DualContour
             return value;
         }
 
-        private ushort DetermineVoxelData(Vector3 pos, int elevation)
+        private ushort DetermineVoxelData(Vector3 pos, int x,int elevation,int z)
         {
             float oreVal = simplexNoise.CalcPixel3D(pos.x * 3, pos.y * 3, pos.z * 3) * 2f;
             //Ground/Stone pass
-            BLOCKID val = BLOCKID.GRASS;
+            BLOCKID val;
             //These should include IDs for the given blocks by enumeration, rather than the plain ids themselves
+            float cellvalue = cellvalues[x + sizeX * (elevation + sizeY * z)];
+
+            val = cellvalue > 0 ? BLOCKID.STONE : BLOCKID.AIR;
+            if (val == BLOCKID.AIR) return (ushort)val;
+
             val = elevation < Ground ? BLOCKID.STONE : BLOCKID.GRASS;
 
             //Ore pass
@@ -192,17 +199,17 @@ namespace DualContour
             v_data = voxel_data;
         }
 
-        public void UpdateDC(ref List<List<Vector3>> points) {
+        public void UpdateDC(ref List<chunk_event> points) {
             //Given a list of update points, that are assumed to be in range.
 
             //Find the index of said points.
             points.ForEach(item => {
 
-                Vector3 localPos = (item[0] - global - offset); //undo transformation to get grid position
+                Vector3 localPos = (item.position - global - offset); //undo transformation to get grid position
 
-                if (item[0].y == 0) return;
+                if (item.position.y == 0) return;
 
-                int y = item[1].y < 0 ? Mathf.CeilToInt((localPos.y * (sizeY / CELL_SIZE))) : Mathf.FloorToInt((localPos.y * (sizeY / CELL_SIZE)));
+                int y = item.position.y < 0 ? Mathf.CeilToInt((localPos.y * (sizeY / CELL_SIZE))) : Mathf.FloorToInt((localPos.y * (sizeY / CELL_SIZE)));
 
                 int x = Mathf.RoundToInt((localPos.x * (sizeX / CELL_SIZE)));
                 int z = Mathf.RoundToInt((localPos.z * (sizeZ / CELL_SIZE)));
@@ -231,7 +238,7 @@ namespace DualContour
 
             cellpos[index] = spaceTransform(pos, y);
             cellvalues[index] = f(global + cellpos[index], y);
-            voxel_data[index] = (ushort)DetermineVoxelData(global + cellpos[index], y);
+            voxel_data[index] = (ushort)DetermineVoxelData(global + cellpos[index], x,y,z);
         }
 
         private void Find_Best_Vertex(int x, int y, int z)

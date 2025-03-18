@@ -222,7 +222,7 @@ public class PatchLOD {
             distance = Vector3.Distance(node.position, playerPos);
             float dotProduct = Vector3.Dot((node.position - node.patchConfig.planetObject.transform.position).normalized, (playerPos- node.patchConfig.planetObject.transform.position).normalized);
 
-            if (distance < (node.patchConfig.distanceThreshold) &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD && dotProduct > -0.5f)
+            if (distance < (node.patchConfig.distanceThreshold) &&  node.patchConfig.LODlevel < node.patchConfig.maxLOD/* && dotProduct > -0.5f*/)
             {
                 node.nextLOD();
             }else if (node.parent != null && distance > (2*node.parent.patchConfig.distanceThreshold) ) //if distance between player and patch is too large

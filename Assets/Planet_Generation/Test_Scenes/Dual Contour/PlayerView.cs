@@ -1,3 +1,4 @@
+using chunk_events;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -108,10 +109,15 @@ public class PlayerView : MonoBehaviour
                 testCubePosition = hit.point;
                 
             }
+            //Find chunk for hit
+            int _id = hit.transform ? hit.transform.GetComponent<DC_Chunk>().GetInstanceID() : 0;
+            //int chunk_index = tickManager.findChunk(_id);
 
             if (dig_mode == DIG_MODE.FLATTEN && hit.point.y < (int)start_dig_pos.y) return;
 
-            tickManager.pushEvent(new List<Vector3> { hit.point, hit.normal });
+
+
+            tickManager.pushEvent(new chunk_event(hit.point,_id) );
             testCube.transform.position = testCubePosition;
             testCube.transform.forward = hit.normal;
         }

@@ -354,6 +354,9 @@ public abstract class GeneratePlane : MonoBehaviour
             for (int j = 0; j < temp_foliage_objs.Count; ++j)
             { //add the tree positions and subsequent rotations to the matrix buffer
 
+                //if (mesh_list[i].landOnly && foliage_positions[j] < patch.planetObject.GetComponent<Sphere>().ge) continue;
+
+
                 Vector3 lookVec = foliage_positions[j];
                 Quaternion rot = Quaternion.LookRotation(lookVec);
                 Vector3 sca = Vector3.one * .02f;

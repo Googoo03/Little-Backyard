@@ -13,8 +13,9 @@ using UnityEngine;
     [SerializeField] public int poissonK;
     [SerializeField] public int poissonNum;
     [SerializeField] public int poissonRadius;
+    [SerializeField] public bool landOnly;
 
-    public mesh_pair(Mesh _mesh, Material _mat, Resource_Preset _resource, int _k, int _num, int _radius)
+    public mesh_pair(Mesh _mesh, Material _mat, Resource_Preset _resource, int _k, int _num, int _radius, bool _landOnly)
     { 
         mesh = _mesh;
         mat = _mat;
@@ -22,6 +23,7 @@ using UnityEngine;
         poissonK = _k;
         poissonNum = _num;
         poissonRadius = _radius;
+        landOnly = _landOnly;
     }
 }
 

@@ -89,7 +89,7 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _HaloColor: {r: 0.625, g: 0.453125, b: 0.1796875, a: 0.39453125}
+    - _HaloColor: {r: 0.09765625, g: 0.26171875, b: 0.28125, a: 0.03515625}
     - _SolarSystemNormal: {r: 0, g: 1, b: 0, a: 0}
-    - _SunPos: {r: 484.61182, g: 11.11837, b: -122.58797, a: 0}
+    - _SunPos: {r: -433.59924, g: -42.684006, b: 245.29527, a: 0}
   m_BuildTextureStacks: []

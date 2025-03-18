@@ -6,10 +6,13 @@ using DualContour;
 using System;
 using UnityEngine.Rendering;
 using Unity.Collections;
+using Poisson;
+using chunk_events;
 
 public class DC_Chunk : MonoBehaviour
 {
     private Dual_Contour dc;
+    private PoissonDisc pois;
     [SerializeField] private Vector3Int scale; //how much voxel resolution each chunk receives
     [SerializeField] private int length; //how long in units each chunk is
     [SerializeField] private bool block_voxel;
@@ -18,6 +21,7 @@ public class DC_Chunk : MonoBehaviour
 
     //Test Cube
     [SerializeField] private GameObject cube;
+    [SerializeField] private GameObject tree_obj;
 
     //MESH DETAILS
     private Mesh m;
@@ -30,7 +34,11 @@ public class DC_Chunk : MonoBehaviour
     private List<int> indices = new List<int>();
     private UInt16[] voxel_data;
 
+    //Voxel Data
     [SerializeField]private Texture3D tex;
+
+    //Tree Data
+    [SerializeField] private List<Vector3> tree_pos;
 
     [SerializeField] private List<int> ind_serial_arr = new List<int>();
 
@@ -65,10 +73,32 @@ public class DC_Chunk : MonoBehaviour
         dc = new Dual_Contour(transform.position, scale, length, block_voxel);
         dc.setCube(cube);
         dc.InitializeGrid();
+        pois = new PoissonDisc();
+        pois.generatePoissonDisc(ref tree_pos, 3, 20, 31, 31, 4);
+        
+
         GenerateDCMesh();
+        GenerateFoliage();
 
         stopwatch.Stop();
         UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
+    }
+
+    private void GenerateFoliage() {
+        tree_pos.ForEach(pos => {
+            Instantiate(tree_obj, transform.position + new Vector3( pos.x, FindSurface(pos),pos.z) - (scale/2), Quaternion.identity);
+        });
+    }
+
+    private int FindSurface(Vector3 pos) {
+        int y = scale.y-1;
+        while (y > 0) {
+            int index = (int)pos.x + scale.x * (y + scale.y * (int)pos.z);
+            
+            if (voxel_data[index] != 15) return y;
+            y--;
+        }
+        return 0;
     }
 
     private void GenerateDCMesh() {
@@ -122,7 +152,7 @@ public class DC_Chunk : MonoBehaviour
 
     }
 
-    public void UpdateChunk(ref List<List<Vector3>> points) {
+    public void UpdateChunk(ref List<chunk_event> points) {
         //convert vector3 to local xyz vertex position
 
         //add to changes list
