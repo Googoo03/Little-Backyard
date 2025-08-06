@@ -63,9 +63,6 @@ namespace DualContour
         //Testing
 
         [SerializeField] private GameObject cube;
-        public void setCube(GameObject c) {
-            cube = c;
-        }
 
         //GLOBAL VARS
         Vector3 step;
@@ -87,25 +84,42 @@ namespace DualContour
         //
         private Vector3 global;
 
-        public Dual_Contour(Vector3 _global, Vector3Int scale, int length, bool mode) {
+        //EDIT VARS
+        private float radius;
+
+        //helper variables to speed up vertex placement
+        float[] vertValues = new float[8];
+        Vector3[] vertPos = new Vector3[8];
+        Func<Vector3, int, Vector3> coordTransformFunction;
+
+
+
+        public Dual_Contour(Vector3 _global, Vector3Int scale, Vector3 ioffset, int ilodLevel, int length, bool mode, float iradius, int idir) {
             global = _global;
             sizeX = scale.x;
             sizeY = scale.y;
             sizeZ = scale.z;
             CELL_SIZE = length;
-            LOD_Level = 0;
+            LOD_Level = ilodLevel;
             Ground = 2;
             amplitude = 5;
             block_voxel = mode;
+            radius = iradius;
+            dir = idir;
+            coordTransformFunction = Grid;
 
             //determines the "step" between vertices to cover 1 unit total
             step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
             step *= (1f / (1 << LOD_Level));
             step *= CELL_SIZE;
+            
 
             //sets the offset of the grid by a power of two based on the LOD level
-            offset = -Vector3.one * (1f / (1 << (LOD_Level + 1))) * (CELL_SIZE);
-
+            //offset = -Vector3.one * (1f / (1 << (LOD_Level + 1))) * (CELL_SIZE);
+            offset = -Vector3.one * CELL_SIZE * 0.5f;
+            offset.x += ioffset.x * CELL_SIZE;
+            offset.y += ioffset.y * CELL_SIZE;
+            offset.z += ioffset.z * CELL_SIZE;
             
         }
 
@@ -118,10 +132,12 @@ namespace DualContour
             if (elevation >= sizeY - 1) { return -1; }
             if (elevation <= 1) { return 1; }
 
-            float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp))) * amplitude + Ground - elevation;
+            float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp))) * amplitude + Ground - pos.y;
 
             return value;
         }
+
+        ///INITIALIZE GRID INFORMATION UPON STARTUP/----------------------------------------------------------------------------
 
         private ushort DetermineVoxelData(Vector3 pos, int x,int elevation,int z)
         {
@@ -144,6 +160,21 @@ namespace DualContour
             return (ushort)val;
         }
 
+
+
+        private void InitializeCell(Func<Vector3, float, float> f, Func<Vector3, int, Vector3> spaceTransform, int x, int y, int z)
+        {
+            uint index = (uint)(x + sizeX * (y + sizeY * z));
+            Vector3 pos = offset + new Vector3(x * step.x, y * step.y, z * step.z);
+
+            cellpos[index] = coordTransformFunction(pos, y);
+            cellvalues[index] = f(global + cellpos[index], y);
+            voxel_data[index] = (ushort)DetermineVoxelData(global + cellpos[index], x, y, z);
+        }
+
+
+
+
         public void InitializeGrid() {
             cellpos = new Vector3[(sizeX) * (sizeY) * sizeZ];
             cellvalues = new float[(sizeX) * (sizeY) * sizeZ];
@@ -156,99 +187,107 @@ namespace DualContour
                 {
                     for (int z = 0; z < sizeZ; ++z)
                     {
-                        InitializeCell(function, Grid, x, y, z);
+                        InitializeCell(function, CartesianToSphere, x, y, z);
                     }
                 }
             }
         }
 
-        public void Generate(ref List<Vector3> verts, ref List<int> ind, ref UInt16[] v_data)
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+        public void Generate(ref List<Vector3> verts, ref List<int> ind, ref UInt16[] v_data, ref int vert_index, ref int ind_index)
         {
             //initialize both the dual grid and the vertex grid
 
             indices = ind;
             vertices = verts;
+            int index = 0;
 
-            
 
 
             //This computes all the vertices except the edge cases (quite literally)
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            //int vert_index = 0;
             for (int x = 0; x < sizeX; ++x)
             {
                 for (int y = 0; y < sizeY; ++y)
                 {
                     for (int z = 0; z < sizeZ; ++z)
                     {
-                        dualGrid[x + sizeX * (y + sizeY * z)] = -1;
-                        Find_Best_Vertex(x, y, z);
+                        index = x + sizeX * (y + sizeY * z);
+                        dualGrid[index] = -1;
+
+                        Find_Best_Vertex(x, y, z,index, ref vert_index);
                     }
                 }
             }
+            stopwatch.Stop();
+            UnityEngine.Debug.Log("Vertices took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
 
+            stopwatch.Reset();
+            stopwatch.Start();
             for (int x = 0; x < sizeX - 1; ++x)
             {
                 for (int y = 0; y < sizeY - 1; ++y)
                 {
                     for (int z = 0; z < sizeZ - 1; ++z)
                     {
-                        CreateQuad(x, y, z);
+                        CreateQuad(x, y, z, ref ind_index);
                     }
                 }
             }
+            stopwatch.Stop ();
+            UnityEngine.Debug.Log("Indices took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
 
             v_data = voxel_data;
         }
 
-        public void UpdateDC(ref List<chunk_event> points) {
+        public void UpdateVoxelData(ref List<chunk_event> points) {
             //Given a list of update points, that are assumed to be in range.
+
+            Vector3 localPos;
+            Vector3 currentCellPos;
 
             //Find the index of said points.
             points.ForEach(item => {
 
-                Vector3 localPos = (item.position - global - offset); //undo transformation to get grid position
+                localPos = (item.position - global - offset); //undo transformation to get grid position
+                
 
                 if (item.position.y == 0) return;
 
-                int y = item.position.y < 0 ? Mathf.CeilToInt((localPos.y * (sizeY / CELL_SIZE))) : Mathf.FloorToInt((localPos.y * (sizeY / CELL_SIZE)));
-
-                int x = Mathf.RoundToInt((localPos.x * (sizeX / CELL_SIZE)));
-                int z = Mathf.RoundToInt((localPos.z * (sizeZ / CELL_SIZE)));
-
-                //cube.transform.position = new Vector3(x, y, z)+offset;
-                UpdateCellValueEntry(x, y, z);
+                for (int x = 0; x < sizeX; ++x)
+                {
+                    for (int y = 0; y < sizeY; ++y)
+                    {
+                        for (int z = 0; z < sizeZ; ++z)
+                        {
+                            currentCellPos = cellpos[(x + sizeX * (y + sizeY * z))] - offset;
+                            if ((localPos - currentCellPos).magnitude < radius)
+                            {
+                                UpdateCellValueEntry(x, y, z);
+                            }
+                        }
+                    }
+                }
             });
-
-            //Change the corresponding dualgrid entries
-            //Add/remove vertex indices as necessary
-
-            //Reassign indices
         }
 
         private void UpdateCellValueEntry(int x, int y, int z) {
             if (x < 0 || x > sizeX || y < 1 || y > sizeY || z < 0 || z > sizeZ) return;
 
             cellvalues[(uint)(x + sizeX * (y + sizeY * z))] = -1;
-            //cant directly affect the dualgrid. Will lead to excess vertices.
         }
         //////////////////////////////////////////////////////////////////////////////
 
-        private void InitializeCell(Func<Vector3, float, float> f, Func<Vector3, int, Vector3> spaceTransform, int x, int y, int z) {
-            uint index = (uint)(x + sizeX * (y + sizeY * z));
-            Vector3 pos = offset + new Vector3(x * step.x, y * step.y, z * step.z);
+       
 
-            cellpos[index] = spaceTransform(pos, y);
-            cellvalues[index] = f(global + cellpos[index], y);
-            voxel_data[index] = (ushort)DetermineVoxelData(global + cellpos[index], x,y,z);
-        }
-
-        private void Find_Best_Vertex(int x, int y, int z)
+        private void Find_Best_Vertex(int x, int y, int z, int index,ref int vert_index)
         {
-            uint index = (uint)(x + sizeX * (y + sizeY * z));
-
-
-            float[] vertValues = new float[8];
-            Vector3[] vertPos = new Vector3[8];
-
             int xPos, yPos, zPos;
 
             for (int i = 0; i < 8; ++i)
@@ -327,7 +366,7 @@ namespace DualContour
                 }
             }
 
-            avg /= count > 1 ? count : 1;//Mathf.Max(1, count);
+            avg /= count > 1 ? count : 1;
 
             //figure out what edge was crossed (axis)
 
@@ -357,19 +396,16 @@ namespace DualContour
             Vector3 vertex = block_voxel ? vertPos[0] : avg;
 
             vertices.Add(vertex);
+            vert_index++;
 
             //This should reference a biome texture and current elevation
-            UInt16 voxelData = 0;// (ushort)UnityEngine.Random.Range(0, 65535);
-
-
-            //voxel data, if we want to add more functionality, should be determined by the noise function, not by the vertex function
-            //voxel_data[index] = (y <= Ground+2) ? (ushort)1 : (ushort)0;
+            UInt16 voxelData = 0;
 
             dualGrid[index] = (newedge | ((vertices.Count-1) << 6) | (voxelData << 21));
             
         }
 
-        void CreateQuad(int x, int y, int z)
+        void CreateQuad(int x, int y, int z, ref int ind_index)
         {
             int index = (int)(x + sizeX * (y + sizeY * z));
             int dualGrid_index = dualGrid[index];
@@ -397,6 +433,7 @@ namespace DualContour
                     indices.Add(dualGrid[((x + 1) + sizeX * (y + sizeY * z))] >> 6 & 0x7FFF);
 
                 }
+                ind_index += 4;
             }
             if ((dualGrid_index & 0x08) == 0x08)
             {
@@ -417,6 +454,7 @@ namespace DualContour
                     indices.Add((dualGrid[(x + 1) + sizeX * (y + sizeY * z)] >> 6 & 0x7FFF));
 
                 }
+                ind_index += 4;
             }
             if ((dualGrid_index & 0x02) == 0x02)
             {
@@ -435,17 +473,23 @@ namespace DualContour
                     indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * (z + 1))] >> 6 & 0x7FFF);
                     indices.Add(dualGrid[x + sizeX * ((y + 1) + sizeY * z)] >> 6 & 0x7FFF);
                 }
+                ind_index += 4;
             }
         }
 
         private Vector3 Grid(Vector3 pos, int elevation) { return pos; }
+
+
+        public Vector3 FindTransformedCoord(Vector3 pos, int elevation) {
+            return coordTransformFunction(pos, elevation);
+        }
 
         private Vector3 CartesianToSphere(Vector3 pos, int elevation)
         {
 
             //Given a grid position, convert the point into a shell point
             //dir contains the u and v direction, which are masks for the x and z positions.
-            Vector3 step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
+            Vector3 step = new Vector3(1f / (sizeX-1), 1f / (sizeY-1), 1f / (sizeZ - 1));
             step *= (1f / (1 << LOD_Level));
             step *= CELL_SIZE;
 
@@ -458,30 +502,23 @@ namespace DualContour
             float radius = CELL_SIZE / 2;
 
             //no idea why the step.x / 2. Why would it need to be pushed back half a unit? BECAUSE THE QUADS ARE CENTERED BY DEFAULT
-            Vector3 newpos = uaxis * pos.x + vaxis * pos.z + wAxis * (radius - step.x / 2);
+            Vector3 newpos = uaxis * pos.x + vaxis * pos.z + wAxis * (radius - step.y / 2);
 
             return newpos.normalized * (radius + (elevation * step.y));
-            //return newpos;
-
         }
 
         private Vector3 ShellElevate(Vector3 pos)
         {
-            //simplexNoise.Seed = 1642;
-            // Vector3 newpos = new Vector3 (pos.x,pos.y+ simplexNoise.CalcPixel3D(pos.x / 5, 0, pos.z / 5)*1, pos.z);
-            //Assert.IsTrue(newpos.x != 0);
             Vector3 newpos = new Vector3(pos.x, pos.y + simplexNoise.CalcPixel3D((global.x + pos.x) / 2, 0, (global.z + pos.z) / 2) * 20, pos.z);
             return newpos;
         }
 
 
-        
+
 
 
         //returns the interpolation t value for points x0 and x1 where sign(x0) != sign(x1)
-        private float adapt(float x0, float x1)
-        {
-            return (-x0) / (x1 - x0);
-        }
+
+        float adapt(float x0, float x1) => (-x0) / (x1 - x0);
     }
 }

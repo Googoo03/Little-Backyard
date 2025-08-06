@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace chunk_events {
+
+
     public struct chunk_event
     {
         public Vector3 position;

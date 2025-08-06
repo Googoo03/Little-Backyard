@@ -50,7 +50,7 @@ public class Tick_Manager : MonoBehaviour
 
         //2 pointer trick
         int begin = 0;
-        int i = chunk_hashmap[points.ElementAt(0).id];//points.ElementAt(0).id;
+        int i = chunk_hashmap[points.ElementAt(0).id];
         int end = 0;
 
         //need a way to identify which chunk we're clicking on.

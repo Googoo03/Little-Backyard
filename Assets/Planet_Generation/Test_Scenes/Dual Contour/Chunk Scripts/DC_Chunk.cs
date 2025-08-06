@@ -9,6 +9,8 @@ using Unity.Collections;
 using Poisson;
 using chunk_events;
 
+using QuadTree;
+
 public class DC_Chunk : MonoBehaviour
 {
     private Dual_Contour dc;
@@ -16,6 +18,8 @@ public class DC_Chunk : MonoBehaviour
     [SerializeField] private Vector3Int scale; //how much voxel resolution each chunk receives
     [SerializeField] private int length; //how long in units each chunk is
     [SerializeField] private bool block_voxel;
+    [SerializeField] private float editRadius;
+    [SerializeField] private int dir;
 
     [SerializeField] private Material mat;
 
@@ -36,6 +40,7 @@ public class DC_Chunk : MonoBehaviour
 
     //Voxel Data
     [SerializeField]private Texture3D tex;
+    [SerializeField] private ChunkConfig chunkConfig;
 
     //Tree Data
     [SerializeField] private List<Vector3> tree_pos;
@@ -67,26 +72,37 @@ public class DC_Chunk : MonoBehaviour
 
     private void Start()
     {
+        
+
+
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
 
-        dc = new Dual_Contour(transform.position, scale, length, block_voxel);
-        dc.setCube(cube);
+        scale = chunkConfig.scale;
+
+        dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
         dc.InitializeGrid();
         pois = new PoissonDisc();
         pois.generatePoissonDisc(ref tree_pos, 3, 20, 31, 31, 4);
         
 
         GenerateDCMesh();
-        GenerateFoliage();
+        //GenerateFoliage();
 
         stopwatch.Stop();
         UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
     }
 
     private void GenerateFoliage() {
+
+        Vector3 treePos = Vector3.zero;
         tree_pos.ForEach(pos => {
-            Instantiate(tree_obj, transform.position + new Vector3( pos.x, FindSurface(pos),pos.z) - (scale/2), Quaternion.identity);
+            treePos = new Vector3(pos.x, FindSurface(pos), pos.z) - (scale / 2);
+            treePos = dc.FindTransformedCoord(treePos, (int)treePos.y + (scale.y / 2));
+            GameObject tree = Instantiate(tree_obj, transform.position + treePos, Quaternion.identity);
+
+            //have each tree looking outward from the surface
+            tree.transform.up = treePos - transform.position;
         });
     }
 
@@ -102,6 +118,8 @@ public class DC_Chunk : MonoBehaviour
     }
 
     private void GenerateDCMesh() {
+
+        //REASSIGN MESH RENDERING COMPONENTS.
         if (!rend) rend = this.gameObject.AddComponent<MeshRenderer>();
 
 
@@ -109,14 +127,21 @@ public class DC_Chunk : MonoBehaviour
 
         if (m) m.Clear();
         m = mf.sharedMesh = new Mesh();
+        //////////////////////////////////////
 
         //Initialize vertex and indices lists
+        
+
         vertices.Clear();
+        vertices.Capacity = scale.x*scale.y*scale.z;
+
         indices.Clear();
+        indices.Capacity = 4*scale.x * scale.y * scale.z;
 
         //Initialize and generate vertices and quads
-        
-        dc.Generate(ref vertices, ref indices, ref voxel_data);
+        int vert_index = 0;
+        int ind_index = 0;
+        dc.Generate(ref vertices, ref indices, ref voxel_data, ref vert_index, ref ind_index);
 
         uvs = new Vector2[vertices.Count];
         for (int i = 0; i < vertices.Count; ++i)
@@ -153,15 +178,7 @@ public class DC_Chunk : MonoBehaviour
     }
 
     public void UpdateChunk(ref List<chunk_event> points) {
-        //convert vector3 to local xyz vertex position
-
-        //add to changes list
-
-        //How should we assign changes?
-        //Should just be changing the index value. Simple, easy
-        //Should change the dual grid index
-        //Reassign indices
-        dc.UpdateDC(ref points);
+        dc.UpdateVoxelData(ref points);
         GenerateDCMesh();
     }
 
@@ -172,6 +189,7 @@ public class DC_Chunk : MonoBehaviour
         tex.Apply();
     }
 
+    public void SetChunkConfig( ChunkConfig ichunkConfig) { chunkConfig = ichunkConfig; }
 
 
     private void InitComputeShader() {

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 public class PatchLOD {
@@ -47,6 +48,7 @@ public class PatchLOD {
 
     public PatchLOD getChild(int childIndex)
     {
+        
         if (childNode.Count > 0)
         {
             return childNode[childIndex];

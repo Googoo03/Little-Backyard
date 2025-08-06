@@ -115,7 +115,7 @@ public class PlayerView : MonoBehaviour
 
             if (dig_mode == DIG_MODE.FLATTEN && hit.point.y < (int)start_dig_pos.y) return;
 
-
+            if (!hit.transform) return;
 
             tickManager.pushEvent(new chunk_event(hit.point,_id) );
             testCube.transform.position = testCubePosition;

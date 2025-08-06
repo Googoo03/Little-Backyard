@@ -804,12 +804,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   health: 10
-  resource: {fileID: 11400000, guid: 6e537de383bcac242b50adb763b846ce, type: 2}
-  resource_quantity: 27
+  preset: {fileID: 0}
   niblets: {fileID: 4492288543787053665, guid: 30dd7eb854fb24f4d84a5cd5526eb9b0, type: 3}
   dust: {fileID: 8158779718236476184, guid: 4d96b75ecaeecc04e865c7ce4a7d09a6, type: 3}
-  color: {r: 0, g: 0.06508279, b: 1, a: 1}
-  player: {fileID: 1595808564}
+  event_manager: {fileID: 1990997962}
+  object_pool_manager: {fileID: 1546218320}
 --- !u!23 &934286599
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -887,6 +886,51 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 7079276449089191528}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1546218319
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1546218321}
+  - component: {fileID: 1546218320}
+  m_Layer: 0
+  m_Name: Object_Pool_Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1546218320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1546218319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8115707a1bfbaf94888aa2b3d4998bda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  obj: {fileID: 0}
+--- !u!4 &1546218321
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1546218319}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -115.03681, y: 428.59872, z: -197.3759}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1585875793
 GameObject:
   m_ObjectHideFlags: 0
@@ -1057,18 +1101,6 @@ PrefabInstance:
       addedObject: {fileID: 930314072}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b088d8908c784da4bacac4e703be4d78, type: 3}
---- !u!114 &1595808564 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 114196765812745448, guid: b088d8908c784da4bacac4e703be4d78,
-    type: 3}
-  m_PrefabInstance: {fileID: 1595808563}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 611ad09f70bafba40a61ad663c866bef, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1876519689
 GameObject:
   m_ObjectHideFlags: 0
@@ -1229,12 +1261,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   health: 10
-  resource: {fileID: 11400000, guid: 2a156e5bcac9d0a4e8d76d9da504efc0, type: 2}
-  resource_quantity: 32
+  preset: {fileID: 0}
   niblets: {fileID: 4492288543787053665, guid: 30dd7eb854fb24f4d84a5cd5526eb9b0, type: 3}
   dust: {fileID: 8158779718236476184, guid: 4d96b75ecaeecc04e865c7ce4a7d09a6, type: 3}
-  color: {r: 1, g: 0.6296739, b: 0, a: 1}
-  player: {fileID: 1595808564}
+  event_manager: {fileID: 1990997962}
+  object_pool_manager: {fileID: 1546218320}
 --- !u!23 &1964783556
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1354,12 +1385,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   health: 10
-  resource: {fileID: 11400000, guid: 2a156e5bcac9d0a4e8d76d9da504efc0, type: 2}
-  resource_quantity: 5
+  preset: {fileID: 0}
   niblets: {fileID: 4492288543787053665, guid: 30dd7eb854fb24f4d84a5cd5526eb9b0, type: 3}
   dust: {fileID: 8158779718236476184, guid: 4d96b75ecaeecc04e865c7ce4a7d09a6, type: 3}
-  color: {r: 1, g: 0.6296739, b: 0, a: 1}
-  player: {fileID: 1595808564}
+  event_manager: {fileID: 1990997962}
+  object_pool_manager: {fileID: 1546218320}
 --- !u!23 &1967126473
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1425,6 +1455,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+--- !u!1 &1990997961
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1990997963}
+  - component: {fileID: 1990997962}
+  m_Layer: 0
+  m_Name: Event_Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1990997962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1990997961}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6f242a6aed95b14fbf0422346b486f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  planets: []
+  updatePlanetList: 0
+  exitShip: 0
+  enterShip: 0
+  player: {fileID: 0}
+  playerInteract: {fileID: 0}
+  ship: {fileID: 0}
+  playerCamera: {fileID: 0}
+  sun: {fileID: 0}
+  generatedSolarSystem: 0
+  atmosphereShader: {fileID: 0}
+  planetRingShader: {fileID: 0}
+  galacticCenter: {fileID: 0}
+--- !u!4 &1990997963
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1990997961}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -115.03681, y: 428.59872, z: -197.3759}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2035714798
 GameObject:
   m_ObjectHideFlags: 0
@@ -2521,12 +2608,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   health: 10
-  resource: {fileID: 11400000, guid: f14c26e33526ce541a56aad289f40394, type: 2}
-  resource_quantity: 800
+  preset: {fileID: 0}
   niblets: {fileID: 4492288543787053665, guid: 30dd7eb854fb24f4d84a5cd5526eb9b0, type: 3}
   dust: {fileID: 8158779718236476184, guid: 4d96b75ecaeecc04e865c7ce4a7d09a6, type: 3}
-  color: {r: 1, g: 0.92875004, b: 0, a: 1}
-  player: {fileID: 1595808564}
+  event_manager: {fileID: 1990997962}
+  object_pool_manager: {fileID: 1546218320}
 --- !u!64 &3469287836629916743
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -2610,7 +2696,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6661736342291917921
 Transform:
   m_ObjectHideFlags: 0
@@ -2715,12 +2801,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   health: 10
-  resource: {fileID: 11400000, guid: a921d3127b2ebc74781b76b966c44b32, type: 2}
-  resource_quantity: 10
+  preset: {fileID: 0}
   niblets: {fileID: 4492288543787053665, guid: 30dd7eb854fb24f4d84a5cd5526eb9b0, type: 3}
   dust: {fileID: 8158779718236476184, guid: 4d96b75ecaeecc04e865c7ce4a7d09a6, type: 3}
-  color: {r: 0.12831843, g: 1, b: 0, a: 1}
-  player: {fileID: 1595808564}
+  event_manager: {fileID: 0}
+  object_pool_manager: {fileID: 0}
 --- !u!65 &7772340482210898886
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2758,3 +2843,5 @@ SceneRoots:
   - {fileID: 1962617867471948987}
   - {fileID: 1585875796}
   - {fileID: 6661736342291917921}
+  - {fileID: 1990997963}
+  - {fileID: 1546218321}

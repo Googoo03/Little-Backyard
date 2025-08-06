@@ -1,4 +1,4 @@
-Shader "Custom/Voxel_Test"
+Shader "Custom/SphereVoxelShader"
 {
     Properties
     {
@@ -54,12 +54,8 @@ Shader "Custom/Voxel_Test"
             UNITY_INITIALIZE_OUTPUT(Input, o);
             o.worldPos = mul(unity_ObjectToWorld, float4(vertexData.vertex.xyz, 1.0)).xyz;
 
-            
-
-            //o.normal = vertexData.normal;
-            o.vertPos = vertexData.vertex.xyz;//mul (unity_ObjectToWorld, vertexData.vertex).xyz;
+            o.vertPos = vertexData.vertex.xyz;
             o.worldNormal = WorldNormalVector (IN, o.normal);
-            //o.uv = vertexData.texcoord.xy;
 
             float4 oVertex = UnityObjectToClipPos(vertexData.vertex);
 
@@ -79,15 +75,13 @@ Shader "Custom/Voxel_Test"
 	        float3 dpdy = ddy(IN.worldPos);
 	        IN.normal = normalize(cross(dpdy, dpdx));
 
-            float voxel = tex3D(_VoxelData,float3(0.5,0.5,0.5)+(IN.vertPos.xyz/_CELL_SIZE) * _Scale).r * 65535;
-            //voxel = (int)voxel == 15 ? tex3D(_VoxelData,float3(0.5,0.5,0.5)+(IN.vertPos.xyz/_CELL_SIZE) * _Scale ).r * 65535 : voxel;
-            //float4 col = voxel > 0 ? float4(1,1,0,1) : _Color;
+            float3 voxelCoord = (float3(IN.vertPos.x,length(IN.vertPos.xyz),IN.vertPos.z)/_CELL_SIZE);
 
-            //(IN.vertPos.xyz/_CELL_SIZE) * _Scale         ----This gives [-0.5, 0.5]. We want 0, dimension
+            float voxel = tex3D(_VoxelData,float3(0.5,0.5,0.5)+voxelCoord * _Scale).r * 65535;
 
             float4 col = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3(IN.uv_MainTex * _Tile.xy, 2*voxel));
-            float4 col_side_x = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3((float2(0.5,0.5)+(IN.vertPos.xy/_CELL_SIZE * _Scale)) * 32, 2*voxel + 1));
-            float4 col_side_z = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3((float2(0.5,0.5)+(IN.vertPos.zy/_CELL_SIZE * _Scale)) * 32, 2*voxel + 1));
+            float4 col_side_x = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3((float2(0.5,0.5)+(IN.vertPos.xy/_CELL_SIZE * _Scale)) * 32, 2*voxel));
+            float4 col_side_z = UNITY_SAMPLE_TEX2DARRAY(_MainTex, float3((float2(0.5,0.5)+(IN.vertPos.zy/_CELL_SIZE * _Scale)) * 32, 2*voxel));
 
             // Albedo comes from a texture tinted by color
             float dotProduct = max(dot(IN.normal,normalize(IN.vertPos)),0);
