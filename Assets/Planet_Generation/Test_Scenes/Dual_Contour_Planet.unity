@@ -652,11 +652,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunks:
   - {fileID: 1903128437}
-  - {fileID: 1929163583}
-  - {fileID: 575803593}
-  - {fileID: 1921160394}
-  - {fileID: 730744056}
-  - {fileID: 0}
 --- !u!4 &1710272012
 Transform:
   m_ObjectHideFlags: 0

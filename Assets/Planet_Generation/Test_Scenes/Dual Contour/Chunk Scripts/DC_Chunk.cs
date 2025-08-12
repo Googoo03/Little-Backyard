@@ -32,10 +32,10 @@ public class DC_Chunk : MonoBehaviour
     private MeshFilter mf;
     private MeshRenderer rend;
     private MeshCollider coll;
-    private List<Vector3> vertices = new List<Vector3>();
+    private NativeList<Vector3> vertices;
     private Vector3[] normals;
     private Vector2[] uvs;
-    private List<int> indices = new List<int>();
+    private NativeList<int> indices;
     private UInt16[] voxel_data;
 
     //Voxel Data
@@ -73,21 +73,20 @@ public class DC_Chunk : MonoBehaviour
     private void Start()
     {
         
-
-
-        Stopwatch stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        scale = chunkConfig.scale;
-
-        dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
-        dc.InitializeGrid();
-        pois = new PoissonDisc();
-        pois.generatePoissonDisc(ref tree_pos, 3, 20, 31, 31, 4);
         
 
-        GenerateDCMesh();
-        //GenerateFoliage();
+        Stopwatch stopwatch = new Stopwatch();
+        
+
+        scale = chunkConfig.scale;
+        dir = chunkConfig.dir;
+
+        
+        
+
+        stopwatch.Start();
+        //pois = new PoissonDisc();
+        //pois.generatePoissonDisc(ref tree_pos, 3, 20, 31, 31, 4);
 
         stopwatch.Stop();
         UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
@@ -106,6 +105,8 @@ public class DC_Chunk : MonoBehaviour
         });
     }
 
+    public Dual_Contour GetDC() { return dc; }
+
     private int FindSurface(Vector3 pos) {
         int y = scale.y-1;
         while (y > 0) {
@@ -117,7 +118,22 @@ public class DC_Chunk : MonoBehaviour
         return 0;
     }
 
-    private void GenerateDCMesh() {
+    public void InitializeDualContour() {
+
+        vertices = new NativeList<Vector3>(scale.x * scale.y * scale.z, Allocator.Persistent);
+        indices = new NativeList<int>(4 * scale.x * scale.y * scale.z, Allocator.Persistent);
+
+        vertices.Clear();
+        vertices.Capacity = scale.x * scale.y * scale.z;
+
+        indices.Clear();
+        indices.Capacity = 4 * scale.x * scale.y * scale.z;
+
+        dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
+        dc.InitializeGrid(ref vertices, ref indices);
+    }
+
+    public void GenerateDCMesh() {
 
         //REASSIGN MESH RENDERING COMPONENTS.
         if (!rend) rend = this.gameObject.AddComponent<MeshRenderer>();
@@ -129,32 +145,23 @@ public class DC_Chunk : MonoBehaviour
         m = mf.sharedMesh = new Mesh();
         //////////////////////////////////////
 
-        //Initialize vertex and indices lists
-        
+        //dc.Generate(ref vertices, ref indices, ref voxel_data, ref vert_index, ref ind_index);
 
-        vertices.Clear();
-        vertices.Capacity = scale.x*scale.y*scale.z;
-
-        indices.Clear();
-        indices.Capacity = 4*scale.x * scale.y * scale.z;
-
-        //Initialize and generate vertices and quads
-        int vert_index = 0;
-        int ind_index = 0;
-        dc.Generate(ref vertices, ref indices, ref voxel_data, ref vert_index, ref ind_index);
-
-        uvs = new Vector2[vertices.Count];
-        for (int i = 0; i < vertices.Count; ++i)
+        uvs = new Vector2[vertices.Length];
+        for (int i = 0; i < vertices.Length; ++i)
         {
             uvs[i] = new Vector2(vertices[i].x, vertices[i].z);
         }
 
-        CreateDataTexture();
+        //CreateDataTexture();
 
         mat.SetTexture("_VoxelData", tex);
         rend.material = mat;
 
-        m.vertices = vertices.ToArray();
+
+        Vector3[] newverts = new Vector3[vertices.Length];
+        vertices.AsArray().CopyTo(newverts);
+        m.vertices = newverts;
         m.normals = normals;
 
 
@@ -162,7 +169,7 @@ public class DC_Chunk : MonoBehaviour
         m.uv = uvs;
         ////////////////////////////////////////////////////////////
 
-        m.SetIndices(indices, MeshTopology.Quads, 0);
+        m.SetIndices(indices.AsArray(), MeshTopology.Triangles, 0);
         m.RecalculateBounds();
         m.RecalculateNormals();
 
@@ -176,6 +183,9 @@ public class DC_Chunk : MonoBehaviour
         }
 
     }
+
+
+
 
     public void UpdateChunk(ref List<chunk_event> points) {
         dc.UpdateVoxelData(ref points);

@@ -15,8 +15,9 @@ public class Chunk_Manager : MonoBehaviour
 
     void Start()
     {   
-        ChunkConfig rootConfig = new ChunkConfig(0,0,Vector2.zero, Vector3Int.one * 32);
+        ChunkConfig rootConfig = new ChunkConfig(0,65,Vector2.zero, Vector3Int.one * 32);
         quadTree = new QuadTreeNode(rootConfig, chunkPrefab, null);
+        quadTree.GetGameObject().GetComponent<DC_Chunk>().InitializeDualContour();
     }
 
     // Update is called once per frame

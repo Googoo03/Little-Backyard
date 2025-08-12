@@ -1,5 +1,8 @@
+using DualContour;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Jobs;
 using UnityEngine;
 
 
@@ -74,8 +77,56 @@ namespace QuadTree
                 ChunkConfig childChunkConfig = new ChunkConfig(chunkConfig.lodLevel+1,chunkConfig.dir,childLODOffset, childScale); 
 
                 QuadTreeNode newchild = new QuadTreeNode(childChunkConfig, prefab, this);
+
+                //after instantiation of gameObject
+                newchild.go.GetComponent<DC_Chunk>().InitializeDualContour();
+
                 AddChild(newchild);
             }
+
+            //Segments the mesh generation job into key steps
+            NativeArray<JobHandle> jobs = new NativeArray<JobHandle>(8,Allocator.TempJob,NativeArrayOptions.UninitializedMemory);
+            JobHandle combinedjobs;
+
+            //Calculate vertex positions
+            for (int i = 0; i < 8; ++i) {
+                var vertJob = children[i].go.GetComponent<DC_Chunk>().GetDC().GetVertexParallel();
+                JobHandle newHandle = vertJob.Schedule();
+                jobs[i] = (newHandle);
+            }
+
+            combinedjobs = JobHandle.CombineDependencies(jobs);
+            combinedjobs.Complete();
+
+            //For each mesh, gather neighbor seams
+
+            QuadTreeNode root = GetRoot(this);
+            for (int i = 0; i < 8; ++i) {
+                NativeArray<seamNode>[] chunkSeamNodes = children[i].go.GetComponent<DC_Chunk>().GetDC().GetSeamStruct();
+                GetSeams(root, children[i].go.GetComponent<DC_Chunk>().GetDC().GetMax(), ref chunkSeamNodes);
+            }
+
+
+
+
+
+            //Calculate quads / tris
+            for (int i = 0; i < 8; ++i)
+            {
+                var quadJob = children[i].go.GetComponent<DC_Chunk>().GetDC().GetQuadParallel();
+                JobHandle newHandle = quadJob.Schedule();
+                jobs[i] = (newHandle);
+            }
+
+            combinedjobs = JobHandle.CombineDependencies(jobs);
+            combinedjobs.Complete();
+
+            //Apply mesh details
+            foreach (var child in children) {
+                child.go.GetComponent<DC_Chunk>().GenerateDCMesh();
+            }
+            ////////////////////////////////////////////////
+
         }
 
         public void PrevLOD() {
@@ -86,13 +137,50 @@ namespace QuadTree
             children.Clear();
         }
 
-        
+        //Reverse DFS to get root of tree
+        public QuadTreeNode GetRoot(QuadTreeNode node) {
+            if (node.GetParent() != null) { 
+                return GetRoot(node.GetParent());
+            }
+            return node;
+        }
+
+
+        public void GetSeams(QuadTreeNode node, Vector3 max, ref NativeArray<seamNode>[] seamNodes) {
+
+            //if outside the max range, stop
+            Vector3 min = node.go.GetComponent<DC_Chunk>().GetDC().GetMin();
+
+            //min and max, for each of the 7 neighbors, should satisfy at least 1 dimension where min.xyz == max.xyz
+
+            //consider floating point arithmetic
+            if (max.x != min.x && max.y != min.y && max.z != min.z) return;
+
+            if (node.HasChildren())
+            {
+                foreach (QuadTreeNode child in node.GetChildren())
+                {
+                    GetSeams(child, max, ref seamNodes);
+                }
+            }
+            else {
+                //is leaf, gather nodes
+                node.go.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes(max , ref seamNodes);
+            }
+
+
+
+        }
 
         public void DestroyGO() { GameObject.Destroy(go); }
 
         public GameObject GetGameObject() { return go; }
 
         public bool HasChildren() { return children.Count > 0; }
+
+        public QuadTreeNode GetParent() {
+            return parent;
+        }
 
         public QuadTreeNode GetChild(int i) { 
             if(i > 0 && i < children.Count) return children[i]; 
