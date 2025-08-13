@@ -28,7 +28,7 @@ namespace QuadTree
 
 
 
-    public class QuadTreeNode : MonoBehaviour
+    public class QuadTreeNode
     {
         private ChunkConfig chunkConfig;
         private List<QuadTreeNode> children;
@@ -36,6 +36,8 @@ namespace QuadTree
 
         private GameObject prefab;
         private GameObject go;
+
+        
 
         //Constructors
         public QuadTreeNode(ChunkConfig ichunkConfig) {
@@ -52,11 +54,9 @@ namespace QuadTree
 
             //Determine the position to place the prefab based on if it's the root or not
             Vector3 pos = chunkConfig.lodLevel == 0 ? Vector3.zero : parent.GetGameObject().transform.position;
-
-            go = Instantiate(igo,
-                             pos,
-                             Quaternion.identity);
-            go.name = "Chunk_" + chunkConfig.lodLevel;
+            go = Object.Instantiate(igo,pos,Quaternion.identity);
+            go.transform.name = "Chunk_" + ichunkConfig.lodLevel;
+            
             go.GetComponent<DC_Chunk>().SetChunkConfig(chunkConfig);
         }
 
@@ -102,10 +102,21 @@ namespace QuadTree
 
             QuadTreeNode root = GetRoot(this);
             for (int i = 0; i < 8; ++i) {
-                NativeArray<seamNode>[] chunkSeamNodes = children[i].go.GetComponent<DC_Chunk>().GetDC().GetSeamStruct();
-                GetSeams(root, children[i].go.GetComponent<DC_Chunk>().GetDC().GetMax(), ref chunkSeamNodes);
+                NativeList<seamNode> chunkSeamNodes = children[i].go.GetComponent<DC_Chunk>().GetDC().GetSeamStruct();
+                NativeList<Vector3> vertices = children[i].go.GetComponent<DC_Chunk>().GetDC().GetVerticesStruct();
+                GetSeams(root, children[i].go.GetComponent<DC_Chunk>().GetDC().GetMax(), ref chunkSeamNodes, ref vertices);
+
+                
             }
 
+            for (int i = 0; i < 8; ++i)
+            {
+                var seamJob = children[i].go.GetComponent<DC_Chunk>().GetDC().GetSeamParallel();
+                JobHandle newHandle = seamJob.Schedule();
+                jobs[i] = (newHandle);
+            }
+            combinedjobs = JobHandle.CombineDependencies(jobs);
+            combinedjobs.Complete();
 
 
 
@@ -146,7 +157,7 @@ namespace QuadTree
         }
 
 
-        public void GetSeams(QuadTreeNode node, Vector3 max, ref NativeArray<seamNode>[] seamNodes) {
+        public void GetSeams(QuadTreeNode node, Vector3 max, ref NativeList<seamNode> seamNodes, ref NativeList<Vector3> verts) {
 
             //if outside the max range, stop
             Vector3 min = node.go.GetComponent<DC_Chunk>().GetDC().GetMin();
@@ -154,18 +165,18 @@ namespace QuadTree
             //min and max, for each of the 7 neighbors, should satisfy at least 1 dimension where min.xyz == max.xyz
 
             //consider floating point arithmetic
-            if (max.x != min.x && max.y != min.y && max.z != min.z) return;
+            if (max.x < min.x && max.y < min.y && max.z < min.z) return;
 
             if (node.HasChildren())
             {
                 foreach (QuadTreeNode child in node.GetChildren())
                 {
-                    GetSeams(child, max, ref seamNodes);
+                    GetSeams(child, max, ref seamNodes, ref verts);
                 }
             }
             else {
                 //is leaf, gather nodes
-                node.go.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes(max , ref seamNodes);
+                node.go.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes(max , ref seamNodes, ref verts);
             }
 
 
