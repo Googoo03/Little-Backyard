@@ -104,7 +104,7 @@ namespace QuadTree
             for (int i = 0; i < 8; ++i) {
                 NativeList<seamNode> chunkSeamNodes = children[i].go.GetComponent<DC_Chunk>().GetDC().GetSeamStruct();
                 NativeList<Vector3> vertices = children[i].go.GetComponent<DC_Chunk>().GetDC().GetVerticesStruct();
-                GetSeams(root, children[i].go.GetComponent<DC_Chunk>().GetDC().GetMax(), ref chunkSeamNodes, ref vertices);
+                GetSeams(root, children[i].go.GetComponent<DC_Chunk>().GetDC().GetMax(), children[i].go.GetComponent<DC_Chunk>().GetDC().GetMin(), ref chunkSeamNodes, ref vertices);
 
                 
             }
@@ -157,26 +157,28 @@ namespace QuadTree
         }
 
 
-        public void GetSeams(QuadTreeNode node, Vector3 max, ref NativeList<seamNode> seamNodes, ref NativeList<Vector3> verts) {
+        public void GetSeams(QuadTreeNode node, Vector3 cmax, Vector3 cmin, ref NativeList<seamNode> seamNodes, ref NativeList<Vector3> verts) {
 
             //if outside the max range, stop
-            Vector3 min = node.go.GetComponent<DC_Chunk>().GetDC().GetMin();
+            Vector3 omin = node.go.GetComponent<DC_Chunk>().GetDC().GetMin();
+            Vector3 omax = node.go.GetComponent<DC_Chunk>().GetDC().GetMax();
 
             //min and max, for each of the 7 neighbors, should satisfy at least 1 dimension where min.xyz == max.xyz
 
             //consider floating point arithmetic
-            if (max.x < min.x && max.y < min.y && max.z < min.z) return;
+            if (cmax.x < omin.x && cmax.y < omin.y && cmax.z < omin.z) return;
+            if (cmin.x > omax.x && cmin.y > omax.y && cmin.z > omax.z) return;
 
             if (node.HasChildren())
             {
                 foreach (QuadTreeNode child in node.GetChildren())
                 {
-                    GetSeams(child, max, ref seamNodes, ref verts);
+                    GetSeams(child, cmax, cmin, ref seamNodes, ref verts);
                 }
             }
             else {
                 //is leaf, gather nodes
-                node.go.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes(max , ref seamNodes, ref verts);
+                node.go.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes(cmin, cmax , ref seamNodes, ref verts);
             }
 
 

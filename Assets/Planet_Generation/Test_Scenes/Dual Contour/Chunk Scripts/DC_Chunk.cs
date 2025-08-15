@@ -20,6 +20,8 @@ public class DC_Chunk : MonoBehaviour
     [SerializeField] private bool block_voxel;
     [SerializeField] private float editRadius;
     [SerializeField] private int dir;
+    [SerializeField] private Vector3 max;
+    [SerializeField] private Vector3 min;
 
     [SerializeField] private Material mat;
 
@@ -131,6 +133,9 @@ public class DC_Chunk : MonoBehaviour
 
         dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
         dc.InitializeGrid(ref vertices, ref indices);
+
+        min = dc.GetMin();
+        max = dc.GetMax();
     }
 
     public void GenerateDCMesh() {

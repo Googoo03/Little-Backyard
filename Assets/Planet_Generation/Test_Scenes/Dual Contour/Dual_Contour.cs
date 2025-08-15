@@ -15,6 +15,8 @@ using Unity.Burst;
 using UnityEditor.PackageManager;
 using DualContour;
 using UnityEngine.UI;
+using System.Data;
+using Unity.Mathematics;
 
 
 namespace DualContour
@@ -41,7 +43,7 @@ namespace DualContour
 
     public struct seamNode {
         public int dualgrid; //entry
-        public (int, int, int) coord;
+        public (int x, int y , int z) coord;
         public Vector3 vertex;
     }
 
@@ -85,6 +87,7 @@ namespace DualContour
     public struct SeamParallel : IJob {
 
         public NativeList<seamNode> seams;
+        public NativeArray<Vector4> cellpacked;
         public NativeArray<int> dualGrid;
         public NativeList<Vector3> vertices;
         public NativeList<int> indices;
@@ -125,95 +128,107 @@ namespace DualContour
             },
         };
 
+        public struct SeamNodeComparer : IComparer<seamNode>
+        {
+            public int Compare(seamNode a, seamNode b)
+            {
+                // Sort by y first
+                int yCompare = a.coord.y.CompareTo(b.coord.y);
+                if (yCompare != 0) return yCompare;
+
+                // Then by z
+                return a.coord.z.CompareTo(b.coord.z);
+            }
+        }
 
         public void Execute()
         {
             //build CSR_x, CSR_y, CSR_z
-            NativeArray<int> groupCounts = new NativeArray<int>(sizeY*sizeZ, Allocator.Temp, NativeArrayOptions.ClearMemory);
+
+
+            int count = 0;
+            
+            for (int i = 0; i < seams.Length; i++)
+            {
+                var node = seams[i];
+                var (nx, ny, nz) = node.coord;
+                if (nx != 0) continue; //only include exclusive axis neighbors
+
+                count++;
+                
+            }
+            NativeArray<seamNode> filtered = new NativeArray<seamNode>(count, Allocator.Temp, NativeArrayOptions.ClearMemory);
+            int index = 0;
             for (int i = 0; i < seams.Length; i++)
             {
                 var node = seams[i];
                 var (nx, ny, nz) = node.coord;
                 if (nx != 0) continue;
-                
-                int groupnIndex = ny + sizeY * nz;
-                groupCounts[groupnIndex]++;
-                
+
+                filtered[index++] = seams[i];
+
             }
 
-            NativeArray<int> offsets = new NativeArray<int>(groupCounts.Length + 1, Allocator.Temp, NativeArrayOptions.ClearMemory);
-            offsets[0] = 0;
-            //Prefix sum
-            for(int g = 0; g < groupCounts.Length; ++g) offsets[g+1] = offsets[g] + groupCounts[g];
+            filtered.Sort(new SeamNodeComparer());
 
-            NativeArray<int> csrIndices = new NativeArray<int>(offsets[groupCounts.Length], Allocator.Temp);
-
-            NativeArray<int> writePos = new NativeArray<int>(groupCounts.Length, Allocator.Temp);
-            groupCounts.CopyTo(writePos); // copy initial counts to mutate
-            for (int g = 0; g < writePos.Length; g++) writePos[g] = offsets[g];
-
-            for(int i = 0; i < seams.Length; i++)
-{
-                var node = seams[i];
-                var (nx, ny, nz) = node.coord;
-                if (nx != 0) continue;
-                
-                int groupnIndex = ny + sizeY * nz;
-                csrIndices[writePos[groupnIndex]++] = i; // i is index into canonical array
-                
-            }
 
 
             //now let's construct the tris along the x axis (x = size-1 on current chunk)
 
-            int x = sizeX - 1;
+            int x = sizeX-1;
             int y = 0; int z = 0;
+            float epsilon = 1e-9f;
 
-            for (y = 0; y < sizeY; ++y)
+            int opposingIndex = 0;
+
+            for (y = 0; y < sizeY-1; ++y)
             {
-                for (z = 0; z < sizeZ; ++z) {
+                for (z = 0; z < sizeZ-1; ++z) {
                     int dualgrid_index = (x + sizeX * (y + sizeY * z));
 
-                    int groupIndex = y + sizeY * z;
-                    int start = offsets[groupIndex];
-                    int end = offsets[groupIndex + 1];
+                    //Ask if valid value, any edges crossed, etc
+                    int dualGridValue = dualGrid[dualgrid_index];
+                    if (dualGridValue == -1) continue;
+                    if ((dualGridValue & 0x08) != 0x08) continue;
 
-                    int dualCursor = dualgrid_index;
-                    int csrCursor = start;
+                    if (opposingIndex+1 >= filtered.Length) return;
 
-                    while (csrCursor < end && dualgrid_index < dualGrid.Length-1)
+                    Vector3 cellMax = cellpacked[(x + sizeX * (y + sizeY * (z+1)))];
+                    Vector3 cellMin = cellpacked[(x + sizeX * (y + sizeY * z))];
+
+                    //ITS NOT A GOOD IDEA TO USE CELLPACKED AS A MEASURE OF VOXEL CELLS, SINCE THE LAST SET OF VERTICES
+                    //ARE ACTUALLY SET BEHIND THE VOXEL, THEREFORE IT'LL 
+
+                    bool inBounds = true;
+                    while (inBounds)
                     {
-                        int csrIndex = csrIndices[csrCursor];
-                        Vector3 csrVertex = seams[csrIndex].vertex;
+                        Vector3 csrVertex = filtered[opposingIndex].vertex;
 
-                        int dualGridValue = dualGrid[dualgrid_index] >> 6;
-                        if (dualGridValue == -1)
+                        //should be like this because we are always iterating in one direction. We want indices to "keep up"
+
+                        while (csrVertex.y < cellMin.y || csrVertex.z < cellMin.z)
                         {
-                            dualgrid_index++;
-                            continue;
+                            UnityEngine.Debug.Log("vertex is :" + csrVertex + "max is: " + cellMax);
+                            opposingIndex++;
+                            csrVertex = filtered[opposingIndex].vertex;
                         }
 
-                        Vector3 cellMin = vertices[dualGrid[dualgrid_index] >> 6 & 0x7FFF];
-                        Vector3 cellMax = cellMin + step*5;
+                        
 
-                        if (csrVertex.y <= cellMax.y && csrVertex.z <= cellMax.z)
-                        {
-                            indices.Add(dualGrid[dualgrid_index] >> 6 & 0x7FFF);
+                        inBounds = csrVertex.y <= cellMax.y && csrVertex.z <= cellMax.z;
 
+                        if (!inBounds) break;
 
+                        //build triangle
+                        indices.Add(dualGrid[dualgrid_index] >> 6 & 0x7FFF);
+                        indices.Add(filtered[opposingIndex+1].dualgrid >> 6 & 0x7FFF);
+                        indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
 
-                            //ASSUMES THE VERTEX IS ALREADY IN THE VERTICES ARRAY, NEED TO ADD THOSE WHEN ADDING THE SEAMS
-                            indices.Add(seams[csrIndex].dualgrid >> 6 & 0x7FFF);
-
-                            indices.Add(dualGrid[dualgrid_index + 1] >> 6 & 0x7FFF); // example: next vertex along Y
-
-                            csrCursor++; // move to next seam vertex
-                        }
-                        else
-                        {
-                            dualgrid_index++;
-                        }
+                        opposingIndex++; // move to next seam vertex
                     }
+                    indices.Add(dualGrid[dualgrid_index] >> 6 & 0x7FFF);
+                    indices.Add(dualGrid[(x + sizeX * (y + sizeY * (z+1)))] >> 6 & 0x7FFF);
+                    indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
                 }
             }
             
@@ -339,6 +354,8 @@ namespace DualContour
                             xPos = x == sizeX - 1 ? (x - ((i >> 2) & 0x01)) : (x + ((i >> 2) & 0x01));
                             yPos = y == sizeY - 1 ? (y - ((i >> 1) & 0x01)) : (y + ((i >> 1) & 0x01));
                             zPos = z == sizeZ - 1 ? (z - (i & 0x01)) : (z + (i & 0x01));
+
+
                             vertPos[i] = cellPacked[(xPos + sizeX * (yPos + sizeY * zPos))];
                             vertValues[i] = cellPacked[(xPos + sizeX * (yPos + sizeY * zPos))].w;
                         }
@@ -535,7 +552,7 @@ namespace DualContour
             block_voxel = mode;
             radius = iradius;
             dir = idir;
-            coordTransformFunction = CartesianToSphere;
+            coordTransformFunction = Grid;
 
 
             //determines the "step" between vertices to cover 1 unit total
@@ -563,8 +580,8 @@ namespace DualContour
             if (elevation >= sizeY - 1) { return -1; }
             if (elevation <= 1) { return 1; }
 
-            float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp))) * amplitude + Ground - elevation;
-            //float value = Ground - elevation;
+            //float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp))) * amplitude + Ground - elevation;
+            float value = Ground - elevation;
 
             return value;
         }
@@ -600,7 +617,7 @@ namespace DualContour
             vertices = verts;
 
             //BIGGEST BOTTLENECK ABOVE ALL
-            cellPacked = new NativeArray<Vector4>(sizeX* sizeY *sizeZ, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            cellPacked = new NativeArray<Vector4>((sizeX+1)* (sizeY+1) *(sizeZ + 1), Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             dualGrid = new NativeArray<int>(sizeX * sizeY * sizeZ, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             voxel_data = new UInt16[sizeX * sizeY * sizeZ];
             ///////////////////////////////
@@ -674,6 +691,7 @@ namespace DualContour
                 seams = seams,
                 vertices = vertices,
                 step = step,
+                cellpacked = cellPacked,
             };
 
         }
@@ -813,15 +831,57 @@ namespace DualContour
 
         public ref NativeList<Vector3> GetVerticesStruct() { return ref vertices; }
 
-        public void ConstructSeamNodes(Vector3 max, ref NativeList<seamNode> seamNodes, ref NativeList<Vector3> verts) {
-            //either add along the minimum x,y,z
+
+        public static int GetNeighborRule(float3 currentMin, float3 currentMax, float3 neighborMin, float3 neighborMax, float epsilon = 0.0001f)
+        {
             int rule = 0;
-            if (max.x - min.x <= step.x) rule += 4;
-            if (max.y - min.y <= step.y) rule += 2;
-            if (max.z - min.z <= step.z) rule += 1;
+
+            bool xNeighbor = neighborMin.x == currentMax.x &&
+                                neighborMax.z <= currentMax.z &&
+                                neighborMax.z >= currentMin.z &&
+                                neighborMax.y <= currentMax.y &&
+                                neighborMax.y >= currentMin.y &&
+                                neighborMin.z <= currentMax.z &&
+                                neighborMin.z >= currentMin.z &&
+                                neighborMin.y <= currentMax.y &&
+                                neighborMin.y >= currentMin.y;
+
+            bool yNeighbor = neighborMin.y == currentMax.y &&
+                                neighborMax.z <= currentMax.z &&
+                                neighborMax.z >= currentMin.z &&
+                                neighborMax.x <= currentMax.x &&
+                                neighborMax.x >= currentMin.x &&
+                                neighborMin.z <= currentMax.z &&
+                                neighborMin.z >= currentMin.z &&
+                                neighborMin.x <= currentMax.x &&
+                                neighborMin.x >= currentMin.x;
+
+            bool zNeighbor = neighborMin.z == currentMax.z &&
+                                neighborMax.x <= currentMax.x &&
+                                neighborMax.x >= currentMin.x &&
+                                neighborMax.y <= currentMax.y &&
+                                neighborMax.y >= currentMin.y &&
+                                neighborMin.x <= currentMax.x &&
+                                neighborMin.x >= currentMin.x &&
+                                neighborMin.y <= currentMax.y &&
+                                neighborMin.y >= currentMin.y;
+
+            if (xNeighbor) rule |= 4;
+            if (yNeighbor) rule |= 2;
+            if (zNeighbor) rule |= 1;
+
+            return rule;
+        }
+
+        public void ConstructSeamNodes(Vector3 cmin, Vector3 cmax, ref NativeList<seamNode> seamNodes, ref NativeList<Vector3> verts) {
+            //either add along the minimum x,y,z
+            int rule = GetNeighborRule(cmin,cmax, min, max);
+
+            UnityEngine.Debug.Log("rule is " + rule);
 
             int x, y, z;
             int newdualgrid = 0;
+            Vector3 newVert;
 
 
             //SHOULD ADD TO A LIST RATHER THAN REFERENCE AN ARRAY, WHAT IF THERE ARE MULTIPLE MORE REFINED CHUNKS BORDERING IT? THEY WILL OVERWRITE EACH OTHER
@@ -834,48 +894,48 @@ namespace DualContour
                 case 0:
                     break;
                 case 1: //001
-                    //seamNodes[rule].SetCapacity(seamNodes[rule].Capacity + sizeX * sizeY);
-                    z = sizeZ - 1;
+                    z = 0;
                     for ( x = 0; x < sizeX; ++x)
                     {
                         for ( y = 0; y < sizeY; ++y) {
                             newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                             if (newdualgrid == -1) continue;
-                            verts.Add(vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]);
+                            newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+
+                            verts.Add(newVert);
                             newdualgrid = (newdualgrid & ~(0x7FFF << 6) ) | ((verts.Length - 1) << 6);
 
                             seamNodes.Add(new seamNode
                             {
-                                coord = (x, y, z),
+                                coord = (x+1, y+1, z),
                                 dualgrid = newdualgrid,
-                                vertex = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]
+                                vertex = newVert
                             }) ;
-
-                            
-                            //change dualgrid index
-
                         }
                     }
                     break;
                 case 2: //010
                     
                     
-                     y = sizeY - 1;
+                     y = 0;
                     for ( x = 0; x < sizeX; ++x)
                     {
                         for ( z = 0; z < sizeZ; ++z)
                         {
                             
                             newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
+                            
                             if (newdualgrid == -1) continue;
-                            verts.Add(vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]);
+                            newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+
+                            verts.Add(newVert);
                             newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
 
                             seamNodes.Add(new seamNode
                             {
-                                coord = (x, y, z),
+                                coord = (x+1, y, z+1),
                                 dualgrid = newdualgrid,
-                                vertex = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]
+                                vertex = newVert
                             });
                         }
                     }
@@ -883,21 +943,23 @@ namespace DualContour
                 case 3: //011
                     
                     
-                    y = sizeY - 1;
-                    z = sizeZ - 1;
+                    y = 0;
+                    z = 0;
                     for (x = 0; x < sizeX; ++x)
                     {
                         
                         newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                         if (newdualgrid == -1) continue;
-                        verts.Add(vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]);
+                        newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+
+                        verts.Add(newVert);
                         newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
 
                         seamNodes.Add(new seamNode
                         {
-                            coord = (x, y, z),
+                            coord = (x+1, y, z),
                             dualgrid = newdualgrid,
-                            vertex = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]
+                            vertex = newVert
                         });
                     }
 
@@ -907,7 +969,7 @@ namespace DualContour
                 case 4: //100
                     
                     
-                    x = sizeX - 1;
+                    x = 0;
                     for (y = 0; y < sizeY; ++y)
                     {
                         for (z = 0; z < sizeZ; ++z)
@@ -915,15 +977,18 @@ namespace DualContour
 
                             newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                             if (newdualgrid == -1) continue;
-                            verts.Add(vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]);
+                            newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+
+                            verts.Add(newVert);
                             
+
                             newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
 
                             seamNodes.Add(new seamNode
                             {
-                                coord = (x, y, z),
+                                coord = (x, y+1, z+1),
                                 dualgrid = newdualgrid,
-                                vertex = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]
+                                vertex = newVert
                             });
                         }
                     }
@@ -933,63 +998,69 @@ namespace DualContour
 
                     
 
-                    x = sizeX - 1;
-                    z = sizeZ - 1;
+                    x = 0;
+                    z = 0;
                     for (y = 0; y < sizeY; ++y)
                     {
                         
                         newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                         if (newdualgrid == -1) continue;
-                        verts.Add(vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]);
+                        newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+
+                        verts.Add(newVert );
                         newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
 
                         seamNodes.Add(new seamNode
                         {
-                            coord = (x, y, z),
+                            coord = (x, y+1, z),
                             dualgrid = newdualgrid,
-                            vertex = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]
+                            vertex = newVert
                         });
                     }
 
                     break;
                 case 6: //110
                     
-                    x = sizeX - 1;
-                    y = sizeY - 1;
+                    x = 0;
+                    y = 0;
                     for (z = 0; z < sizeZ; ++z)
                     {
                         
                         newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                         if (newdualgrid == -1) continue;
-                        verts.Add(vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]);
+                        newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+
+                        verts.Add(newVert );
                         newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
 
                         seamNodes.Add(new seamNode
                         {
-                            coord = (x, y, z),
+                            coord = (x, y, z+1),
                             dualgrid = newdualgrid,
-                            vertex = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]
+                            vertex = newVert
                         });
                     }
 
                     break;
                 case 7: //111
                     
-                    x = sizeX - 1;
-                    y = sizeY - 1;
-                    z = sizeZ - 1;
+                    x = 0;
+                    y = 0;
+                    z = 0;
 
                     
                     newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                     if (newdualgrid == -1) break;
-                    verts.Add(vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]);
+                    newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+
+                    verts.Add(newVert );
                     newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
 
                     seamNodes.Add(new seamNode
                     {
                         coord = (x, y, z),
                         dualgrid = newdualgrid,
-                        vertex = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF]
+                        vertex = newVert
                     });
                     break;
                 default:
