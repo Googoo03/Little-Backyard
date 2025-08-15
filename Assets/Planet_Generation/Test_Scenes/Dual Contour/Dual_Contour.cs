@@ -17,6 +17,7 @@ using DualContour;
 using UnityEngine.UI;
 using System.Data;
 using Unity.Mathematics;
+using System.Reflection;
 
 
 namespace DualContour
@@ -133,11 +134,12 @@ namespace DualContour
             public int Compare(seamNode a, seamNode b)
             {
                 // Sort by y first
+                int zCompare = a.coord.z.CompareTo(b.coord.z);
                 int yCompare = a.coord.y.CompareTo(b.coord.y);
                 if (yCompare != 0) return yCompare;
 
                 // Then by z
-                return a.coord.z.CompareTo(b.coord.z);
+                return zCompare;
             }
         }
 
@@ -175,60 +177,95 @@ namespace DualContour
 
             //now let's construct the tris along the x axis (x = size-1 on current chunk)
 
+            //connect similar y values together?
+
+
             int x = sizeX-1;
             int y = 0; int z = 0;
             float epsilon = 1e-9f;
+            bool madeTri = false;
 
             int opposingIndex = 0;
 
             for (y = 0; y < sizeY-1; ++y)
             {
                 for (z = 0; z < sizeZ-1; ++z) {
+                    
                     int dualgrid_index = (x + sizeX * (y + sizeY * z));
 
                     //Ask if valid value, any edges crossed, etc
                     int dualGridValue = dualGrid[dualgrid_index];
-                    if (dualGridValue == -1) continue;
-                    if ((dualGridValue & 0x08) != 0x08) continue;
+                    if (dualGridValue == -1 || dualGrid[(x + sizeX * (y + sizeY * (z+1)))] == -1) continue;
+                    if ((dualGridValue & 0x08) != 0x08)
+                    {
+                        //opposingIndex++;
+                        continue;
+                    }
 
                     if (opposingIndex+1 >= filtered.Length) return;
 
-                    Vector3 cellMax = cellpacked[(x + sizeX * (y + sizeY * (z+1)))];
+                    Vector3 cellMax = cellpacked[(x + sizeX * ((y+1) + sizeY * (z+1)))];
                     Vector3 cellMin = cellpacked[(x + sizeX * (y + sizeY * z))];
-
+                    
                     //ITS NOT A GOOD IDEA TO USE CELLPACKED AS A MEASURE OF VOXEL CELLS, SINCE THE LAST SET OF VERTICES
                     //ARE ACTUALLY SET BEHIND THE VOXEL, THEREFORE IT'LL 
 
                     bool inBounds = true;
+                    madeTri = false;
                     while (inBounds)
                     {
                         Vector3 csrVertex = filtered[opposingIndex].vertex;
 
-                        //should be like this because we are always iterating in one direction. We want indices to "keep up"
+                        inBounds = csrVertex.y <= cellMax.y - epsilon && csrVertex.z <= cellMax.z - epsilon;
+                        UnityEngine.Debug.Log("vertex is :" + csrVertex + "max is: " + cellMax);
 
-                        while (csrVertex.y < cellMin.y || csrVertex.z < cellMin.z)
-                        {
-                            UnityEngine.Debug.Log("vertex is :" + csrVertex + "max is: " + cellMax);
+                        while (csrVertex.y < cellMin.y - epsilon || csrVertex.z < cellMin.z - epsilon) {
                             opposingIndex++;
                             csrVertex = filtered[opposingIndex].vertex;
                         }
 
-                        
-
-                        inBounds = csrVertex.y <= cellMax.y && csrVertex.z <= cellMax.z;
-
-                        if (!inBounds) break;
+                        if (!inBounds)
+                        {
+                            break;
+                        }
+                        if (opposingIndex + 1 >= filtered.Length) return;
 
                         //build triangle
-                        indices.Add(dualGrid[dualgrid_index] >> 6 & 0x7FFF);
-                        indices.Add(filtered[opposingIndex+1].dualgrid >> 6 & 0x7FFF);
-                        indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
+                        madeTri = true;
+                        if ((dualGridValue & 0x04) != 0x04)
+                        {
+
+                            indices.Add(dualGridValue >> 6 & 0x7FFF);
+                            indices.Add(filtered[opposingIndex + 1].dualgrid >> 6 & 0x7FFF);
+                            indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
+                        }
+                        else {
+                            //reverse triangle
+                            indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
+                            
+                            indices.Add(filtered[opposingIndex + 1].dualgrid >> 6 & 0x7FFF);
+                            indices.Add(dualGridValue >> 6 & 0x7FFF);
+
+                        }
 
                         opposingIndex++; // move to next seam vertex
                     }
-                    indices.Add(dualGrid[dualgrid_index] >> 6 & 0x7FFF);
-                    indices.Add(dualGrid[(x + sizeX * (y + sizeY * (z+1)))] >> 6 & 0x7FFF);
-                    indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
+                    if (!madeTri) continue;
+
+                    if ((dualGridValue & 0x04) != 0x04)
+                    {
+                        indices.Add(dualGridValue >> 6 & 0x7FFF);
+                        indices.Add(dualGrid[(x + sizeX * (y + sizeY * (z + 1)))] >> 6 & 0x7FFF);
+                        indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
+                    }
+                    else {
+
+                        indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
+                        indices.Add(dualGrid[(x + sizeX * (y + sizeY * (z + 1)))] >> 6 & 0x7FFF);
+                        indices.Add(dualGridValue >> 6 & 0x7FFF);
+                    }
+                    
+
                 }
             }
             
@@ -547,7 +584,7 @@ namespace DualContour
             sizeZ = scale.z;
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
-            Ground = 2;
+            Ground = 1f;
             amplitude = 5;
             block_voxel = mode;
             radius = iradius;
@@ -580,8 +617,10 @@ namespace DualContour
             if (elevation >= sizeY - 1) { return -1; }
             if (elevation <= 1) { return 1; }
 
-            //float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp))) * amplitude + Ground - elevation;
-            float value = Ground - elevation;
+            //float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp))) * amplitude;// + Ground - elevation;
+            //float value = Ground - elevation;
+            float value = simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp) * amplitude;
+
 
             return value;
         }
@@ -836,35 +875,35 @@ namespace DualContour
         {
             int rule = 0;
 
-            bool xNeighbor = neighborMin.x == currentMax.x &&
-                                neighborMax.z <= currentMax.z &&
-                                neighborMax.z >= currentMin.z &&
-                                neighborMax.y <= currentMax.y &&
-                                neighborMax.y >= currentMin.y &&
-                                neighborMin.z <= currentMax.z &&
-                                neighborMin.z >= currentMin.z &&
-                                neighborMin.y <= currentMax.y &&
-                                neighborMin.y >= currentMin.y;
+            bool xNeighbor = Mathf.Abs(neighborMin.x - currentMax.x) < epsilon &&
+                                neighborMax.z <= currentMax.z + epsilon &&
+                                neighborMax.z >= currentMin.z - epsilon &&
+                                neighborMax.y <= currentMax.y + epsilon &&
+                                neighborMax.y >= currentMin.y - epsilon &&
+                                neighborMin.z <= currentMax.z + epsilon &&
+                                neighborMin.z >= currentMin.z - epsilon &&
+                                neighborMin.y <= currentMax.y + epsilon &&
+                                neighborMin.y >= currentMin.y - epsilon;
 
-            bool yNeighbor = neighborMin.y == currentMax.y &&
-                                neighborMax.z <= currentMax.z &&
-                                neighborMax.z >= currentMin.z &&
-                                neighborMax.x <= currentMax.x &&
-                                neighborMax.x >= currentMin.x &&
-                                neighborMin.z <= currentMax.z &&
-                                neighborMin.z >= currentMin.z &&
-                                neighborMin.x <= currentMax.x &&
-                                neighborMin.x >= currentMin.x;
+            bool yNeighbor = Mathf.Abs(neighborMin.y - currentMax.y) < epsilon &&
+                                neighborMax.z <= currentMax.z + epsilon &&
+                                neighborMax.z >= currentMin.z - epsilon &&
+                                neighborMax.x <= currentMax.x + epsilon &&
+                                neighborMax.x >= currentMin.x - epsilon &&
+                                neighborMin.z <= currentMax.z + epsilon &&
+                                neighborMin.z >= currentMin.z - epsilon &&
+                                neighborMin.x <= currentMax.x + epsilon &&
+                                neighborMin.x >= currentMin.x - epsilon;
 
-            bool zNeighbor = neighborMin.z == currentMax.z &&
-                                neighborMax.x <= currentMax.x &&
-                                neighborMax.x >= currentMin.x &&
-                                neighborMax.y <= currentMax.y &&
-                                neighborMax.y >= currentMin.y &&
-                                neighborMin.x <= currentMax.x &&
-                                neighborMin.x >= currentMin.x &&
-                                neighborMin.y <= currentMax.y &&
-                                neighborMin.y >= currentMin.y;
+            bool zNeighbor = Mathf.Abs(neighborMin.z - currentMax.z) < epsilon &&
+                                neighborMax.x <= currentMax.x + epsilon &&
+                                neighborMax.x >= currentMin.x - epsilon &&
+                                neighborMax.y <= currentMax.y + epsilon &&
+                                neighborMax.y >= currentMin.y - epsilon &&
+                                neighborMin.x <= currentMax.x + epsilon &&
+                                neighborMin.x >= currentMin.x - epsilon &&
+                                neighborMin.y <= currentMax.y + epsilon &&
+                                neighborMin.y >= currentMin.y - epsilon;
 
             if (xNeighbor) rule |= 4;
             if (yNeighbor) rule |= 2;
@@ -876,8 +915,6 @@ namespace DualContour
         public void ConstructSeamNodes(Vector3 cmin, Vector3 cmax, ref NativeList<seamNode> seamNodes, ref NativeList<Vector3> verts) {
             //either add along the minimum x,y,z
             int rule = GetNeighborRule(cmin,cmax, min, max);
-
-            UnityEngine.Debug.Log("rule is " + rule);
 
             int x, y, z;
             int newdualgrid = 0;
@@ -976,8 +1013,17 @@ namespace DualContour
                         {
 
                             newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                            if (newdualgrid == -1) continue;
-                            newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+                            //if (newdualgrid == -1) continue;
+
+                            //if vertex doesnt exist, make one at the center or corner, then add
+                            if (newdualgrid == -1)
+                            {
+                                newVert = cellPacked[(x) + sizeX * ((y) + sizeY * (z))];
+                            }
+                            else {
+
+                                newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+                            }
 
                             verts.Add(newVert);
                             

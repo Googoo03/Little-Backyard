@@ -41,7 +41,12 @@ public class Chunk_Manager : MonoBehaviour
         if (!node.HasChildren()) { node.NextLOD(); return; }
 
         List<QuadTreeNode> children = node.GetChildren();
-        foreach (QuadTreeNode child in children) { DFSNextLod(child); }
+        for (int i = 0; i < children.Count; ++i) {
+            //if (i % 2 == 0) continue;
+            QuadTreeNode child = children[i];
+            DFSNextLod(child);
+        }
+        
     }
 
     public void DFSPrevLod(QuadTreeNode node) {

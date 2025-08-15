@@ -173,6 +173,8 @@ public class DC_Chunk : MonoBehaviour
         //IF WE WANT TEXTURES, WE HAVE TO CALCULATE THE UVS MANUALLY
         m.uv = uvs;
         ////////////////////////////////////////////////////////////
+        if (indices.Length < 3) return;
+
 
         m.SetIndices(indices.AsArray(), MeshTopology.Triangles, 0);
         m.RecalculateBounds();
