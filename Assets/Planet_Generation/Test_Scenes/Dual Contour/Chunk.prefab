@@ -46,11 +46,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   scale: {x: 32, y: 32, z: 32}
   length: 32
-  block_voxel: 1
+  block_voxel: 0
   editRadius: 2.26
   dir: 172
   max: {x: 0, y: 0, z: 0}
   min: {x: 0, y: 0, z: 0}
+  LODLevel: 0
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 0}

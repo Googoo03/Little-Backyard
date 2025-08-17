@@ -18,6 +18,7 @@ using UnityEngine.UI;
 using System.Data;
 using Unity.Mathematics;
 using System.Reflection;
+using static UnityEngine.Rendering.VolumeComponent;
 
 
 namespace DualContour
@@ -79,204 +80,10 @@ namespace DualContour
         AIR = 15
     }
 
-
-    
-
-
-
-    [BurstCompile]
-    public struct SeamParallel : IJob {
-
-        public NativeList<seamNode> seams;
-        public NativeArray<Vector4> cellpacked;
-        public NativeArray<int> dualGrid;
-        public NativeList<Vector3> vertices;
-        public NativeList<int> indices;
-        public int sizeX, sizeY, sizeZ;
-        public Vector3 step;
-
-        struct Trirule
-        {
-            public int axis;
-            public int sign;
-            public (int dx, int dy, int dz)[] vertpos;
-        }
-
-        static readonly Trirule[] rules = {
-            new Trirule { //x axis
-                axis = 0x20,
-                sign = 0x10,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (1,0,0), (1,1,0),
-                    (1,1,0), (0,1,0), (0,0,0)
-                }
-            },
-            new Trirule { //y axis
-                axis = 0x08,
-                sign = 0x04,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (1,0,0), (1,0,1),
-                    (1,0,1), (0,0,1), (0,0,0)
-                }
-            },
-            new Trirule { //z axis
-                axis = 0x02,
-                sign = 0x01,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (0,1,0), (0,1,1),
-                    (0,1,1), (0,0,1), (0,0,0)
-                }
-            },
-        };
-
-        public struct SeamNodeComparer : IComparer<seamNode>
-        {
-            public int Compare(seamNode a, seamNode b)
-            {
-                // Sort by y first
-                int zCompare = a.coord.z.CompareTo(b.coord.z);
-                int yCompare = a.coord.y.CompareTo(b.coord.y);
-                if (yCompare != 0) return yCompare;
-
-                // Then by z
-                return zCompare;
-            }
-        }
-
-        public void Execute()
-        {
-            //build CSR_x, CSR_y, CSR_z
-
-
-            int count = 0;
-            
-            for (int i = 0; i < seams.Length; i++)
-            {
-                var node = seams[i];
-                var (nx, ny, nz) = node.coord;
-                if (nx != 0) continue; //only include exclusive axis neighbors
-
-                count++;
-                
-            }
-            NativeArray<seamNode> filtered = new NativeArray<seamNode>(count, Allocator.Temp, NativeArrayOptions.ClearMemory);
-            int index = 0;
-            for (int i = 0; i < seams.Length; i++)
-            {
-                var node = seams[i];
-                var (nx, ny, nz) = node.coord;
-                if (nx != 0) continue;
-
-                filtered[index++] = seams[i];
-
-            }
-
-            filtered.Sort(new SeamNodeComparer());
-
-
-
-            //now let's construct the tris along the x axis (x = size-1 on current chunk)
-
-            //connect similar y values together?
-
-
-            int x = sizeX-1;
-            int y = 0; int z = 0;
-            float epsilon = 1e-9f;
-            bool madeTri = false;
-
-            int opposingIndex = 0;
-
-            for (y = 0; y < sizeY-1; ++y)
-            {
-                for (z = 0; z < sizeZ-1; ++z) {
-                    
-                    int dualgrid_index = (x + sizeX * (y + sizeY * z));
-
-                    //Ask if valid value, any edges crossed, etc
-                    int dualGridValue = dualGrid[dualgrid_index];
-                    if (dualGridValue == -1 || dualGrid[(x + sizeX * (y + sizeY * (z+1)))] == -1) continue;
-                    if ((dualGridValue & 0x08) != 0x08)
-                    {
-                        //opposingIndex++;
-                        continue;
-                    }
-
-                    if (opposingIndex+1 >= filtered.Length) return;
-
-                    Vector3 cellMax = cellpacked[(x + sizeX * ((y+1) + sizeY * (z+1)))];
-                    Vector3 cellMin = cellpacked[(x + sizeX * (y + sizeY * z))];
-                    
-                    //ITS NOT A GOOD IDEA TO USE CELLPACKED AS A MEASURE OF VOXEL CELLS, SINCE THE LAST SET OF VERTICES
-                    //ARE ACTUALLY SET BEHIND THE VOXEL, THEREFORE IT'LL 
-
-                    bool inBounds = true;
-                    madeTri = false;
-                    while (inBounds)
-                    {
-                        Vector3 csrVertex = filtered[opposingIndex].vertex;
-
-                        inBounds = csrVertex.y <= cellMax.y - epsilon && csrVertex.z <= cellMax.z - epsilon;
-                        UnityEngine.Debug.Log("vertex is :" + csrVertex + "max is: " + cellMax);
-
-                        while (csrVertex.y < cellMin.y - epsilon || csrVertex.z < cellMin.z - epsilon) {
-                            opposingIndex++;
-                            csrVertex = filtered[opposingIndex].vertex;
-                        }
-
-                        if (!inBounds)
-                        {
-                            break;
-                        }
-                        if (opposingIndex + 1 >= filtered.Length) return;
-
-                        //build triangle
-                        madeTri = true;
-                        if ((dualGridValue & 0x04) != 0x04)
-                        {
-
-                            indices.Add(dualGridValue >> 6 & 0x7FFF);
-                            indices.Add(filtered[opposingIndex + 1].dualgrid >> 6 & 0x7FFF);
-                            indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
-                        }
-                        else {
-                            //reverse triangle
-                            indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
-                            
-                            indices.Add(filtered[opposingIndex + 1].dualgrid >> 6 & 0x7FFF);
-                            indices.Add(dualGridValue >> 6 & 0x7FFF);
-
-                        }
-
-                        opposingIndex++; // move to next seam vertex
-                    }
-                    if (!madeTri) continue;
-
-                    if ((dualGridValue & 0x04) != 0x04)
-                    {
-                        indices.Add(dualGridValue >> 6 & 0x7FFF);
-                        indices.Add(dualGrid[(x + sizeX * (y + sizeY * (z + 1)))] >> 6 & 0x7FFF);
-                        indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
-                    }
-                    else {
-
-                        indices.Add(filtered[opposingIndex].dualgrid >> 6 & 0x7FFF); //x delta
-                        indices.Add(dualGrid[(x + sizeX * (y + sizeY * (z + 1)))] >> 6 & 0x7FFF);
-                        indices.Add(dualGridValue >> 6 & 0x7FFF);
-                    }
-                    
-
-                }
-            }
-            
-
-            }
-        }
-
-
     [BurstCompile]
     public struct QuadParallel : IJob
     {
+
         public int sizeX, sizeY, sizeZ;
         public NativeArray<int> dualGrid;
         public NativeList<int> indices;
@@ -317,13 +124,13 @@ namespace DualContour
         public void Execute()
         {
 
-            for (int x = 0; x < sizeX - 1; ++x)
+            for (int x = 0; x < sizeX - 2; ++x)
             {
 
-                for (int y = 0; y < sizeY - 1; ++y)
+                for (int y = 0; y < sizeY - 2; ++y)
                 {
 
-                    for (int z = 0; z < sizeZ - 1; ++z)
+                    for (int z = 0; z < sizeZ - 2; ++z)
                     {
                         int index = (int)(x + sizeX * (y + sizeY * z));
                         int dualGrid_index = dualGrid[index];
@@ -339,13 +146,397 @@ namespace DualContour
                                     rule.vertpos[3], rule.vertpos[1], rule.vertpos[5]
                                 };
 
-                            
 
-                            for (int i = 0; i < 6; ++i) {
-                                var (dx, dy, dz) = verts[i];
-                                indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z+dz))] >> 6 & 0x7FFF);
+                            for (int j = 0; j < 2; ++j)
+                            {
+                                var (dx, dy, dz) = verts[j];
+                                if (dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == 0) continue;
+
+                                (dx, dy, dz) = verts[j+1];
+                                if (dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == 0) continue;
+
+                                (dx, dy, dz) = verts[j+2];
+                                if (dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == 0) continue;
+
+
+                                for (int i = 0; i < 3; ++i)
+                                {
+                                    (dx, dy, dz) = verts[j*3 + i];
+                                    indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
+                                }
                             }
                             
+                        }
+                    }
+                }
+
+
+            }
+        }
+    }
+
+    [BurstCompile]
+    public struct SeamVertexParallel : IJob {
+        public NativeList<Vector3> vertsParallel;
+        public int sizeX, sizeY, sizeZ;
+        public int resolution;
+
+        public NativeArray<int> dualGrid;
+
+        public NativeArray<float> vertValues;
+        public NativeArray<Vector3> vertPos;
+        public NativeArray<Vector4> cellPacked;
+
+        public bool block_voxel;
+
+        float adapt(float x0, float x1) => (-x0) / (x1 - x0);
+
+        public void DetermineVertex(int x, int y, int z) {
+            int index = x + sizeX * (y + sizeY * z);
+            dualGrid[index] = -1;
+            int xPos, yPos, zPos;
+
+            for (int i = 0; i < 8; ++i)
+            {
+                xPos = (x + ((i >> 2) & 0x01));
+                yPos = (y + ((i >> 1) & 0x01));
+                zPos = (z + (i & 0x01));
+
+
+                vertPos[i] = cellPacked[(xPos + sizeX * (yPos + sizeY * zPos))];
+                vertValues[i] = cellPacked[(xPos + sizeX * (yPos + sizeY * zPos))].w;
+            }
+            //calculate the adapt of only the edges that cross, rather than the whole thing
+            //calculate the positions of the edges itself
+
+            Vector3 avg = Vector3.zero;
+            int count = 0;
+
+            //replace Vector3 with dynamic sizing
+
+            //we then identify where changes in the function are (sign changes)
+            bool signChange = false;
+            bool xCross;
+            bool yCross;
+            bool zCross;
+
+            //set sign change if any edge is crossed
+            signChange |= (vertValues[0] > 0) != (vertValues[4] > 0);
+            signChange |= (vertValues[0] > 0) != (vertValues[1] > 0);
+            signChange |= (vertValues[5] > 0) != (vertValues[1] > 0);
+            signChange |= (vertValues[5] > 0) != (vertValues[4] > 0);
+            signChange |= (vertValues[4] > 0) != (vertValues[6] > 0);
+            signChange |= (vertValues[1] > 0) != (vertValues[3] > 0);
+            signChange |= (vertValues[0] > 0) != (vertValues[2] > 0);
+            signChange |= yCross = (vertValues[5] > 0) != (vertValues[7] > 0);
+            signChange |= xCross = (vertValues[6] > 0) != (vertValues[7] > 0);
+            signChange |= zCross = (vertValues[3] > 0) != (vertValues[7] > 0);
+            signChange |= (vertValues[2] > 0) != (vertValues[3] > 0);
+            signChange |= (vertValues[2] > 0) != (vertValues[6] > 0);
+
+            if (signChange)
+            {
+
+                //X EDGES NEW 
+                for (int i = 0; i < 4; ++i)
+                {
+                    float a = vertValues[i];
+                    float b = vertValues[i | 0x04];
+                    if (a > 0 != b > 0)
+                    {
+                        avg += vertPos[i] + adapt(a, b) * (vertPos[i | 0x04] - vertPos[i]);
+                        count++;
+                    }
+                }
+
+                //Y EDGES
+                int j = 0;
+                for (int i = 0; i < 4; ++i)
+                {
+
+                    if (i < 2)
+                    {
+                        j = i;
+                    }
+                    else
+                    {
+                        j = i == 2 ? 4 : 5;
+                    }
+                    float a = vertValues[j];
+                    float b = vertValues[j | 0x02];
+                    if (a > 0 != b > 0)
+                    {
+                        avg += vertPos[j] + adapt(a, b) * (vertPos[j | 0x02] - vertPos[j]);
+                        count++;
+                    }
+                }
+
+                //Z EDGES
+                for (int i = 0; i < 4; ++i)
+                {
+                    float a = vertValues[(i << 1)];
+                    float b = vertValues[(i << 1) | 0x01];
+                    if (a > 0 != b > 0)
+                    {
+                        avg += vertPos[i << 1] + adapt(a, b) * (vertPos[(i << 1) | 0x01] - vertPos[i << 1]);
+                        count++;
+                    }
+                }
+
+                avg /= count > 1 ? count : 1;
+
+                //figure out what edge was crossed (axis)
+
+                //Assign the sign of the edge according to how the flip occurs
+
+                //The normals shouldn't have x,y,z as their parameters, but should instead reflect
+                //the positions of the intermediate point on the edge.
+
+                int newedge = 0;
+
+                if (xCross)
+                {
+                    newedge |= 1 << 5;
+                    newedge |= (((vertValues[6] > 0) && !(vertValues[7] > 0)) ? 1 : 0) << 4;
+                }
+                if (yCross)
+                {
+                    newedge |= 1 << 3;
+                    newedge |= ((!(vertValues[5] > 0) && (vertValues[7] > 0)) ? 1 : 0) << 2;
+                }
+                if (zCross)
+                {
+                    newedge |= 1 << 1;
+                    newedge |= ((vertValues[3] > 0) && !(vertValues[7] > 0)) ? 1 : 0;
+                }
+
+                Vector3 vertex = block_voxel ? vertPos[0] : avg;
+
+                vertsParallel.Add(vertex);
+
+                //This should reference a biome texture and current elevation
+                UInt16 voxelData = 0;
+                //UnityEngine.Debug.Log("New Vert at " + vertPos[0]);
+                dualGrid[index] = (newedge | ((vertsParallel.Length - 1) << 6) | (voxelData << 21));
+            }
+        }
+        public void Execute()
+        {
+            int x, y, z;
+
+            /*
+            for (x = 0; x < sizeX  - 1; ++x)
+            {
+                for (y = 0; y < sizeY - 1; ++y)
+                {
+                    for (z = 0; z < sizeZ - 1; ++z)
+                    {
+                        DetermineVertex(x, y, z);
+                        //UnityEngine.Debug.Log("x vert running");
+                    }
+                }
+            }*/
+
+            //z = sizeZ - resolution-2;
+
+            
+            for (x = 0; x < sizeX - 1; ++x)
+            {
+                for (y = 0; y < sizeY - 1; ++y)
+                {
+                    for (z= sizeZ - resolution - 1; z < sizeZ - 1; ++z)
+                    {
+                        DetermineVertex(x, y, z);
+                        
+                    }
+                }
+            }
+
+
+
+            /////////////BROKEN THIS  LOOP
+            ///
+            x = sizeX - resolution - 1;
+            for (x = sizeX - resolution - 2; x < sizeX - 1; ++x)
+                    {
+                for (y = 0; y < sizeY - 1; ++y)
+                {
+
+                    for (z = 0; z < sizeZ - 1; ++z)
+                    {
+
+                        UnityEngine.Debug.Log("x FACE running");
+                        DetermineVertex(x, y, z);
+                    }
+                }
+            }
+            //////////////////////////////////
+            ///
+
+            for (x = 0; x < sizeX - 1; ++x)
+            {
+                for (z = 0; z < sizeZ - 1; ++z)
+                {
+                    for (y = sizeY - resolution - 1; y < sizeY - 1; ++y)
+                    {
+                        DetermineVertex(x, y, z);
+                    }
+                }
+            }
+
+            
+            x = sizeX - resolution - 1;
+            y = sizeY - resolution - 1;
+            for (; x < sizeX - 1; ++x)
+            {
+                for (; y < sizeY - 1; ++y)
+                {
+                    for (z=0; z < sizeZ - resolution - 1; ++z)
+                    {
+                        DetermineVertex(x, y, z);
+                    }
+                }
+            }
+            
+            z = sizeZ - resolution - 1;
+            y = sizeY - resolution - 1;
+            for (x = 0; x < sizeX - resolution - 1; ++x)
+            {
+                for (; y < sizeY - 1; ++y)
+                {
+                    for (; z < sizeZ - 1; ++z)
+                    {
+                        DetermineVertex(x, y, z);
+                        UnityEngine.Debug.Log("zy vert running");
+                    }
+                }
+            }
+            
+            x = sizeX - resolution - 1;
+            z = sizeZ - resolution - 1;
+            for (; x < sizeX - 1; ++x)
+            {
+                for (y = 0; y < sizeY - resolution - 1; ++y)
+                {
+                    for (; z < sizeZ - 1; ++z)
+                    {
+                        DetermineVertex(x, y, z);
+                    }
+                }
+            }
+            
+            x = sizeX - resolution - 1;
+            y = sizeY - resolution - 1;
+            z = sizeZ - resolution - 1;
+            for (; x < sizeX - 1; ++x)
+            {
+                for (; y < sizeY - 1; ++y)
+                {
+                    for (; z < sizeZ - 1; ++z)
+                    {
+                        DetermineVertex(x, y, z);
+                        UnityEngine.Debug.Log("xyz vert running");
+                    }
+                }
+            }
+
+        }
+    }
+
+
+
+    [BurstCompile]
+    public struct SeamQuadParallel : IJob
+    {
+
+        public int sizeX, sizeY, sizeZ;
+        public NativeArray<int> dualGrid;
+        public NativeList<int> indices;
+        public NativeList<Vector3> vertices;
+
+        struct Trirule
+        {
+            public int axis;
+            public int sign;
+            public (int dx, int dy, int dz)[] vertpos;
+        }
+
+        static readonly Trirule[] rules = {
+            new Trirule { //x axis
+                axis = 0x20,
+                sign = 0x10,
+                vertpos = new (int, int, int )[]{
+                    (0,0,0), (1,0,0), (1,1,0),
+                    (1,1,0), (0,1,0), (0,0,0)
+                }
+            },
+            new Trirule { //y axis
+                axis = 0x08,
+                sign = 0x04,
+                vertpos = new (int, int, int )[]{
+                    (0,0,0), (1,0,0), (1,0,1),
+                    (1,0,1), (0,0,1), (0,0,0)
+                }
+            },
+            new Trirule { //z axis
+                axis = 0x02,
+                sign = 0x01,
+                vertpos = new (int, int, int )[]{
+                    (0,0,0), (0,1,0), (0,1,1),
+                    (0,1,1), (0,0,1), (0,0,0)
+                }
+            },
+        };
+
+        public void Execute()
+        {
+
+            for (int x = 0; x < sizeX-1; ++x)
+            {
+
+                for (int y = 0; y < sizeY-1; ++y)
+                {
+
+                    for (int z = 0; z < sizeZ-1; ++z)
+                    {
+                        int index = (int)(x + sizeX * (y + sizeY * z));
+                        int dualGrid_index = dualGrid[index];
+
+                        if (dualGrid_index == -1) continue;
+
+                        foreach (Trirule rule in rules)
+                        {
+                            if ((dualGrid_index & rule.axis) != rule.axis) continue;
+
+                            var verts = (dualGrid_index & rule.sign) == rule.sign ? rule.vertpos : new (int, int, int)[]
+                                {
+                                    rule.vertpos[0], rule.vertpos[4], rule.vertpos[2],
+                                    rule.vertpos[3], rule.vertpos[1], rule.vertpos[5]
+                                };
+
+
+
+                            for (int j = 0; j < 2; ++j)
+                            {
+                                
+                                var (dx, dy, dz) = verts[j];
+                                if (dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == 0 || dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == -1) continue;
+
+                                (dx, dy, dz) = verts[j + 1];
+                                if (dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == 0 || dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == -1) continue;
+
+                                (dx, dy, dz) = verts[j + 2];
+                                if (dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == 0 || dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == -1) continue;
+                                
+
+                                for (int i = 0; i < 3; ++i)
+                                {
+                                    (dx, dy, dz) = verts[j * 3 + i];
+                                    if ((dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF) >= vertices.Length) UnityEngine.Debug.Log(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
+                                    indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
+                                }
+                            }
+
                         }
                     }
                 }
@@ -376,14 +567,14 @@ namespace DualContour
         public void Execute() {
             int index = 0;
 
-            for (int x = 0; x < sizeX; ++x)
+            for (int x = 0; x < sizeX-1; ++x)
             {
-                for (int y = 0; y < sizeY; ++y)
+                for (int y = 0; y < sizeY-1; ++y)
                 {
-                    for (int z = 0; z < sizeZ; ++z)
+                    for (int z = 0; z < sizeZ-1; ++z)
                     {
                         index = x + sizeX * (y + sizeY * z);
-                        dualGrid[index] = -1;
+                        if (dualGrid[index] == 0) dualGrid[index] = -1;
                         int xPos, yPos, zPos;
 
                         for (int i = 0; i < 8; ++i)
@@ -526,12 +717,13 @@ namespace DualContour
         [SerializeField] private float lastT;
         [SerializeField] private float amplitude;
         [SerializeField] private int LOD_Level;
-        [SerializeField] private int dir;
+        [SerializeField] private int dir; //on spherical meshes, this defines the uv direction (on a uv sphere) and sign
+        [SerializeField] private int resolution; //for seams, determines how many times it needs to subdivide to be on the same level as the highest fidelity neighbor
 
         //MESH MODE
         [SerializeField] private bool block_voxel;
 
-        [SerializeField] private float CELL_SIZE;
+        [SerializeField] private float CELL_SIZE; //determines how far in units all the cells in a particular axis should cover.
 
         [SerializeField] private float Ground;
 
@@ -574,7 +766,8 @@ namespace DualContour
 
         public VertexParallel vertJob;
         public QuadParallel quadJob;
-        public SeamParallel seamJob;
+        public SeamQuadParallel seamQuadJob;
+        public SeamVertexParallel seamVertexJob;
         
 
         public Dual_Contour(Vector3 _global, Vector3Int scale, Vector3 ioffset, int ilodLevel, int length, bool mode, float iradius, int idir) {
@@ -590,15 +783,9 @@ namespace DualContour
             radius = iradius;
             dir = idir;
             coordTransformFunction = Grid;
+            resolution = 1;
 
-
-            //determines the "step" between vertices to cover 1 unit total
-            step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
-            step *= (1f / (1 << LOD_Level));
-            step *= CELL_SIZE;
             
-
-            //sets the offset of the grid by a power of two based on the LOD level
             offset = -Vector3.one * CELL_SIZE * 0.5f;
             offset.x += ioffset.x * CELL_SIZE;
             offset.y += ioffset.y * CELL_SIZE;
@@ -648,16 +835,49 @@ namespace DualContour
             return (ushort)val;
         }
 
+        public void InitializeBounds() {
+            min = global + offset;
+
+            //be careful that cell_size is before it increments, in fact, it may be better if the seam just inherits from the parent chunk
+            max = global + offset + (Vector3.one * CELL_SIZE * (1f / (1 << LOD_Level)));
+        }
 
         [BurstCompile]
-        public void InitializeGrid(ref NativeList<Vector3> verts, ref NativeList<int> ind) {
+        public void InitializeGrid(bool seam,ref NativeList<Vector3> verts, ref NativeList<int> ind) {
 
             indices = ind;
             vertices = verts;
 
+            //sets the offset of the grid by a power of two based on the LOD level
+            //YES KEEP IT BEFORE IT INCREMENTS THE CELL_SIZE
+           
+
+            //UnityEngine.Debug.Log((seam ? ("seam") : ("chunk")) + " Offset at" + offset);
+
+            if (seam) {
+                sizeX++;
+                sizeY++;
+                sizeZ++;
+
+                CELL_SIZE++; //want to cover n+1 units, where n is the initial length
+            }
+
+            sizeX *= resolution;
+            sizeY *= resolution;
+            sizeZ *= resolution;
+
+            //determines the "step" between vertices to cover 1 unit total
+            step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
+            step *= (1f / (1 << LOD_Level));
+            step *= CELL_SIZE;
+
+            
+            
+            
+
             //BIGGEST BOTTLENECK ABOVE ALL
-            cellPacked = new NativeArray<Vector4>((sizeX+1)* (sizeY+1) *(sizeZ + 1), Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-            dualGrid = new NativeArray<int>(sizeX * sizeY * sizeZ, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            cellPacked = new NativeArray<Vector4>(sizeX * sizeY * sizeZ, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            dualGrid = new NativeArray<int>(sizeX * sizeY * sizeZ, Allocator.TempJob, NativeArrayOptions.ClearMemory);
             voxel_data = new UInt16[sizeX * sizeY * sizeZ];
             ///////////////////////////////
 
@@ -666,8 +886,7 @@ namespace DualContour
             Vector3 cellp;
             Vector4 packed_cell;
 
-            min = global + offset;
-            max = global + offset + (Vector3.one * CELL_SIZE * (1f / (1 << LOD_Level)));
+            
             seams = new NativeList<seamNode>(1,Allocator.Persistent);
 
             for (int z = 0; z < sizeZ; ++z)
@@ -686,10 +905,10 @@ namespace DualContour
                         packed_cell = cellp;
                         packed_cell.w = function(global + cellp, y);
 
-
+                        index = x + sizeX * (y + sizeY * z);
                         cellPacked[index] = packed_cell;
                         voxel_data[index] = (ushort)DetermineVoxelData(global + cellp, x, y, z);
-                        index++;
+                        //index++;
                     }
                 }
             }
@@ -710,6 +929,21 @@ namespace DualContour
                 block_voxel = block_voxel
             };
 
+            seamVertexJob = new SeamVertexParallel
+            {
+                cellPacked = cellPacked,
+                dualGrid = dualGrid,
+                vertValues = new NativeArray<float>(8, Allocator.Persistent, NativeArrayOptions.UninitializedMemory),
+                vertPos = new NativeArray<Vector3>(8, Allocator.Persistent, NativeArrayOptions.UninitializedMemory),
+                vertsParallel = vertices,
+                resolution = resolution,
+
+                sizeX = sizeX,
+                sizeY = sizeY,
+                sizeZ = sizeZ,
+                block_voxel = block_voxel
+            };
+
             quadJob = new QuadParallel
             {
                 sizeX = sizeX,
@@ -720,17 +954,14 @@ namespace DualContour
 
             };
 
-            seamJob = new SeamParallel
+            seamQuadJob = new SeamQuadParallel
             {
                 sizeX = sizeX,
                 sizeY = sizeY,
                 sizeZ = sizeZ,
                 indices = indices,
                 dualGrid = dualGrid,
-                seams = seams,
-                vertices = vertices,
-                step = step,
-                cellpacked = cellPacked,
+                vertices = vertices
             };
 
         }
@@ -741,6 +972,8 @@ namespace DualContour
 
         public Vector3 GetMin() { return min; }
         public Vector3 GetMax() { return max; }
+
+        public void SetResolution(int iresolution) { resolution = iresolution; }
 
 
         public void Generate(ref NativeList<Vector3> verts, ref NativeList<int> ind, ref UInt16[] v_data, ref int vert_index, ref int ind_index)
@@ -864,11 +1097,16 @@ namespace DualContour
 
         public QuadParallel GetQuadParallel() { return quadJob; }
 
-        public SeamParallel GetSeamParallel() { return seamJob; }
+        public SeamQuadParallel GetSeamQuadParallel() { return seamQuadJob; }
+
+        public SeamVertexParallel GetSeamVertexParallel() { return seamVertexJob; }
 
         public ref NativeList<seamNode> GetSeamStruct() { return ref seams; }
 
         public ref NativeList<Vector3> GetVerticesStruct() { return ref vertices; }
+
+        public int GetLODLevel() { return LOD_Level; }
+
 
 
         public static int GetNeighborRule(float3 currentMin, float3 currentMax, float3 neighborMin, float3 neighborMax, float epsilon = 0.0001f)
@@ -912,18 +1150,159 @@ namespace DualContour
             return rule;
         }
 
-        public void ConstructSeamNodes(Vector3 cmin, Vector3 cmax, ref NativeList<seamNode> seamNodes, ref NativeList<Vector3> verts) {
-            //either add along the minimum x,y,z
-            int rule = GetNeighborRule(cmin,cmax, min, max);
+
+
+
+        public void ConstructSeamFromParentChunk(Dual_Contour current)
+        {
+
+            //current is the seam
 
             int x, y, z;
+            int cx, cy, cz;
+
+            int dgIndex;
             int newdualgrid = 0;
             Vector3 newVert;
 
+            //find difference in LOD levels, for a start x,y,z index (beginning of chunk, not beginning of loop)
 
-            //SHOULD ADD TO A LIST RATHER THAN REFERENCE AN ARRAY, WHAT IF THERE ARE MULTIPLE MORE REFINED CHUNKS BORDERING IT? THEY WILL OVERWRITE EACH OTHER
+            //it is guaranteed at this point that the density of the seam >= density of chunk
+            float relativeDensity = step.x / current.step.x;
+            int indicesToCover = (int)relativeDensity;
+            int startX = 0, startY = 0, startZ = 0;
+
+            //apply offset to finding indices
+
+            //CHANGE THIS SUCH THAT IT DOESNT RELY ON OFFSET AND STEP, SINCE THESE ARE CHANGED TO ACCOUNT FOR THE EXTRA LAYER
+            startX += (int)((offset.x - current.offset.x) / current.step.x);
+            startY += (int)((offset.y - current.offset.y) / current.step.y);
+            startZ += (int)((offset.z - current.offset.z) / current.step.z);
+
+            //z face
+            z = sizeZ - 2;
+            for (x = 0; x < sizeX - 1; ++x)
+            {
+                for (y = 0; y < sizeY - 1; ++y)
+                {
+                    newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
+                    if (newdualgrid == -1) continue;
+                    newVert = vertices[newdualgrid >> 6 & 0x7FFF];
+
+                    current.vertices.Add(newVert);
+                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
+
+                    cz = (current.sizeZ-1) - resolution - 1;
+                    for (cx = 0; cx < indicesToCover; ++cx)
+                    {
+                        for (cy = 0; cy < indicesToCover; ++cy)
+                        {
+
+                            //the x and y variables (NOT CX CY) need to be multiplied by something
+                            dgIndex = ((startX + (x * indicesToCover) + cx) + current.sizeX * ((startY + (y * indicesToCover) + cy) + current.sizeY * cz));
+                            current.dualGrid[dgIndex] = newdualgrid;
+                        }
+                    }
+
+                }
+            }
+
+            //x face
+            x = sizeX-2;
+            for (y = 0; y < sizeY - 1; ++y)
+            {
+                for (z = 0; z < sizeZ - 1; ++z)
+                {
+
+                    newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
+                    if (newdualgrid == -1) continue;
+                    newVert = vertices[newdualgrid >> 6 & 0x7FFF];
+
+                    current.vertices.Add(newVert);
+                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
+
+                    cx = (current.sizeX-1) - resolution - 1;
+                    for (cy = 0; cy < indicesToCover; ++cy)
+                    {
+                        for (cz = 0; cz < indicesToCover; ++cz)
+                        {
+
+                            //the x and y variables (NOT CX CY) need to be multiplied by something
+                            dgIndex = ((cx) + current.sizeX * ((startY + (y * indicesToCover) + cy) + current.sizeY * (startZ + (z * indicesToCover) + cz)));
+                            current.dualGrid[dgIndex] = newdualgrid;
+                        }
+
+                    }
+                }
+            }
+
+            //y face
+            y = sizeY - 2;
+            for (x = 0; x < sizeX - 1; ++x)
+            {
+                for (z = 0; z < sizeZ - 1; ++z)
+                {
+
+                    newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
+                    if (newdualgrid == -1) continue;
+                    newVert = vertices[newdualgrid >> 6 & 0x7FFF];
+
+                    current.vertices.Add(newVert);
+                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
+
+                    cy = (current.sizeY - 1) - resolution - 1;
+                    for (cx = 0; cx < indicesToCover; ++cx)
+                    {
+                        for (cz = 0; cz < indicesToCover; ++cz)
+                        {
+
+                            //the x and y variables (NOT CX CY) need to be multiplied by something
+                            dgIndex = ((startX + (x * indicesToCover) + cx) + current.sizeX * (cy + current.sizeY * (startZ + z * indicesToCover + cz)));
+                            current.dualGrid[dgIndex] = newdualgrid;
+                        }
+
+                    }
+                }
 
 
+            }
+        }
+
+
+        public void ConstructSeamNodes(Dual_Contour current) {
+            
+            Vector3 cmin = current.min;
+            Vector3 cmax = current.max;
+
+            int rule = GetNeighborRule(cmin,cmax, min, max);
+
+            int x, y, z;
+
+            //the in-plane offset when filling in subdivided space
+            int cx, cy, cz;
+
+            int dgIndex;
+            int newdualgrid = 0;
+            Vector3 newVert;
+
+            //find difference in LOD levels, for a start x,y,z index (beginning of chunk, not beginning of loop)
+
+            //it is guaranteed at this point that the density of the seam >= density of chunk
+            float relativeDensity = step.x / current.step.x;
+            int indicesToCover = (int)relativeDensity;
+            int startX = 0, startY = 0, startZ = 0;
+
+            //apply offset to finding indices
+            startX += (int)((offset.x - current.offset.x) / current.step.x);
+            startY += (int)((offset.y - current.offset.y) / current.step.y);
+            startZ += (int)((offset.z - current.offset.z) / current.step.z);
+            //apply a start and end index to loop over
+
+            //core logic is already present. Just have to find indices.
+
+            //all neighboring chunks will add to the outside of the array based on where they are as neighbors
+
+            int start, end;
 
 
             switch (rule)
@@ -932,22 +1311,27 @@ namespace DualContour
                     break;
                 case 1: //001
                     z = 0;
-                    for ( x = 0; x < sizeX; ++x)
+                    for ( x = 0; x < sizeX-1; ++x)
                     {
-                        for ( y = 0; y < sizeY; ++y) {
+                        for ( y = 0; y < sizeY-1; ++y) {
                             newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                             if (newdualgrid == -1) continue;
-                            newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+                            newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                            verts.Add(newVert);
-                            newdualgrid = (newdualgrid & ~(0x7FFF << 6) ) | ((verts.Length - 1) << 6);
+                            current.vertices.Add(newVert);
+                            newdualgrid = (newdualgrid & ~(0x7FFF << 6) ) | ((current.vertices.Length - 1) << 6);
 
-                            seamNodes.Add(new seamNode
+                            cz = current.sizeZ - 1;
+                            for (cx = 0; cx < indicesToCover; ++cx)
                             {
-                                coord = (x+1, y+1, z),
-                                dualgrid = newdualgrid,
-                                vertex = newVert
-                            }) ;
+                                for (cy = 0; cy < indicesToCover; ++cy) {
+
+                                    //the x and y variables (NOT CX CY) need to be multiplied by something
+                                    dgIndex = ((startX + (x*indicesToCover) + cx) + current.sizeX * ((startY + (y*indicesToCover) + cy) + current.sizeY * cz));
+                                    current.dualGrid[dgIndex] = newdualgrid;
+                                }
+                            }                            
+                            
                         }
                     }
                     break;
@@ -955,25 +1339,30 @@ namespace DualContour
                     
                     
                      y = 0;
-                    for ( x = 0; x < sizeX; ++x)
+                    for (x = 0; x < sizeX - 1; ++x)
                     {
-                        for ( z = 0; z < sizeZ; ++z)
+                        for (z = 0; z < sizeZ - 1; ++z)
                         {
-                            
+
                             newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                            
                             if (newdualgrid == -1) continue;
-                            newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+                            newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                            verts.Add(newVert);
-                            newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
+                            current.vertices.Add(newVert);
+                            newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
 
-                            seamNodes.Add(new seamNode
+                            cy = current.sizeY - 1;
+                            for (cx = 0; cx < indicesToCover; ++cx)
                             {
-                                coord = (x+1, y, z+1),
-                                dualgrid = newdualgrid,
-                                vertex = newVert
-                            });
+                                for (cz = 0; cz < indicesToCover; ++cz)
+                                {
+
+                                    //the x and y variables (NOT CX CY) need to be multiplied by something
+                                    dgIndex = ((startX + (x * indicesToCover) + cx) + current.sizeX * (cy + current.sizeY * (startZ + z*indicesToCover +cz) ));
+                                    current.dualGrid[dgIndex] = newdualgrid;
+                                }
+
+                            }
                         }
                     }
                     break;
@@ -982,22 +1371,26 @@ namespace DualContour
                     
                     y = 0;
                     z = 0;
-                    for (x = 0; x < sizeX; ++x)
+                    for (x = 0; x < sizeX - 1; ++x)
                     {
-                        
+
                         newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                         if (newdualgrid == -1) continue;
-                        newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+                        newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                        verts.Add(newVert);
-                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
+                        current.vertices.Add(newVert);
+                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
 
-                        seamNodes.Add(new seamNode
+                        cy = current.sizeY - 1;
+                        cz = current.sizeZ - 1;
+                        for (cx = 0; cx < indicesToCover; ++cx)
                         {
-                            coord = (x+1, y, z),
-                            dualgrid = newdualgrid,
-                            vertex = newVert
-                        });
+
+                            //the x and y variables (NOT CX CY) need to be multiplied by something
+                            dgIndex = ((startX + (x * indicesToCover) + cx) + current.sizeX * (cy + current.sizeY * cz));
+                            current.dualGrid[dgIndex] = newdualgrid;
+
+                        }
                     }
 
 
@@ -1007,35 +1400,30 @@ namespace DualContour
                     
                     
                     x = 0;
-                    for (y = 0; y < sizeY; ++y)
+                    for (y = 0; y < sizeY - 1; ++y)
                     {
-                        for (z = 0; z < sizeZ; ++z)
+                        for (z = 0; z < sizeZ - 1; ++z)
                         {
 
                             newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                            //if (newdualgrid == -1) continue;
+                            if (newdualgrid == -1) continue;
+                            newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                            //if vertex doesnt exist, make one at the center or corner, then add
-                            if (newdualgrid == -1)
+                            current.vertices.Add(newVert);
+                            newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
+
+                            cx = current.sizeX - 1;
+                            for (cy = 0; cy < indicesToCover; ++cy)
                             {
-                                newVert = cellPacked[(x) + sizeX * ((y) + sizeY * (z))];
+                                for (cz = 0; cz < indicesToCover; ++cz)
+                                {
+
+                                    //the x and y variables (NOT CX CY) need to be multiplied by something
+                                    dgIndex = ((cx) + current.sizeX * ((startY + (y * indicesToCover) + cy) + current.sizeY * (startZ + (z * indicesToCover) + cz)  ));
+                                    current.dualGrid[dgIndex] = newdualgrid;
+                                }
+
                             }
-                            else {
-
-                                newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
-                            }
-
-                            verts.Add(newVert);
-                            
-
-                            newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
-
-                            seamNodes.Add(new seamNode
-                            {
-                                coord = (x, y+1, z+1),
-                                dualgrid = newdualgrid,
-                                vertex = newVert
-                            });
                         }
                     }
                     break;
@@ -1046,22 +1434,26 @@ namespace DualContour
 
                     x = 0;
                     z = 0;
-                    for (y = 0; y < sizeY; ++y)
+                    for (y = 0; y < sizeY - 1; ++y)
                     {
-                        
+
                         newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                         if (newdualgrid == -1) continue;
-                        newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+                        newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                        verts.Add(newVert );
-                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
+                        current.vertices.Add(newVert);
+                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
 
-                        seamNodes.Add(new seamNode
+                        cx = current.sizeX - 1;
+                        cz = current.sizeZ - 1;
+                        for (cy = 0; cy < indicesToCover; ++cy)
                         {
-                            coord = (x, y+1, z),
-                            dualgrid = newdualgrid,
-                            vertex = newVert
-                        });
+
+                            //the x and y variables (NOT CX CY) need to be multiplied by something
+                            dgIndex = ((cx) + current.sizeX * ((startY + (y * indicesToCover) + cy) + current.sizeY * cz));
+                            current.dualGrid[dgIndex] = newdualgrid;
+
+                        }
                     }
 
                     break;
@@ -1069,22 +1461,26 @@ namespace DualContour
                     
                     x = 0;
                     y = 0;
-                    for (z = 0; z < sizeZ; ++z)
+                    for (z = 0; z < sizeZ - 1; ++z)
                     {
-                        
+
                         newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                         if (newdualgrid == -1) continue;
-                        newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+                        newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                        verts.Add(newVert );
-                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
+                        current.vertices.Add(newVert);
+                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
 
-                        seamNodes.Add(new seamNode
+                        cy = current.sizeY - 1;
+                        cx = current.sizeX - 1;
+                        for (cz = 0; cz < indicesToCover; ++cz)
                         {
-                            coord = (x, y, z+1),
-                            dualgrid = newdualgrid,
-                            vertex = newVert
-                        });
+
+                            //the x and y variables (NOT CX CY) need to be multiplied by something
+                            dgIndex = ((cx) + current.sizeX * ((cy) + current.sizeY * (startZ + (z*indicesToCover) + cz)  ));
+                            current.dualGrid[dgIndex] = newdualgrid;
+
+                        }
                     }
 
                     break;
@@ -1094,20 +1490,22 @@ namespace DualContour
                     y = 0;
                     z = 0;
 
-                    
+
                     newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                     if (newdualgrid == -1) break;
-                    newVert = vertices[dualGrid[(x) + sizeX * ((y) + sizeY * (z))] >> 6 & 0x7FFF];
+                    newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                    verts.Add(newVert );
-                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((verts.Length - 1) << 6);
+                    current.vertices.Add(newVert);
+                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
 
-                    seamNodes.Add(new seamNode
-                    {
-                        coord = (x, y, z),
-                        dualgrid = newdualgrid,
-                        vertex = newVert
-                    });
+                    cy = current.sizeY - 1;
+                    cz = current.sizeZ - 1;
+                    cx = current.sizeX - 1;
+
+                    //the x and y variables (NOT CX CY) need to be multiplied by something
+                    dgIndex = ((cx) + current.sizeX * ((cy) + current.sizeY * cz));
+                    current.dualGrid[dgIndex] = newdualgrid;
+
                     break;
                 default:
                     break;

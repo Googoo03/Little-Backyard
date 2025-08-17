@@ -22,6 +22,7 @@ public class DC_Chunk : MonoBehaviour
     [SerializeField] private int dir;
     [SerializeField] private Vector3 max;
     [SerializeField] private Vector3 min;
+    [SerializeField] private int LODLevel;
 
     [SerializeField] private Material mat;
 
@@ -72,6 +73,7 @@ public class DC_Chunk : MonoBehaviour
     AsyncGPUReadbackRequest vertReadbackRequest;
     int requestCount = 0;
 
+
     private void Start()
     {
         
@@ -120,6 +122,11 @@ public class DC_Chunk : MonoBehaviour
         return 0;
     }
 
+    public void InitializeDualContourBounds() {
+        if (dc == null) dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
+        dc.InitializeBounds();
+    }
+
     public void InitializeDualContour() {
 
         vertices = new NativeList<Vector3>(scale.x * scale.y * scale.z, Allocator.Persistent);
@@ -131,11 +138,14 @@ public class DC_Chunk : MonoBehaviour
         indices.Clear();
         indices.Capacity = 4 * scale.x * scale.y * scale.z;
 
-        dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
-        dc.InitializeGrid(ref vertices, ref indices);
+        if(dc == null) dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
+
+        dc.InitializeGrid(chunkConfig.seam, ref vertices, ref indices);
 
         min = dc.GetMin();
         max = dc.GetMax();
+        LODLevel = dc.GetLODLevel();
+        
     }
 
     public void GenerateDCMesh() {
