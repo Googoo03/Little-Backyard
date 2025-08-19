@@ -88,12 +88,6 @@ public class DC_Chunk : MonoBehaviour
         
         
 
-        stopwatch.Start();
-        //pois = new PoissonDisc();
-        //pois.generatePoissonDisc(ref tree_pos, 3, 20, 31, 31, 4);
-
-        stopwatch.Stop();
-        UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds.ToString() + " milliseconds");
     }
 
     private void GenerateFoliage() {

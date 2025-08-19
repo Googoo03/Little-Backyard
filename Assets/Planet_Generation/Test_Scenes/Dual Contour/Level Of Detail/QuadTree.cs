@@ -124,6 +124,22 @@ namespace QuadTree
             combinedjobs = JobHandle.CombineDependencies(jobs);
             combinedjobs.Complete();
 
+            //Calculate intermediary vertices of seam
+
+
+            for (int i = 0; i < 8; ++i)
+            {
+                Dual_Contour seamdc = children[i].seamgo.GetComponent<DC_Chunk>().GetDC();
+                var quadJob = seamdc.GetSeamVertexParallel();
+                JobHandle newHandle = quadJob.Schedule();
+
+                jobs[i] = (newHandle);
+            }
+
+            combinedjobs = JobHandle.CombineDependencies(jobs);
+            combinedjobs.Complete();
+
+
             //Gather Vertices from surrounding chunks into seams
             for (int i = 0; i < 8; ++i)
             {
@@ -140,20 +156,7 @@ namespace QuadTree
 
             //////////////////SEAM JOBS
 
-            //Calculate intermediary vertices of seam
             
-            
-            for (int i = 0; i < 8; ++i)
-            {
-                Dual_Contour seamdc = children[i].seamgo.GetComponent<DC_Chunk>().GetDC();
-                var quadJob = seamdc.GetSeamVertexParallel();
-                JobHandle newHandle = quadJob.Schedule();
-
-                jobs[i] = (newHandle);
-            }
-
-            combinedjobs = JobHandle.CombineDependencies(jobs);
-            combinedjobs.Complete();
             
 
 
@@ -221,8 +224,10 @@ namespace QuadTree
             //min and max, for each of the 7 neighbors, should satisfy at least 1 dimension where min.xyz == max.xyz
 
             //consider floating point arithmetic
-            if (cmax.x < omin.x && cmax.y < omin.y && cmax.z < omin.z) return;
-            if (cmin.x > omax.x && cmin.y > omax.y && cmin.z > omax.z) return;
+            //if (cmax.x < omin.x && cmax.y < omin.y && cmax.z < omin.z) return;
+            //if (cmin.x > omax.x && cmin.y > omax.y && cmin.z > omax.z) return;
+
+            if (cmin == omin && cmax == omax) return;
 
             if (node.HasChildren())
             {
@@ -250,8 +255,8 @@ namespace QuadTree
             //min and max, for each of the 7 neighbors, should satisfy at least 1 dimension where min.xyz == max.xyz
 
             //consider floating point arithmetic
-            if (cmax.x < omin.x && cmax.y < omin.y && cmax.z < omin.z) return -1;
-            if (cmin.x > omax.x && cmin.y > omax.y && cmin.z > omax.z) return -1;
+            //if (cmax.x < omin.x && cmax.y < omin.y && cmax.z < omin.z) return -1;
+            //if (cmin.x > omax.x && cmin.y > omax.y && cmin.z > omax.z) return -1;
 
             if (node.HasChildren())
             {
