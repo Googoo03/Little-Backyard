@@ -279,19 +279,6 @@ namespace DualContour
         public void Execute()
         {
             int x, y, z;
-            /*
-            for (x = 0; x < sizeX; ++x)
-            {
-                for (y = 0; y < sizeY; ++y)
-                {
-                    for (z = 0; z < sizeZ; ++z)
-                    {
-                        dualGrid[x + sizeX * (y + sizeY * z)] = -1;
-
-                    }
-                }
-            }*/
-
 
             for (x = 0; x < sizeX - 1; ++x)
             {
@@ -493,8 +480,6 @@ namespace DualContour
                         }
                     }
                 }
-
-
             }
         }
     }
@@ -680,10 +665,6 @@ namespace DualContour
 
         [SerializeField] private float Ground;
 
-        //Testing
-
-        [SerializeField] private GameObject cube;
-
         //GLOBAL VARS
         Vector3 step;
         Vector3 offset;
@@ -693,11 +674,8 @@ namespace DualContour
 
         private NativeList<int> indices;
         private NativeList<Vector3> vertices;
-
         private NativeArray<int> dualGrid;
-
         private NativeArray<Vector4> cellPacked;
-
         private NativeArray<Vector3> cellpos;
         private NativeArray<float> cellvalues;
 
@@ -729,8 +707,8 @@ namespace DualContour
             sizeZ = scale.z;
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
-            Ground = 1f;
-            amplitude = 5;
+            Ground = 10f;
+            amplitude = 2;
             block_voxel = mode;
             radius = iradius;
             dir = idir;
@@ -750,16 +728,13 @@ namespace DualContour
 
 
             float domainWarp =  simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
+            float frequency = 10f;
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
 
-            //if (elevation >= sizeY - 1) { return -1; }
-            //if (elevation <= 1) { return 1; }
 
-            //float value = ((simplexNoise.CalcPixel3D(pos.x, pos.y, pos.z))) * amplitude;// + Ground - elevation;
-            //float value = Ground - pos.y;
-            float value = simplexNoise.CalcPixel3D(pos.x + domainWarp, pos.y + domainWarp, pos.z + domainWarp) * amplitude;
-
+            float radius = pos.magnitude;
+            float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((pos.x+domainWarp) * frequency, (pos.y+domainWarp)*frequency, (pos.z+domainWarp)*frequency)) * amplitude) + Ground - radius;
 
             return value;
         }
@@ -772,7 +747,7 @@ namespace DualContour
             //Ground/Stone pass
             BLOCKID val;
             //These should include IDs for the given blocks by enumeration, rather than the plain ids themselves
-            float cellvalue = cellPacked[x + sizeX * (elevation + sizeY * z)].w;//cellvalues[x + sizeX * (elevation + sizeY * z)];
+            float cellvalue = cellPacked[x + sizeX * (elevation + sizeY * z)].w;
 
             val = cellvalue > 0 ? BLOCKID.STONE : BLOCKID.AIR;
             if (val == BLOCKID.AIR) return (ushort)val;
@@ -982,15 +957,6 @@ namespace DualContour
         }
         //////////////////////////////////////////////////////////////////////////////
 
-        
-        private Vector3 Grid(Vector3 pos, int elevation) { return pos; }
-
-
-        public Vector3 FindTransformedCoord(Vector3 pos, int elevation) {
-            return coordTransformFunction(pos, elevation);
-        }
-
-
         private Vector3 CartesianToSphere(Vector3 pos, int elevation)
         {
 
@@ -1014,11 +980,11 @@ namespace DualContour
             return newpos.normalized * (radius + (elevation * step.y));
         }
 
-        private Vector3 ShellElevate(Vector3 pos)
-        {
-            Vector3 newpos = new Vector3(pos.x, pos.y + simplexNoise.CalcPixel3D((global.x + pos.x) / 2, 0, (global.z + pos.z) / 2) * 20, pos.z);
-            return newpos;
-        }
+        private Vector3 Grid(Vector3 pos, int elevation) { return pos; }
+
+        public Vector3 FindTransformedCoord(Vector3 pos, int elevation){ return coordTransformFunction(pos, elevation); }
+
+        private Vector3 ShellElevate(Vector3 pos){ return new Vector3(pos.x, pos.y + simplexNoise.CalcPixel3D((global.x + pos.x) / 2, 0, (global.z + pos.z) / 2) * 20, pos.z); }
 
         public VertexParallel GetVertexParallel() { return vertJob; }
 
@@ -1037,39 +1003,15 @@ namespace DualContour
         public static int GetNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1e-4f)
         {
             int rule = 0;
-            
+            bool inZBounds = neighborMax.z <= currentMax.z + epsilon && neighborMax.z >= currentMin.z - epsilon && neighborMin.z <= currentMax.z + epsilon && neighborMin.z >= currentMin.z - epsilon;
+            bool inYBounds = neighborMax.y <= currentMax.y + epsilon && neighborMax.y >= currentMin.y - epsilon && neighborMin.y <= currentMax.y + epsilon && neighborMin.y >= currentMin.y - epsilon;
+            bool inXBounds = neighborMax.x <= currentMax.x + epsilon && neighborMax.x >= currentMin.x - epsilon && neighborMin.x <= currentMax.x + epsilon && neighborMin.x >= currentMin.x - epsilon;
 
-            bool xNeighbor = Mathf.Abs(neighborMin.x - currentMax.x) < epsilon &&
-                                neighborMax.z <= currentMax.z + epsilon &&
-                                neighborMax.z >= currentMin.z - epsilon &&
-                                neighborMax.y <= currentMax.y + epsilon &&
-                                neighborMax.y >= currentMin.y - epsilon &&
-                                neighborMin.z <= currentMax.z + epsilon &&
-                                neighborMin.z >= currentMin.z - epsilon &&
-                                neighborMin.y <= currentMax.y + epsilon &&
-                                neighborMin.y >= currentMin.y - epsilon;
+            bool xNeighbor = Mathf.Abs(neighborMin.x - currentMax.x) < epsilon && inZBounds && inYBounds;
 
-            bool yNeighbor = Mathf.Abs(neighborMin.y - currentMax.y) < epsilon &&
-                                neighborMax.z <= currentMax.z + epsilon &&
-                                neighborMax.z >= currentMin.z - epsilon &&
-                                neighborMax.x <= currentMax.x + epsilon &&
-                                neighborMax.x >= currentMin.x - epsilon &&
-                                neighborMin.z <= currentMax.z + epsilon &&
-                                neighborMin.z >= currentMin.z - epsilon &&
-                                neighborMin.x <= currentMax.x + epsilon &&
-                                neighborMin.x >= currentMin.x - epsilon;
+            bool yNeighbor = Mathf.Abs(neighborMin.y - currentMax.y) < epsilon && inZBounds && inXBounds;
 
-            bool zNeighbor = Mathf.Abs(neighborMin.z - currentMax.z) < epsilon &&
-                                neighborMax.x <= currentMax.x + epsilon &&
-                                neighborMax.x >= currentMin.x - epsilon &&
-                                neighborMax.y <= currentMax.y + epsilon &&
-                                neighborMax.y >= currentMin.y - epsilon &&
-                                neighborMin.x <= currentMax.x + epsilon &&
-                                neighborMin.x >= currentMin.x - epsilon &&
-                                neighborMin.y <= currentMax.y + epsilon &&
-                                neighborMin.y >= currentMin.y - epsilon;
-
-            if ((currentMin == new Vector3(-16, -16, -16)) && neighborMin == new Vector3(-16, -16, 0)) UnityEngine.Debug.Log("z neighbor " + zNeighbor);
+            bool zNeighbor = Mathf.Abs(neighborMin.z - currentMax.z) < epsilon && inXBounds && inYBounds;
 
             if (xNeighbor) rule |= 4;
             if (yNeighbor) rule |= 2;
@@ -1078,9 +1020,6 @@ namespace DualContour
             return rule;
         }
 
-
-
-
         public void ConstructSeamFromParentChunk(Dual_Contour current)
         {
 
@@ -1088,6 +1027,7 @@ namespace DualContour
 
             int x, y, z;
             int cx, cy, cz;
+            int ax, ay, az;
 
             int dgIndex;
             int newdualgrid = 0;
@@ -1107,91 +1047,52 @@ namespace DualContour
             //startY += (int)((offset.y - current.offset.y) / current.step.y);
             //startZ += (int)((offset.z - current.offset.z) / current.step.z);
 
-           
+            (int x,int y,int z)[] boundaries = new (int,int,int)[3] {
+                (sizeX-2,0,0),
+                (0,sizeY-2,0),
+                (0,0,sizeZ-2)
+            };
 
-            //x face
-            x = sizeX-2;
-            for (y = 0; y < sizeY - 1; ++y)
-            {
-                for (z = 0; z < sizeZ - 1; ++z)
+            (int x, int y, int z)[] cboundaries = new (int, int, int)[3] {
+                (indicesToCover-1,0,0),
+                (0,indicesToCover-1,0),
+                (0,0,indicesToCover-1)
+            };
+
+            for (int i = 0; i < boundaries.Length; ++i) {
+
+                for (x = boundaries[i].x; x < sizeX - 1; ++x)
                 {
-
-                    newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                    if (newdualgrid == -1) continue;
-                    newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                    current.vertices.Add(newVert);
-                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                    cx = (current.sizeX-1) - resolution - 1;
-                    for (cy = 0; cy < indicesToCover; ++cy)
+                    for (y = boundaries[i].y; y < sizeY - 1; ++y)
                     {
-                        for (cz = 0; cz < indicesToCover; ++cz)
+                        for (z = boundaries[i].z; z < sizeZ - 1; ++z)
                         {
 
-                            //the x and y variables (NOT CX CY) need to be multiplied by something
-                            dgIndex = cx + current.sizeX * ((startY + (y * indicesToCover) + cy) + current.sizeY * (startZ + (z * indicesToCover) + cz));
-                            current.dualGrid[dgIndex] = newdualgrid;
-                        }
+                            newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
+                            if (newdualgrid == -1) continue;
+                            newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                    }
-                }
-            }
+                            current.vertices.Add(newVert);
+                            newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
 
-            //y face
-            y = sizeY - 2;
-            for (x = 0; x < sizeX - 1; ++x)
-            {
-                for (z = 0; z < sizeZ - 1; ++z)
-                {
+                            for (cx = cboundaries[i].x; cx < indicesToCover; ++cx)
+                            {
+                                for (cy = cboundaries[i].y; cy < indicesToCover; ++cy)
+                                {
+                                    for (cz = cboundaries[i].z; cz < indicesToCover; ++cz)
+                                    {
+                                        ax = i == 0 ? (current.sizeX - 1) - resolution - 1 : (startX + (x * indicesToCover) + cx);
+                                        ay = i == 1 ? (current.sizeY - 1) - resolution - 1 : (startY + (y * indicesToCover) + cy);
+                                        az = i == 2 ? (current.sizeZ - 1) - resolution - 1 : (startZ + (z * indicesToCover) + cz);
+                                        //the x and y variables (NOT CX CY) need to be multiplied by something
+                                        dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
+                                        current.dualGrid[dgIndex] = newdualgrid;
+                                    }
 
-                    newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                    if (newdualgrid == -1) continue;
-                    newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                    current.vertices.Add(newVert);
-                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                    cy = (current.sizeY - 1) - resolution - 1;
-                    for (cx = 0; cx < indicesToCover; ++cx)
-                    {
-                        for (cz = 0; cz < indicesToCover; ++cz)
-                        {
-
-                            //the x and y variables (NOT CX CY) need to be multiplied by something
-                            dgIndex = ((startX + (x * indicesToCover) + cx) + current.sizeX * (cy + current.sizeY * (startZ + z * indicesToCover + cz)));
-                            current.dualGrid[dgIndex] = newdualgrid;
-                        }
-
-                    }
-                }
-            }
-
-            //z face
-            z = sizeZ - 2;
-            for (x = 0; x < sizeX - 1; ++x)
-            {
-                for (y = 0; y < sizeY - 1; ++y)
-                {
-                    newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                    if (newdualgrid == -1) continue;
-                    newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                    current.vertices.Add(newVert);
-                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                    cz = (current.sizeZ - 1) - resolution - 1;
-                    for (cx = 0; cx < indicesToCover; ++cx)
-                    {
-                        for (cy = 0; cy < indicesToCover; ++cy)
-                        {
-
-                            //the x and y variables (NOT CX CY) need to be multiplied by something
-                            dgIndex = ((startX + (x * indicesToCover) + cx) + current.sizeX * ((startY + (y * indicesToCover) + cy) + current.sizeY * cz));
-                            current.dualGrid[dgIndex] = newdualgrid;
+                                }
+                            }
                         }
                     }
-
                 }
             }
         }
@@ -1203,11 +1104,13 @@ namespace DualContour
             Vector3 cmax = current.max;
 
             int rule = GetNeighborRule(cmin,cmax, min, max);
+            if (rule == 0) return;
 
             int x, y, z;
 
             //the in-plane offset when filling in subdivided space
             int cx, cy, cz;
+            int ax, ay, az;
 
             int dgIndex;
             int newdualgrid = 0;
@@ -1230,210 +1133,50 @@ namespace DualContour
 
             //all neighboring chunks will add to the outside of the array based on where they are as neighbors
 
-            switch (rule)
+            //start and end indices
+
+            //picks which is / are the fixed axes and chooses which one to instead iterate over
+            ((int start,int end) x, (int start,int end) y, (int start, int end) z) boundaries = (
+                                                (rule & 0x4) != 0 ? (0, 1) : (0, sizeX - 1),
+                                                (rule & 0x2) != 0 ? (0, 1) : (0, sizeY - 1),
+                                                (rule & 0x1) != 0 ? (0, 1) : (0, sizeZ - 1));
+
+            (int x, int y, int z) cboundaries = ((rule & 0x4) != 0 ? indicesToCover - 1 : 0,
+                                                (rule & 0x2) != 0 ? indicesToCover - 1 : 0,
+                                                (rule & 0x1) != 0 ? indicesToCover - 1 : 0);
+
+            for (x = boundaries.x.start; x < boundaries.x.end; ++x)
             {
-                case 0:
-                    break;
-                case 1: //001
-                    z = 0;
-                    for ( x = 0; x < sizeX-1; ++x)
+                for (y = boundaries.y.start; y < boundaries.y.end; ++y)
+                {
+                    for (z = boundaries.z.start; z < boundaries.z.end; ++z)
                     {
-                        for ( y = 0; y < sizeY-1; ++y) {
-                            newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                            if (newdualgrid == -1) continue;
-                            newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                            current.vertices.Add(newVert);
-                            newdualgrid = (newdualgrid & ~(0x7FFF << 6) ) | ((current.vertices.Length - 1) << 6);
+                        newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
+                        if (newdualgrid == -1) continue;
+                        newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
-                            cz = current.sizeZ - 1;
-                            for (cx = 0; cx < indicesToCover; ++cx)
-                            {
-                                for (cy = 0; cy < indicesToCover; ++cy) {
+                        current.vertices.Add(newVert);
+                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
 
-                                    //the x and y variables (NOT CX CY) need to be multiplied by something
-                                    dgIndex = ((startX + (x*indicesToCover) + cx) + current.sizeX * ((startY + (y*indicesToCover) + cy) + current.sizeY * cz));
-                                    current.dualGrid[dgIndex] = newdualgrid;
-                                }
-                            }                            
-                            
-                        }
-                    }
-                    break;
-                case 2: //010
-                    
-                    
-                     y = 0;
-                    for (x = 0; x < sizeX - 1; ++x)
-                    {
-                        for (z = 0; z < sizeZ - 1; ++z)
+                        for (cx = cboundaries.x; cx < indicesToCover; ++cx)
                         {
-
-                            newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                            if (newdualgrid == -1) continue;
-                            newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                            current.vertices.Add(newVert);
-                            newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                            cy = current.sizeY - 1;
-                            for (cx = 0; cx < indicesToCover; ++cx)
+                            for (cy = cboundaries.y; cy < indicesToCover; ++cy)
                             {
-                                for (cz = 0; cz < indicesToCover; ++cz)
+                                for (cz = cboundaries.z; cz < indicesToCover; ++cz)
                                 {
-
+                                    ax = (rule & 0x4) != 0 ? (current.sizeX - 1) : (startX + (x * indicesToCover) + cx);
+                                    ay = (rule & 0x2) != 0 ? (current.sizeY - 1) : (startY + (y * indicesToCover) + cy);
+                                    az = (rule & 0x1) != 0 ? (current.sizeZ - 1) : (startZ + (z * indicesToCover) + cz);
                                     //the x and y variables (NOT CX CY) need to be multiplied by something
-                                    dgIndex = ((startX + (x * indicesToCover) + cx) + current.sizeX * (cy + current.sizeY * (startZ + z*indicesToCover +cz) ));
+                                    dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
                                     current.dualGrid[dgIndex] = newdualgrid;
                                 }
 
                             }
                         }
                     }
-                    break;
-                case 3: //011
-                    
-                    
-                    y = 0;
-                    z = 0;
-                    for (x = 0; x < sizeX - 1; ++x)
-                    {
-
-                        newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                        if (newdualgrid == -1) continue;
-                        newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                        current.vertices.Add(newVert);
-                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                        cy = current.sizeY - 1;
-                        cz = current.sizeZ - 1;
-                        for (cx = 0; cx < indicesToCover; ++cx)
-                        {
-
-                            //the x and y variables (NOT CX CY) need to be multiplied by something
-                            dgIndex = ((startX + (x * indicesToCover) + cx) + current.sizeX * (cy + current.sizeY * cz));
-                            current.dualGrid[dgIndex] = newdualgrid;
-
-                        }
-                    }
-
-
-
-                    break;
-                case 4: //100
-                    
-                    
-                    x = 0;
-                    for (y = 0; y < sizeY - 1; ++y)
-                    {
-                        for (z = 0; z < sizeZ - 1; ++z)
-                        {
-
-                            newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                            if (newdualgrid == -1) continue;
-                            newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                            current.vertices.Add(newVert);
-                            newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                            cx = current.sizeX - 1;
-                            for (cy = 0; cy < indicesToCover; ++cy)
-                            {
-                                for (cz = 0; cz < indicesToCover; ++cz)
-                                {
-
-                                    //the x and y variables (NOT CX CY) need to be multiplied by something
-                                    dgIndex = ((cx) + current.sizeX * ((startY + (y * indicesToCover) + cy) + current.sizeY * (startZ + (z * indicesToCover) + cz)  ));
-                                    current.dualGrid[dgIndex] = newdualgrid;
-                                }
-
-                            }
-                        }
-                    }
-                    break;
-                case 5: //101
-                    
-
-                    
-
-                    x = 0;
-                    z = 0;
-                    for (y = 0; y < sizeY - 1; ++y)
-                    {
-
-                        newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                        if (newdualgrid == -1) continue;
-                        newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                        current.vertices.Add(newVert);
-                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                        cx = current.sizeX - 1;
-                        cz = current.sizeZ - 1;
-                        for (cy = 0; cy < indicesToCover; ++cy)
-                        {
-
-                            //the x and y variables (NOT CX CY) need to be multiplied by something
-                            dgIndex = ((cx) + current.sizeX * ((startY + (y * indicesToCover) + cy) + current.sizeY * cz));
-                            current.dualGrid[dgIndex] = newdualgrid;
-
-                        }
-                    }
-
-                    break;
-                case 6: //110
-                    
-                    x = 0;
-                    y = 0;
-                    for (z = 0; z < sizeZ - 1; ++z)
-                    {
-
-                        newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                        if (newdualgrid == -1) continue;
-                        newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                        current.vertices.Add(newVert);
-                        newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                        cy = current.sizeY - 1;
-                        cx = current.sizeX - 1;
-                        for (cz = 0; cz < indicesToCover; ++cz)
-                        {
-
-                            //the x and y variables (NOT CX CY) need to be multiplied by something
-                            dgIndex = ((cx) + current.sizeX * ((cy) + current.sizeY * (startZ + (z*indicesToCover) + cz)  ));
-                            current.dualGrid[dgIndex] = newdualgrid;
-
-                        }
-                    }
-
-                    break;
-                case 7: //111
-                    
-                    x = 0;
-                    y = 0;
-                    z = 0;
-
-
-                    newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                    if (newdualgrid == -1) break;
-                    newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                    current.vertices.Add(newVert);
-                    newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                    cy = current.sizeY - 1;
-                    cz = current.sizeZ - 1;
-                    cx = current.sizeX - 1;
-
-                    //the x and y variables (NOT CX CY) need to be multiplied by something
-                    dgIndex = ((cx) + current.sizeX * ((cy) + current.sizeY * cz));
-                    current.dualGrid[dgIndex] = newdualgrid;
-
-                    break;
-                default:
-                    break;
+                }
             }
         }
     }
