@@ -46,33 +46,65 @@ namespace DualContour
         struct Trirule {
             public int axis;
             public int sign;
-            public (int dx, int dy, int dz)[] vertpos;
+            //public (int dx, int dy, int dz)[] vertpos;
+            public (int dx, int dy, int dz) v0;
+            public (int dx, int dy, int dz) v1;
+            public (int dx, int dy, int dz) v2;
+            public (int dx, int dy, int dz) v3;
+            public (int dx, int dy, int dz) v4;
+            public (int dx, int dy, int dz) v5;
+
+            // indexer to access like an array
+            public (int dx, int dy, int dz) this[int i]
+            {
+                get => i switch
+                {
+                    0 => v0,
+                    1 => v1,
+                    2 => v2,
+                    3 => v3,
+                    4 => v4,
+                    5 => v5,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+            }
         }
 
         static readonly Trirule[] rules = { 
             new Trirule { //x axis
                 axis = 0x20,
                 sign = 0x10,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (1,0,0), (1,1,0),
-                    (1,1,0), (0,1,0), (0,0,0)
-                }
+                
+                v0 = (0,0,0),
+                v1 = (1,0,0),
+                v2 = (1,1,0),
+                v3 = (1,1,0),
+                v4 = (0,1,0),
+                v5 = (0,0,0)
             },
             new Trirule { //y axis
                 axis = 0x08,
                 sign = 0x04,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (1,0,0), (1,0,1),
-                    (1,0,1), (0,0,1), (0,0,0)
-                }
+                
+                v0 = (0,0,0),
+                v1 = (1,0,0),
+                v2 = (1,0,1),
+                v3 = (1,0,1),
+                v4 = (0,0,1),
+                v5 = (0,0,0)
+
             },
             new Trirule { //z axis
                 axis = 0x02,
                 sign = 0x01,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (0,1,0), (0,1,1),
-                    (0,1,1), (0,0,1), (0,0,0)
-                }
+                
+                v0 = (0,0,0), 
+                v1 = (0,1,0),
+                v2 = (0,1,1),
+                v3 = (0,1,1),
+                v4 = (0,0,1),
+                v5 = (0,0,0)
+
             },
         };
 
@@ -95,12 +127,21 @@ namespace DualContour
                         foreach (Trirule rule in rules) {
                             if ((dualGrid_index & rule.axis) != rule.axis) continue;
 
-                            var verts = (dualGrid_index & rule.sign) == rule.sign ? rule.vertpos : new (int, int, int)[]
+                            var verts = rule;
+                            if ((dualGrid_index & rule.sign) != rule.sign)
+                            {
+                                verts = new Trirule
                                 {
-                                    rule.vertpos[0], rule.vertpos[4], rule.vertpos[2],
-                                    rule.vertpos[3], rule.vertpos[1], rule.vertpos[5]
+                                    axis = rule.axis,
+                                    sign = rule.sign,
+                                    v0 = rule[0],
+                                    v1 = rule[4],
+                                    v2 = rule[2],
+                                    v3 = rule[3],
+                                    v4 = rule[1],
+                                    v5 = rule[5]
                                 };
-
+                            }
 
                             for (int j = 0; j < 2; ++j)
                             {
@@ -393,33 +434,65 @@ namespace DualContour
         {
             public int axis;
             public int sign;
-            public (int dx, int dy, int dz)[] vertpos;
+            //public (int dx, int dy, int dz)[] vertpos;
+            public (int dx, int dy, int dz) v0;
+            public (int dx, int dy, int dz) v1;
+            public (int dx, int dy, int dz) v2;
+            public (int dx, int dy, int dz) v3;
+            public (int dx, int dy, int dz) v4;
+            public (int dx, int dy, int dz) v5;
+
+            // indexer to access like an array
+            public (int dx, int dy, int dz) this[int i]
+            {
+                get => i switch
+                {
+                    0 => v0,
+                    1 => v1,
+                    2 => v2,
+                    3 => v3,
+                    4 => v4,
+                    5 => v5,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+            }
         }
 
         static readonly Trirule[] rules = {
             new Trirule { //x axis
                 axis = 0x20,
                 sign = 0x10,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (1,0,0), (1,1,0),
-                    (1,1,0), (0,1,0), (0,0,0)
-                }
+
+                v0 = (0,0,0),
+                v1 = (1,0,0),
+                v2 = (1,1,0),
+                v3 = (1,1,0),
+                v4 = (0,1,0),
+                v5 = (0,0,0)
             },
             new Trirule { //y axis
                 axis = 0x08,
                 sign = 0x04,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (1,0,0), (1,0,1),
-                    (1,0,1), (0,0,1), (0,0,0)
-                }
+
+                v0 = (0,0,0),
+                v1 = (1,0,0),
+                v2 = (1,0,1),
+                v3 = (1,0,1),
+                v4 = (0,0,1),
+                v5 = (0,0,0)
+
             },
             new Trirule { //z axis
                 axis = 0x02,
                 sign = 0x01,
-                vertpos = new (int, int, int )[]{
-                    (0,0,0), (0,1,0), (0,1,1),
-                    (0,1,1), (0,0,1), (0,0,0)
-                }
+
+                v0 = (0,0,0),
+                v1 = (0,1,0),
+                v2 = (0,1,1),
+                v3 = (0,1,1),
+                v4 = (0,0,1),
+                v5 = (0,0,0)
+
             },
         };
 
@@ -442,19 +515,25 @@ namespace DualContour
 
                         foreach (Trirule rule in rules)
                         {
-                            
 
-                            
                             if ((dualGrid_index & rule.axis) != rule.axis) continue;
 
-                            var verts = (dualGrid_index & rule.sign) == rule.sign ? rule.vertpos : new (int, int, int)[]
+                            var verts = rule;
+                            if ((dualGrid_index & rule.sign) != rule.sign)
+                            {
+                                verts = new Trirule
                                 {
-                                    rule.vertpos[0], rule.vertpos[4], rule.vertpos[2],
-                                    rule.vertpos[3], rule.vertpos[1], rule.vertpos[5]
+                                    axis = rule.axis,
+                                    sign = rule.sign,
+                                    v0 = rule[0],
+                                    v1 = rule[4],
+                                    v2 = rule[2],
+                                    v3 = rule[3],
+                                    v4 = rule[1],
+                                    v5 = rule[5]
                                 };
+                            }
 
-                            
-                            
                             for (int j = 0; j < 2; ++j)
                             {
                                 var (dx, dy, dz) = verts[j];
@@ -470,9 +549,7 @@ namespace DualContour
                                 for (int i = 0; i < 3; ++i)
                                 {
                                     (dx, dy, dz) = verts[j * 3 + i];
-                                    if ((dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF) > vertices.Length) {
-                                        UnityEngine.Debug.Log((dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF));
-                                    }
+                                    
                                     indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
                                 }
                             }
@@ -717,17 +794,14 @@ namespace DualContour
 
             
             offset = -Vector3.one * CELL_SIZE * 0.5f;
-            offset.x += ioffset.x * CELL_SIZE;
-            offset.y += ioffset.y * CELL_SIZE;
-            offset.z += ioffset.z * CELL_SIZE;
-            
+            offset += ioffset * CELL_SIZE;
         }
 
         private float function(Vector3 pos, float y)
         {
 
 
-            float domainWarp =  simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
+            float domainWarp = 0;// simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
             float frequency = 10f;
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
