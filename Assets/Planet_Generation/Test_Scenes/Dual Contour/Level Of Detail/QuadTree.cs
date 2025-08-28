@@ -15,13 +15,15 @@ namespace QuadTree
         public Vector3 lodOffset;
         public Vector3Int scale;
         public bool seam;
+        public Transform transform;
 
-        public ChunkConfig(int ilodLevel, int idir, Vector3 ilodOffset, Vector3Int iscale, bool iseam) {
+        public ChunkConfig(int ilodLevel, int idir, Vector3 ilodOffset, Vector3Int iscale, bool iseam, Transform itransform) {
             lodLevel = ilodLevel;
             dir = idir;
             lodOffset = ilodOffset;
             scale = iscale;
             seam = iseam;
+            transform = itransform;
         }
 
     }
@@ -56,8 +58,9 @@ namespace QuadTree
 
             //Determine the position to place the prefab based on if it's the root or not
             Vector3 pos = chunkConfig.lodLevel == 0 ? Vector3.zero : parent.GetGameObject().transform.position;
-            go = Object.Instantiate(igo,pos,Quaternion.identity);
+            go = Object.Instantiate(igo, pos, Quaternion.identity);
             go.transform.name = "Chunk_" + ichunkConfig.lodLevel;
+            go.transform.parent = ichunkConfig.transform;
             DC_Chunk gonodeDC = go.GetComponent<DC_Chunk>();
 
             gonodeDC.SetChunkConfig(chunkConfig);
@@ -67,6 +70,7 @@ namespace QuadTree
 
             seamgo = Object.Instantiate(igo, pos, Quaternion.identity);
             seamgo.transform.name = "Seam_" + ichunkConfig.lodLevel;
+            seamgo.transform.parent = ichunkConfig.transform;
             DC_Chunk seamnodeDC = seamgo.GetComponent<DC_Chunk>();
 
 
@@ -82,8 +86,6 @@ namespace QuadTree
             //set resolution to 2^ number of times the max lod is ahead of the current lod
             if (maxLOD != chunkConfig.lodLevel) seamnodeDC.GetDC().SetResolution(1 << (maxLOD - chunkConfig.lodLevel));
             seamnodeDC.InitializeDualContour();
-
-
         }
 
         public void AddChild(QuadTreeNode newchild) { children.Add(newchild); }
@@ -100,7 +102,7 @@ namespace QuadTree
                 Vector3 childLODOffset = chunkConfig.lodOffset + new Vector3(p2fracVec.x * binaryOperator[i].x, p2fracVec.y * binaryOperator[i].y, p2fracVec.z * binaryOperator[i].z);
                 Vector3Int childScale = chunkConfig.scale;
 
-                ChunkConfig childChunkConfig = new ChunkConfig(chunkConfig.lodLevel+1,chunkConfig.dir,childLODOffset, childScale, false); 
+                ChunkConfig childChunkConfig = new ChunkConfig(chunkConfig.lodLevel+1,chunkConfig.dir,childLODOffset, childScale, false, chunkConfig.transform); 
 
                 QuadTreeNode newchild = new QuadTreeNode(childChunkConfig, prefab, this);
 
@@ -196,6 +198,48 @@ namespace QuadTree
 
         }
 
+        public void RenderChunk() {
+            //Segments the mesh generation job into key steps
+
+            //Calculate vertex positions
+            DC_Chunk goDC = go.GetComponent<DC_Chunk>();
+            DC_Chunk seamDC = seamgo.GetComponent<DC_Chunk>();
+
+            var vertJob = goDC.GetDC().GetVertexParallel();
+            JobHandle vertHandle = vertJob.Schedule();
+            vertHandle.Complete();
+
+            //Calculate intermediary vertices of seam
+            var seamVertexJob = seamDC.GetDC().GetSeamVertexParallel();
+            JobHandle quadHandle = seamVertexJob.Schedule();
+            quadHandle.Complete();
+
+
+            //Gather Vertices from surrounding chunks into seams
+
+            //get seams from neighbors
+            QuadTreeNode root = GetRoot(this);
+            GetSeams(root, seamDC.GetDC());
+
+            //gather vertices from parent chunk of seam
+            goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
+
+            //Calculate quads / tris of seams
+            var seamTriJob = seamDC.GetDC().GetSeamQuadParallel();
+            JobHandle seamTriHandle = seamTriJob.Schedule();
+            seamTriHandle.Complete();
+
+            //Calculate quads / tris
+            var chunkTriJob = go.GetComponent<DC_Chunk>().GetDC().GetQuadParallel();
+            JobHandle chunkTriHandle = chunkTriJob.Schedule();
+            chunkTriHandle.Complete();
+
+            //Apply mesh details
+            go.GetComponent<DC_Chunk>().GenerateDCMesh();
+            seamgo.GetComponent<DC_Chunk>().GenerateDCMesh();
+            ////////////////////////////////////////////////
+        }
+
         public void PrevLOD() {
             foreach (QuadTreeNode child in children)
             {
@@ -239,6 +283,7 @@ namespace QuadTree
             else {
                 //is leaf, gather nodes
                 node.go.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes( current);
+                node.seamgo.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes(current);
             }
 
 

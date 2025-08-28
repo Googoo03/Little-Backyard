@@ -154,8 +154,6 @@ public class DC_Chunk : MonoBehaviour
         m = mf.sharedMesh = new Mesh();
         //////////////////////////////////////
 
-        //dc.Generate(ref vertices, ref indices, ref voxel_data, ref vert_index, ref ind_index);
-
         uvs = new Vector2[vertices.Length];
         for (int i = 0; i < vertices.Length; ++i)
         {
@@ -192,6 +190,9 @@ public class DC_Chunk : MonoBehaviour
             coll.sharedMesh = null;
             coll.sharedMesh = mf.sharedMesh;
         }
+
+        //vertices.Dispose();
+        //indices.Dispose();
 
     }
 

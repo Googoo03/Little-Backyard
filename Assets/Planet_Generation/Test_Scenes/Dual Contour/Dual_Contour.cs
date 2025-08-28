@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Diagnostics;
 using Simplex;
+using SignedDistanceFields;
 using Unity.Collections;
 using chunk_events;
 using Unity.Jobs;
@@ -723,7 +724,8 @@ namespace DualContour
     public class Dual_Contour
     {
 
-        
+        [SerializeField] bool IsSeam;
+
         //MESH DIMENSIONS
         [SerializeField] private int sizeX;
         [SerializeField] private int sizeY;
@@ -784,13 +786,14 @@ namespace DualContour
             sizeZ = scale.z;
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
-            Ground = 10f;
+            Ground = 1f;
             amplitude = 2;
             block_voxel = mode;
             radius = iradius;
             dir = idir;
             coordTransformFunction = Grid;
             resolution = 1;
+            IsSeam = false;
 
             
             offset = -Vector3.one * CELL_SIZE * 0.5f;
@@ -807,8 +810,9 @@ namespace DualContour
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
 
 
-            float radius = pos.magnitude;
-            float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((pos.x+domainWarp) * frequency, (pos.y+domainWarp)*frequency, (pos.z+domainWarp)*frequency)) * amplitude) + Ground - radius;
+            float radius = SDF.CutHollowSphere(pos,global,5,2f,.2f);
+            //float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((pos.x+domainWarp) * frequency, (pos.y+domainWarp)*frequency, (pos.z+domainWarp)*frequency)) * amplitude) + Ground - radius;
+            float value = Ground - radius;
 
             return value;
         }
@@ -850,6 +854,7 @@ namespace DualContour
             vertices = verts;
 
             if (seam) {
+                IsSeam = true;
                 sizeX++;
                 sizeY++;
                 sizeZ++;
@@ -1176,6 +1181,9 @@ namespace DualContour
             
             Vector3 cmin = current.min;
             Vector3 cmax = current.max;
+            int endCutoff = IsSeam ? 0 : 1;
+
+            if (vertices.Length == 0) return;
 
             int rule = GetNeighborRule(cmin,cmax, min, max);
             if (rule == 0) return;
@@ -1211,9 +1219,9 @@ namespace DualContour
 
             //picks which is / are the fixed axes and chooses which one to instead iterate over
             ((int start,int end) x, (int start,int end) y, (int start, int end) z) boundaries = (
-                                                (rule & 0x4) != 0 ? (0, 1) : (0, sizeX - 1),
-                                                (rule & 0x2) != 0 ? (0, 1) : (0, sizeY - 1),
-                                                (rule & 0x1) != 0 ? (0, 1) : (0, sizeZ - 1));
+                                                (rule & 0x4) != 0 ? (0, 1) : (0, sizeX - endCutoff),
+                                                (rule & 0x2) != 0 ? (0, 1) : (0, sizeY - endCutoff),
+                                                (rule & 0x1) != 0 ? (0, 1) : (0, sizeZ - endCutoff));
 
             (int x, int y, int z) cboundaries = ((rule & 0x4) != 0 ? indicesToCover - 1 : 0,
                                                 (rule & 0x2) != 0 ? indicesToCover - 1 : 0,
@@ -1225,9 +1233,11 @@ namespace DualContour
                 {
                     for (z = boundaries.z.start; z < boundaries.z.end; ++z)
                     {
+                        int index = (x + sizeX * (y + sizeY * z));
 
-                        newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
+                        newdualgrid = dualGrid[index];
                         if (newdualgrid == -1) continue;
+
                         newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
                         current.vertices.Add(newVert);
@@ -1244,6 +1254,7 @@ namespace DualContour
                                     az = (rule & 0x1) != 0 ? (current.sizeZ - 1) : (startZ + (z * indicesToCover) + cz);
                                     //the x and y variables (NOT CX CY) need to be multiplied by something
                                     dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
+                                    if (current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
                                     current.dualGrid[dgIndex] = newdualgrid;
                                 }
 
