@@ -804,8 +804,8 @@ namespace DualContour
         {
 
 
-            float domainWarp = 0;// simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
-            float frequency = 10f;
+            //float domainWarp = 0;// simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
+            //float frequency = 10f;
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
 
@@ -1252,7 +1252,9 @@ namespace DualContour
                                     ax = (rule & 0x4) != 0 ? (current.sizeX - 1) : (startX + (x * indicesToCover) + cx);
                                     ay = (rule & 0x2) != 0 ? (current.sizeY - 1) : (startY + (y * indicesToCover) + cy);
                                     az = (rule & 0x1) != 0 ? (current.sizeZ - 1) : (startZ + (z * indicesToCover) + cz);
-                                    //the x and y variables (NOT CX CY) need to be multiplied by something
+                                    
+
+
                                     dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
                                     if (current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
                                     current.dualGrid[dgIndex] = newdualgrid;

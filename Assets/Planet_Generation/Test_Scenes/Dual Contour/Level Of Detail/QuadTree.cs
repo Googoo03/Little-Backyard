@@ -127,8 +127,6 @@ namespace QuadTree
             combinedjobs.Complete();
 
             //Calculate intermediary vertices of seam
-
-
             for (int i = 0; i < 8; ++i)
             {
                 Dual_Contour seamdc = children[i].seamgo.GetComponent<DC_Chunk>().GetDC();
@@ -148,18 +146,32 @@ namespace QuadTree
                 DC_Chunk seamDC = children[i].seamgo.GetComponent<DC_Chunk>();
                 DC_Chunk goDC = children[i].go.GetComponent<DC_Chunk>();
 
-                //get seams from neighbors
-                QuadTreeNode root = GetRoot(this);
-                GetSeams(root, seamDC.GetDC() );
 
                 //gather vertices from parent chunk of seam
                 goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
+
+                //get seams from neighbors
+                QuadTreeNode root = GetRoot(this);
+                GetSeams(root, seamDC.GetDC(),false);
+
             }
+
+            //Grab neighboring seam nodes last
+            for (int i = 0; i < 8; ++i)
+            {
+                DC_Chunk seamDC = children[i].seamgo.GetComponent<DC_Chunk>();
+
+                //get seams from neighbors
+                QuadTreeNode root = GetRoot(this);
+                GetSeams(root, seamDC.GetDC(), true);
+
+            }
+
 
             //////////////////SEAM JOBS
 
-            
-            
+
+
 
 
             //Calculate quads / tris of seams
@@ -219,7 +231,7 @@ namespace QuadTree
 
             //get seams from neighbors
             QuadTreeNode root = GetRoot(this);
-            GetSeams(root, seamDC.GetDC());
+            GetSeams(root, seamDC.GetDC(), false);
 
             //gather vertices from parent chunk of seam
             goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
@@ -257,7 +269,7 @@ namespace QuadTree
         }
 
 
-        public void GetSeams(QuadTreeNode node, Dual_Contour current) {
+        public void GetSeams(QuadTreeNode node, Dual_Contour current, bool seam) {
 
             //if outside the max range, stop
             Vector3 omin = node.go.GetComponent<DC_Chunk>().GetDC().GetMin();
@@ -277,13 +289,14 @@ namespace QuadTree
             {
                 foreach (QuadTreeNode child in node.GetChildren())
                 {
-                    GetSeams(child, current);
+                    GetSeams(child, current, seam);
                 }
             }
             else {
                 //is leaf, gather nodes
-                node.go.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes( current);
-                node.seamgo.GetComponent<DC_Chunk>().GetDC().ConstructSeamNodes(current);
+                Dual_Contour neighborDC = seam ? node.seamgo.GetComponent<DC_Chunk>().GetDC() : node.go.GetComponent<DC_Chunk>().GetDC();
+
+                neighborDC.ConstructSeamNodes( current);
             }
 
 

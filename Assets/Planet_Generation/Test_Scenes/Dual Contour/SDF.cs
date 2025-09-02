@@ -30,6 +30,20 @@ namespace SignedDistanceFields
             Vector2 q = new Vector2(new Vector2(p.x, p.z).magnitude, p.y);
             return ((h * q.x < w * q.y) ? (q - new Vector2(w, h)).magnitude : Mathf.Abs((q).magnitude - r)) - t;
         }
+
+        public static float sdBox(Vector3 p, Vector3 b)
+        {
+            p = new Vector3(
+                            Mathf.Abs(p.x),
+                            Mathf.Abs(p.y),
+                            Mathf.Abs(p.z)
+                            );
+            Vector3 q = p - b;
+            q = new Vector3(
+                            Mathf.Max(q.x, 0f), Mathf.Max(q.y, 0f), Mathf.Max(q.z,0f)
+                ) ;
+            return (q).magnitude + Mathf.Min(Mathf.Max(q.x, Mathf.Max(q.y, q.z)), 0.0f);
+        }
     }
 
 }
