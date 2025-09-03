@@ -786,7 +786,7 @@ namespace DualContour
             sizeZ = scale.z;
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
-            Ground = 1f;
+            Ground = 200f;
             amplitude = 2;
             block_voxel = mode;
             radius = iradius;
@@ -798,21 +798,22 @@ namespace DualContour
             
             offset = -Vector3.one * CELL_SIZE * 0.5f;
             offset += ioffset * CELL_SIZE;
+            
         }
 
         private float function(Vector3 pos, float y)
         {
 
 
-            //float domainWarp = 0;// simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
-            //float frequency = 10f;
+            float domainWarp = 0;// simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
+            float frequency = 30f;
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
+            Vector3 spherePos = pos.normalized * Ground;
 
-
-            float radius = SDF.CutHollowSphere(pos,global,5,2f,.2f);
-            //float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((pos.x+domainWarp) * frequency, (pos.y+domainWarp)*frequency, (pos.z+domainWarp)*frequency)) * amplitude) + Ground - radius;
-            float value = Ground - radius;
+            float radius = SDF.CutHollowSphere(pos,global,5,5,1);
+            float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((spherePos.x+domainWarp) * frequency, (spherePos.y+domainWarp)*frequency, (spherePos.z+domainWarp)*frequency)) * amplitude) + Ground - radius;
+            //float value = Ground - radius;
 
             return value;
         }
@@ -854,13 +855,18 @@ namespace DualContour
             vertices = verts;
 
             if (seam) {
+
                 IsSeam = true;
+                CELL_SIZE += (CELL_SIZE / sizeX); //want to cover n+1 units, where n is the initial length
+
                 sizeX++;
                 sizeY++;
                 sizeZ++;
 
-                CELL_SIZE++; //want to cover n+1 units, where n is the initial length
+                
             }
+
+            
 
             sizeX *= resolution;
             sizeY *= resolution;
@@ -870,6 +876,8 @@ namespace DualContour
             step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
             step *= (1f / (1 << LOD_Level));
             step *= CELL_SIZE;
+
+            UnityEngine.Debug.Log((seam ? "Seam" : "") + step);
 
             //BIGGEST BOTTLENECK ABOVE ALL
             cellPacked = new NativeArray<Vector4>(sizeX * sizeY * sizeZ, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
@@ -966,6 +974,8 @@ namespace DualContour
         public Vector3 GetMin() { return min; }
         public Vector3 GetMax() { return max; }
 
+        public Vector3 GetCenter() { return (min+max) / 2; }
+
         public void SetResolution(int iresolution) { resolution = iresolution; }
 
 
@@ -1059,6 +1069,28 @@ namespace DualContour
             return newpos.normalized * (radius + (elevation * step.y));
         }
 
+        Vector3 CubeToSphereDirection(Vector3 p)
+        {
+            float x = p.x;
+            float y = p.y;
+            float z = p.z;
+
+            float x2 = x * x;
+            float y2 = y * y;
+            float z2 = z * z;
+
+            return new Vector3(
+                x * Mathf.Sqrt(1f - (y2 / 2f) - (z2 / 2f) + (y2 * z2) / 3f),
+                y * Mathf.Sqrt(1f - (z2 / 2f) - (x2 / 2f) + (x2 * z2) / 3f),
+                z * Mathf.Sqrt(1f - (x2 / 2f) - (y2 / 2f) + (x2 * y2) / 3f)
+            );
+        }
+
+        private Vector3 GridToSphere(Vector3 pos, int elevation) {
+            float r = pos.magnitude; // radial distance
+            return CubeToSphereDirection(pos.normalized) * r;
+        }
+
         private Vector3 Grid(Vector3 pos, int elevation) { return pos; }
 
         public Vector3 FindTransformedCoord(Vector3 pos, int elevation){ return coordTransformFunction(pos, elevation); }
@@ -1077,10 +1109,14 @@ namespace DualContour
 
         public int GetLODLevel() { return LOD_Level; }
 
+        public float GetSideLength() { return max.x - min.x; }
+
 
 
         public static int GetNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1e-4f)
         {
+            //convert all 8 corners into warped space, compare 
+
             int rule = 0;
             bool inZBounds = neighborMax.z <= currentMax.z + epsilon && neighborMax.z >= currentMin.z - epsilon && neighborMin.z <= currentMax.z + epsilon && neighborMin.z >= currentMin.z - epsilon;
             bool inYBounds = neighborMax.y <= currentMax.y + epsilon && neighborMax.y >= currentMin.y - epsilon && neighborMin.y <= currentMax.y + epsilon && neighborMin.y >= currentMin.y - epsilon;
@@ -1098,6 +1134,8 @@ namespace DualContour
 
             return rule;
         }
+
+
 
         public void ConstructSeamFromParentChunk(Dual_Contour current)
         {

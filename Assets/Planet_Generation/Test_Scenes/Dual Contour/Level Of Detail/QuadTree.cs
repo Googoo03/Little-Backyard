@@ -36,11 +36,12 @@ namespace QuadTree
         private ChunkConfig chunkConfig;
         private List<QuadTreeNode> children;
         private QuadTreeNode parent;
+        private bool empty;
 
         private GameObject prefab;
         private GameObject go;
         private GameObject seamgo;
-
+        
         
 
         //Constructors
@@ -55,6 +56,7 @@ namespace QuadTree
             chunkConfig = ichunkConfig;
             prefab = igo;
             parent = iparent;
+            empty = true;
 
             //Determine the position to place the prefab based on if it's the root or not
             Vector3 pos = chunkConfig.lodLevel == 0 ? Vector3.zero : parent.GetGameObject().transform.position;
@@ -205,6 +207,8 @@ namespace QuadTree
             foreach (var child in children) {
                 child.go.GetComponent<DC_Chunk>().GenerateDCMesh();
                 child.seamgo.GetComponent<DC_Chunk>().GenerateDCMesh();
+
+                child.empty = child.go.GetComponent<DC_Chunk>().HasEmptyMesh();
             }
             ////////////////////////////////////////////////
 
@@ -250,6 +254,8 @@ namespace QuadTree
             go.GetComponent<DC_Chunk>().GenerateDCMesh();
             seamgo.GetComponent<DC_Chunk>().GenerateDCMesh();
             ////////////////////////////////////////////////
+            ///
+            empty = go.GetComponent<DC_Chunk>().HasEmptyMesh();
         }
 
         public void PrevLOD() {
@@ -268,6 +274,7 @@ namespace QuadTree
             return node;
         }
 
+        public ChunkConfig GetChunkConfig() { return chunkConfig; }
 
         public void GetSeams(QuadTreeNode node, Dual_Contour current, bool seam) {
 
@@ -336,6 +343,8 @@ namespace QuadTree
         public GameObject GetGameObject() { return go; }
 
         public bool HasChildren() { return children.Count > 0; }
+
+        public bool IsEmpty() { return empty; }
 
         public QuadTreeNode GetParent() {
             return parent;

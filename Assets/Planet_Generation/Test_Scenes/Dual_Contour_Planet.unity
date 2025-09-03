@@ -157,6 +157,9 @@ MonoBehaviour:
   block_voxel: 1
   editRadius: 2.26
   dir: 33
+  max: {x: 0, y: 0, z: 0}
+  min: {x: 0, y: 0, z: 0}
+  LODLevel: 0
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -219,6 +222,9 @@ MonoBehaviour:
   block_voxel: 1
   editRadius: 2.26
   dir: 194
+  max: {x: 0, y: 0, z: 0}
+  min: {x: 0, y: 0, z: 0}
+  LODLevel: 0
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -263,7 +269,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!20 &1010059176
 Camera:
   m_ObjectHideFlags: 0
@@ -410,8 +416,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1557406413}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1306516608
@@ -561,7 +566,7 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 1
+  orthographic: 0
   orthographic size: 5
   m_Depth: -1
   m_CullingMask:
@@ -614,12 +619,12 @@ Transform:
   m_GameObject: {fileID: 1557406409}
   serializedVersion: 2
   m_LocalRotation: {x: 0.1150751, y: 0.8811196, z: -0.27781588, w: 0.36497167}
-  m_LocalPosition: {x: -25, y: 20, z: 25}
+  m_LocalPosition: {x: -36.4, y: 31.3, z: 36.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1010059177}
-  m_Father: {fileID: 1080299011}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 35, y: 135, z: 0}
 --- !u!1 &1710272010
 GameObject:
@@ -637,7 +642,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1710272011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -806,6 +811,9 @@ MonoBehaviour:
   block_voxel: 1
   editRadius: 2.26
   dir: 65
+  max: {x: 0, y: 0, z: 0}
+  min: {x: 0, y: 0, z: 0}
+  LODLevel: 0
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -868,6 +876,9 @@ MonoBehaviour:
   block_voxel: 1
   editRadius: 2.26
   dir: 161
+  max: {x: 0, y: 0, z: 0}
+  min: {x: 0, y: 0, z: 0}
+  LODLevel: 0
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -930,6 +941,9 @@ MonoBehaviour:
   block_voxel: 1
   editRadius: 2.26
   dir: 193
+  max: {x: 0, y: 0, z: 0}
+  min: {x: 0, y: 0, z: 0}
+  LODLevel: 0
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -987,6 +1001,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cd70335be10bcc4e90828dd6dbd7936, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainCamera: {fileID: 0}
   LODLevel: 0
   chunkPrefab: {fileID: 344543328703040535, guid: 82cf3e795759e334087c40e96f9d1ad4,
     type: 3}
@@ -1001,7 +1016,7 @@ Transform:
   m_GameObject: {fileID: 1987582527}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7.037861, y: -38.037216, z: 7.6690464}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1096,6 +1111,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1306516610}
+  - {fileID: 1557406413}
   - {fileID: 1080299011}
   - {fileID: 1710272012}
   - {fileID: 1869510752}

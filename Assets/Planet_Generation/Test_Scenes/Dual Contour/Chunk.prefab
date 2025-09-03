@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   scale: {x: 32, y: 32, z: 32}
-  length: 32
+  length: 512
   block_voxel: 0
   editRadius: 2.26
   dir: 172
@@ -55,6 +55,7 @@ MonoBehaviour:
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 0}
+  emptyMesh: 0
   tex: {fileID: 0}
   tree_pos: []
   ind_serial_arr: 

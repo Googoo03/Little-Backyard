@@ -40,6 +40,7 @@ public class DC_Chunk : MonoBehaviour
     private Vector2[] uvs;
     private NativeList<int> indices;
     private UInt16[] voxel_data;
+    [SerializeField] private bool emptyMesh;
 
     //Voxel Data
     [SerializeField]private Texture3D tex;
@@ -76,18 +77,8 @@ public class DC_Chunk : MonoBehaviour
 
     private void Start()
     {
-        
-        
-
-        Stopwatch stopwatch = new Stopwatch();
-        
-
         scale = chunkConfig.scale;
         dir = chunkConfig.dir;
-
-        
-        
-
     }
 
     private void GenerateFoliage() {
@@ -104,6 +95,8 @@ public class DC_Chunk : MonoBehaviour
     }
 
     public Dual_Contour GetDC() { return dc; }
+
+    public bool HasEmptyMesh() { return emptyMesh; }
 
     private int FindSurface(Vector3 pos) {
         int y = scale.y-1;
@@ -165,6 +158,10 @@ public class DC_Chunk : MonoBehaviour
         mat.SetTexture("_VoxelData", tex);
         rend.material = mat;
 
+        //If nothing is generated,dont bother setting vertices and indices.
+        emptyMesh = vertices.Length == 0 || indices.Length < 3;
+        if (emptyMesh) return;
+        //----------------------------------------------------------------
 
         Vector3[] newverts = new Vector3[vertices.Length];
         vertices.AsArray().CopyTo(newverts);

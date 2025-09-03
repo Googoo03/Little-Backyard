@@ -1,3 +1,4 @@
+using DualContour;
 using QuadTree;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ public class Chunk_Manager : MonoBehaviour
 {
     // Start is called before the first frame update
     private QuadTreeNode quadTree;
+    [SerializeField] private Camera mainCamera;
     [SerializeField] private int LODLevel;
     [SerializeField] private GameObject chunkPrefab;
     [SerializeField] private bool next;
@@ -15,6 +17,7 @@ public class Chunk_Manager : MonoBehaviour
 
     void Start()
     {   
+        mainCamera = Camera.main;
         ChunkConfig rootConfig = new ChunkConfig(0,65,Vector2.zero, Vector3Int.one * 32, false, transform);
         quadTree = new QuadTreeNode(rootConfig, chunkPrefab, null);
         quadTree.GetGameObject().GetComponent<DC_Chunk>().InitializeDualContourBounds();
@@ -25,6 +28,7 @@ public class Chunk_Manager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        
         if (next) {
             next = false;
             DFSNextLod(quadTree);
@@ -36,6 +40,9 @@ public class Chunk_Manager : MonoBehaviour
             DFSPrevLod(quadTree);
             LODLevel -= LODLevel > 0 ? 1 : 0;
         }
+
+        //Automatic subdivision based on distance to camera
+        DFSCheckDistance(quadTree);
     }
 
     public void DFSNextLod(QuadTreeNode node) {
@@ -47,6 +54,45 @@ public class Chunk_Manager : MonoBehaviour
             //if (i % 2 == 0) continue;
             QuadTreeNode child = children[i];
             DFSNextLod(child);
+        }
+        
+    }
+
+    public void OnDrawGizmos()
+    {
+        Gizmos.color = new Color(1,1,1,0.5f);
+        DFSGizmos(quadTree);
+    }
+
+    //temporary, shows the bounding boxes of each leaf
+    public void DFSGizmos(QuadTreeNode node) {
+        Dual_Contour nodeDC = node.GetGameObject().GetComponent<DC_Chunk>().GetDC();
+        float distance = (nodeDC.GetCenter() + transform.position - mainCamera.transform.position).magnitude;
+        if (!node.HasChildren())
+        {
+            float size = nodeDC.GetSideLength();
+            Gizmos.DrawWireCube(nodeDC.GetCenter(), Vector3.one * size);
+            return;
+        }
+
+        foreach (QuadTreeNode child in node.GetChildren())
+        {
+            DFSGizmos(child);
+        }
+    }
+
+    public void DFSCheckDistance(QuadTreeNode node) {
+
+        Dual_Contour nodeDC = node.GetGameObject().GetComponent<DC_Chunk>().GetDC();
+        float distance = (nodeDC.GetCenter() + transform.position - mainCamera.transform.position).magnitude;
+        if (!node.HasChildren() && !node.IsEmpty() && (distance < (32f / (1 << node.GetChunkConfig().lodLevel)))) {
+            node.NextLOD();
+            node.GetGameObject().SetActive(false);
+            return;
+        }
+
+        foreach (QuadTreeNode child in node.GetChildren()) {
+            DFSCheckDistance(child);
         }
         
     }
