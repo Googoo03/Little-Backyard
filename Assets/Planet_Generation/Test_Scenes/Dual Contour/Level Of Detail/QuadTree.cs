@@ -84,6 +84,7 @@ namespace QuadTree
             //find highest resolution (smallest cell_size) of its NEIGHBORS
             QuadTreeNode root = GetRoot(this);
             int maxLOD = Mathf.Max(chunkConfig.lodLevel, GetHighestLOD(root, seamnodeDC.GetDC().GetMax(), seamnodeDC.GetDC().GetMin()));
+            maxLOD = chunkConfig.lodLevel;
 
             //set resolution to 2^ number of times the max lod is ahead of the current lod
             if (maxLOD != chunkConfig.lodLevel) seamnodeDC.GetDC().SetResolution(1 << (maxLOD - chunkConfig.lodLevel));
@@ -341,6 +342,8 @@ namespace QuadTree
         public void DestroyGO() { GameObject.Destroy(go); }
 
         public GameObject GetGameObject() { return go; }
+
+        public GameObject GetSeamGameObject() { return seamgo; }
 
         public bool HasChildren() { return children.Count > 0; }
 

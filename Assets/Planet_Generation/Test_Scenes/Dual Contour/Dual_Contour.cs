@@ -550,7 +550,12 @@ namespace DualContour
                                 for (int i = 0; i < 3; ++i)
                                 {
                                     (dx, dy, dz) = verts[j * 3 + i];
-                                    
+                                    if ((dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF) > vertices.Length)
+                                    {
+                                        
+                                        UnityEngine.Debug.Log(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))]);
+                                        //continue;
+                                    }
                                     indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
                                 }
                             }
@@ -786,12 +791,12 @@ namespace DualContour
             sizeZ = scale.z;
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
-            Ground = 200f;
-            amplitude = 2;
+            Ground = 512;
+            amplitude = 0;
             block_voxel = mode;
             radius = iradius;
             dir = idir;
-            coordTransformFunction = Grid;
+            coordTransformFunction = CartesianToSphere;
             resolution = 1;
             IsSeam = false;
 
@@ -811,8 +816,10 @@ namespace DualContour
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
             Vector3 spherePos = pos.normalized * Ground;
 
-            float radius = SDF.CutHollowSphere(pos,global,5,5,1);
+            float radius = pos.magnitude;
+            float caveVal = simplexNoise.CalcPixel3D((pos.x + domainWarp), (pos.y + domainWarp), (pos.z + domainWarp));
             float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((spherePos.x+domainWarp) * frequency, (spherePos.y+domainWarp)*frequency, (spherePos.z+domainWarp)*frequency)) * amplitude) + Ground - radius;
+            value -= caveVal;
             //float value = Ground - radius;
 
             return value;
@@ -867,17 +874,16 @@ namespace DualContour
             }
 
             
-
+            /*
             sizeX *= resolution;
             sizeY *= resolution;
             sizeZ *= resolution;
-
+            */
             //determines the "step" between vertices to cover 1 unit total
             step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
             step *= (1f / (1 << LOD_Level));
             step *= CELL_SIZE;
 
-            UnityEngine.Debug.Log((seam ? "Seam" : "") + step);
 
             //BIGGEST BOTTLENECK ABOVE ALL
             cellPacked = new NativeArray<Vector4>(sizeX * sizeY * sizeZ, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
@@ -1051,22 +1057,27 @@ namespace DualContour
 
             //Given a grid position, convert the point into a shell point
             //dir contains the u and v direction, which are masks for the x and z positions.
+
+            /*
             Vector3 step = new Vector3(1f / (sizeX-1), 1f / (sizeY-1), 1f / (sizeZ - 1));
             step *= (1f / (1 << LOD_Level));
             step *= CELL_SIZE;
+            */
 
+
+            float radius = 512;
 
             int uSign = ((dir & 0x80) != 0) ? 1 : -1;
             int vSign = ((dir & 0x08) != 0) ? 1 : -1;
             Vector3 uaxis = new Vector3(((dir >> 6 & 0x7FFF) & 0x01), (dir >> 5) & 0x01, (dir >> 4) & 0x01) * (uSign);
             Vector3 vaxis = new Vector3(((dir >> 2) & 0x01), (dir >> 1) & 0x01, (dir) & 0x01) * (vSign);
             Vector3 wAxis = Vector3.Cross(vaxis, uaxis);
-            float radius = CELL_SIZE / 2;
+
 
             //no idea why the step.x / 2. Why would it need to be pushed back half a unit? BECAUSE THE QUADS ARE CENTERED BY DEFAULT
             Vector3 newpos = uaxis * pos.x + vaxis * pos.z + wAxis * (radius - step.y / 2);
 
-            return newpos.normalized * (radius + (elevation * step.y));
+            return newpos.normalized * (radius + (elevation * step.y) + offset.y);
         }
 
         Vector3 CubeToSphereDirection(Vector3 p)
@@ -1135,6 +1146,53 @@ namespace DualContour
             return rule;
         }
 
+        public int GetNeighborByCorners(Dual_Contour current, float epsilon = 1f) {
+            int rule = 0;
+            int endCutoff = IsSeam ? 1 : 2;
+            Vector3[] Neighborcorners = new Vector3[8];
+            Vector3[] CurrentCorners = new Vector3[8];
+
+            int xPos, yPos, zPos;
+            for (int i = 0; i < 8; ++i)
+            {
+                xPos = ((sizeX - 1) * ((i >> 2) & 0x01));
+                yPos = ((sizeY - 1) * ((i >> 1) & 0x01));
+                zPos = ((sizeZ - 1) * (i & 0x01));
+
+
+                Neighborcorners[i] = cellPacked[(xPos + sizeX * (yPos + sizeY * zPos))];
+                
+            }
+            UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Neighbor " + Neighborcorners[0] + " | " + new Vector3(0,0,0));
+
+            for (int i = 0; i < 8; ++i)
+            {
+                xPos = ((current.sizeX - 1) * ((i >> 2) & 0x01));
+                yPos = ((current.sizeY - 1) * ((i >> 1) & 0x01));
+                zPos = ((current.sizeZ - 1) * (i & 0x01));
+
+
+                CurrentCorners[i] = current.cellPacked[(xPos + current.sizeX * (yPos + current.sizeY * zPos))];
+                
+            }
+            UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[4]);
+            UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[2]);
+            UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[1]);
+            //Check difference of neighbor chunk corners and current chunk corners
+            bool xNeighbor = (Neighborcorners[0] - CurrentCorners[4]).magnitude < epsilon;
+
+            bool yNeighbor = (Neighborcorners[0] - CurrentCorners[2]).magnitude < epsilon;
+
+            bool zNeighbor = (Neighborcorners[0] - CurrentCorners[1]).magnitude < epsilon;
+
+            if (xNeighbor) rule |= 4;
+            if (yNeighbor) rule |= 2;
+            if (zNeighbor) rule |= 1;
+
+           
+
+            return rule;
+        }
 
 
         public void ConstructSeamFromParentChunk(Dual_Contour current)
@@ -1223,8 +1281,10 @@ namespace DualContour
 
             if (vertices.Length == 0) return;
 
-            int rule = GetNeighborRule(cmin,cmax, min, max);
+            int rule = GetNeighborByCorners(current);
+            //int rule = GetNeighborRule(cmin, cmax, min, max);
             if (rule == 0) return;
+            //UnityEngine.Debug.Log("neighbor at " + GetCenter() + " current at " + current.GetCenter() + "| rule: " + rule);
 
             int x, y, z;
 
@@ -1280,6 +1340,8 @@ namespace DualContour
 
                         current.vertices.Add(newVert);
                         newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
+
+                        //UnityEngine.Debug.Log(newdualgrid >> 6 & 0x7FFF);
 
                         for (cx = cboundaries.x; cx < indicesToCover; ++cx)
                         {

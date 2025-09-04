@@ -29,6 +29,7 @@ public class DC_Chunk : MonoBehaviour
     //Test Cube
     [SerializeField] private GameObject cube;
     [SerializeField] private GameObject tree_obj;
+    public bool subdivide = false;
 
     //MESH DETAILS
     private Mesh m;
