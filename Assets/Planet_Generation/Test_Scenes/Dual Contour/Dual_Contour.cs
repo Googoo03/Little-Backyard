@@ -791,8 +791,8 @@ namespace DualContour
             sizeZ = scale.z;
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
-            Ground = 512;
-            amplitude = 0;
+            Ground = 32768;
+            amplitude = 20;
             block_voxel = mode;
             radius = iradius;
             dir = idir;
@@ -811,15 +811,15 @@ namespace DualContour
 
 
             float domainWarp = 0;// simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
-            float frequency = 30f;
+            float frequency = .25f;
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
             Vector3 spherePos = pos.normalized * Ground;
 
             float radius = pos.magnitude;
-            float caveVal = simplexNoise.CalcPixel3D((pos.x + domainWarp), (pos.y + domainWarp), (pos.z + domainWarp));
-            float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((spherePos.x+domainWarp) * frequency, (spherePos.y+domainWarp)*frequency, (spherePos.z+domainWarp)*frequency)) * amplitude) + Ground - radius;
-            value -= caveVal;
+            float caveVal = simplexNoise.CalcPixel3D((pos.x + domainWarp), (pos.y + domainWarp), (pos.z + domainWarp)) * amplitude;
+            float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((spherePos.x+domainWarp) * frequency, (spherePos.y+domainWarp)*frequency, (spherePos.z+domainWarp)*frequency)))*amplitude + Ground - radius;
+            //value -= caveVal;
             //float value = Ground - radius;
 
             return value;
@@ -1065,7 +1065,7 @@ namespace DualContour
             */
 
 
-            float radius = 512;
+            float radius = 32768;
 
             int uSign = ((dir & 0x80) != 0) ? 1 : -1;
             int vSign = ((dir & 0x08) != 0) ? 1 : -1;

@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   scale: {x: 32, y: 32, z: 32}
-  length: 1024
+  length: 65536
   block_voxel: 0
   editRadius: 2.26
   dir: 172

@@ -6,6 +6,7 @@ using UnityEngine;
 public class ShipControls : Controllable_Entity
 {
     public float speed;
+    [SerializeField] private float baseSpeed;
     public float mouseSensitivityX;
     public float mouseSensitivityY;
     public float rollSensitivity;
@@ -51,7 +52,6 @@ public class ShipControls : Controllable_Entity
     [SerializeField] private float boostAmount;
 
     private float boostSpeed = 0;
-    //private float pullUpDistance = 1.1f; //should be grabbed from the planet when it's said and done
 
     public float angle;
     private Vector3 horizonDirection = new Vector3(1, 1, 1);
@@ -159,7 +159,7 @@ public class ShipControls : Controllable_Entity
         boostSpeed = Mathf.Lerp(boostSpeed, boostDestination, Time.deltaTime);
         boostSpeed = !boost ? 0 : boostSpeed;
 
-        speed = (sprint ? 1f : 0.25f) + (boostSpeed);
+        speed = (sprint ? 4 * baseSpeed : baseSpeed) + (boostSpeed);
 
         float _currentFOV = _camera.GetComponent<Camera>().fieldOfView;
         float _newFOV = sprint ? FOV[1] : FOV[0];
@@ -186,7 +186,6 @@ public class ShipControls : Controllable_Entity
         targetRotation = yaw * pitch * roll * targetRotation;
         lastOrientation = yaw*pitch*roll*lastOrientation;//perhaps delete later.
 
-        //transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation,strength);
         transform.rotation = targetRotation;
 
         /////Moving forward
@@ -227,13 +226,6 @@ public class ShipControls : Controllable_Entity
             axis = Mathf.Clamp(axis, -1f, 1f); //prevents infinite speed increase
         }
     }
-
-    /*private void LODCheckDistance() { //measures the distance between the player and nearbyPlanet. If close enough
-                                      //make new LOD      
-            if (distanceToNearestPlanet < initialDistanceThreshold) {
-                nearbyPlanet.GetComponent<Sphere>().checkPatchDistances(transform.position);
-            }
-    }*/
 
     private float sigmoidFunction(float x) {
         return (1 / (1 + Mathf.Pow(2.78f, -5 * x))) - 0.5f;
