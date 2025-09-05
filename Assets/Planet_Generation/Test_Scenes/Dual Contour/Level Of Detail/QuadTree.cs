@@ -81,10 +81,14 @@ namespace QuadTree
             seamnodeDC.SetChunkConfig(chunkConfig);
             seamnodeDC.InitializeDualContourBounds();
 
+            //For testing purposes only
+            seamnodeDC.SetOffset(seamnodeDC.GetDC().GetOffset());
+            gonodeDC.SetOffset(gonodeDC.GetDC().GetOffset());
+
             //find highest resolution (smallest cell_size) of its NEIGHBORS
             QuadTreeNode root = GetRoot(this);
             int maxLOD = Mathf.Max(chunkConfig.lodLevel, GetHighestLOD(root, seamnodeDC.GetDC().GetMax(), seamnodeDC.GetDC().GetMin()));
-            maxLOD = chunkConfig.lodLevel;
+            //maxLOD = chunkConfig.lodLevel;
 
             //set resolution to 2^ number of times the max lod is ahead of the current lod
             if (maxLOD != chunkConfig.lodLevel) seamnodeDC.GetDC().SetResolution(1 << (maxLOD - chunkConfig.lodLevel));

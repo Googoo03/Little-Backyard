@@ -23,6 +23,7 @@ public class DC_Chunk : MonoBehaviour
     [SerializeField] private Vector3 max;
     [SerializeField] private Vector3 min;
     [SerializeField] private int LODLevel;
+    [SerializeField] private Vector3 offset;
 
     [SerializeField] private Material mat;
 
@@ -211,6 +212,7 @@ public class DC_Chunk : MonoBehaviour
 
     public void SetChunkConfig( ChunkConfig ichunkConfig) { chunkConfig = ichunkConfig; }
 
+    public void SetOffset(Vector3 ioffset) { offset = ioffset; }
 
     private void InitComputeShader() {
 

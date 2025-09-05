@@ -792,7 +792,7 @@ namespace DualContour
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
             Ground = 32768;
-            amplitude = 20;
+            amplitude = 150;
             block_voxel = mode;
             radius = iradius;
             dir = idir;
@@ -811,7 +811,7 @@ namespace DualContour
 
 
             float domainWarp = 0;// simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
-            float frequency = .25f;
+            float frequency = .05f;
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
             Vector3 spherePos = pos.normalized * Ground;
@@ -874,11 +874,11 @@ namespace DualContour
             }
 
             
-            /*
+            
             sizeX *= resolution;
             sizeY *= resolution;
             sizeZ *= resolution;
-            */
+            
             //determines the "step" between vertices to cover 1 unit total
             step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
             step *= (1f / (1 << LOD_Level));
@@ -980,7 +980,14 @@ namespace DualContour
         public Vector3 GetMin() { return min; }
         public Vector3 GetMax() { return max; }
 
+        //returns the center based on base cartestian grid coordinates
         public Vector3 GetCenter() { return (min+max) / 2; }
+
+        //returns the center based on transformed coordinates
+        public Vector3 GetCornerCenter() {
+            int lastIndex = ((sizeX - 1) + sizeX * (sizeY - 1 + sizeY * (sizeZ - 1)));
+            return ((Vector3)cellPacked[0] + (Vector3)cellPacked[lastIndex]) / 2;
+        }
 
         public void SetResolution(int iresolution) { resolution = iresolution; }
 
@@ -1102,6 +1109,14 @@ namespace DualContour
             return CubeToSphereDirection(pos.normalized) * r;
         }
 
+        //returns in radians the polar coords of a given cartesian coordinate
+        private Vector3 CartesianToPolarCoords(Vector3 Relativecartesian) { 
+            float r = Relativecartesian.magnitude;
+            float theta = Mathf.Atan2(Relativecartesian.y,Relativecartesian.x);
+            float phi = Mathf.Acos(Relativecartesian.z/r);
+            return new Vector3(r, theta, phi);
+        }
+
         private Vector3 Grid(Vector3 pos, int elevation) { return pos; }
 
         public Vector3 FindTransformedCoord(Vector3 pos, int elevation){ return coordTransformFunction(pos, elevation); }
@@ -1122,16 +1137,18 @@ namespace DualContour
 
         public float GetSideLength() { return max.x - min.x; }
 
+        public Vector3 GetOffset() { return offset; }
 
 
-        public static int GetNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1e-4f)
+
+        public static int GetNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1f)
         {
             //convert all 8 corners into warped space, compare 
 
             int rule = 0;
-            bool inZBounds = neighborMax.z <= currentMax.z + epsilon && neighborMax.z >= currentMin.z - epsilon && neighborMin.z <= currentMax.z + epsilon && neighborMin.z >= currentMin.z - epsilon;
-            bool inYBounds = neighborMax.y <= currentMax.y + epsilon && neighborMax.y >= currentMin.y - epsilon && neighborMin.y <= currentMax.y + epsilon && neighborMin.y >= currentMin.y - epsilon;
-            bool inXBounds = neighborMax.x <= currentMax.x + epsilon && neighborMax.x >= currentMin.x - epsilon && neighborMin.x <= currentMax.x + epsilon && neighborMin.x >= currentMin.x - epsilon;
+            bool inZBounds = neighborMax.z > currentMin.z - epsilon && neighborMin.z < currentMax.z + epsilon;
+            bool inYBounds = neighborMax.y > currentMin.y - epsilon && neighborMin.y < currentMax.y + epsilon;
+            bool inXBounds = neighborMax.x > currentMin.x - epsilon && neighborMin.x < currentMax.x + epsilon;
 
             bool xNeighbor = Mathf.Abs(neighborMin.x - currentMax.x) < epsilon && inZBounds && inYBounds;
 
@@ -1163,7 +1180,7 @@ namespace DualContour
                 Neighborcorners[i] = cellPacked[(xPos + sizeX * (yPos + sizeY * zPos))];
                 
             }
-            UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Neighbor " + Neighborcorners[0] + " | " + new Vector3(0,0,0));
+            //UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Neighbor " + Neighborcorners[0] + " | " + new Vector3(0,0,0));
 
             for (int i = 0; i < 8; ++i)
             {
@@ -1175,9 +1192,11 @@ namespace DualContour
                 CurrentCorners[i] = current.cellPacked[(xPos + current.sizeX * (yPos + current.sizeY * zPos))];
                 
             }
+            /*
             UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[4]);
             UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[2]);
             UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[1]);
+            */
             //Check difference of neighbor chunk corners and current chunk corners
             bool xNeighbor = (Neighborcorners[0] - CurrentCorners[4]).magnitude < epsilon;
 
@@ -1281,8 +1300,8 @@ namespace DualContour
 
             if (vertices.Length == 0) return;
 
-            int rule = GetNeighborByCorners(current);
-            //int rule = GetNeighborRule(cmin, cmax, min, max);
+            //int rule = GetNeighborByCorners(current);
+            int rule = GetNeighborRule(cmin, cmax, min, max);
             if (rule == 0) return;
             //UnityEngine.Debug.Log("neighbor at " + GetCenter() + " current at " + current.GetCenter() + "| rule: " + rule);
 
@@ -1300,13 +1319,16 @@ namespace DualContour
 
             //it is guaranteed at this point that the density of the seam >= density of chunk
             float relativeDensity = step.x / current.step.x;
-            int indicesToCover = 1;// (int)relativeDensity;
+            int indicesToCover =  (int)relativeDensity;
             int startX = 0, startY = 0, startZ = 0;
 
             //apply offset to finding indices
-            //startX += (int)((offset.x - current.offset.x) / current.step.x);
-            //startY += (int)((offset.y - current.offset.y) / current.step.y);
-            //startZ += (int)((offset.z - current.offset.z) / current.step.z);
+            startX += (int)((current.offset.x - offset.x) / step.x);
+            startY += (int)((current.offset.y - offset.y) / step.y);
+            startZ += (int)((current.offset.z - offset.z) / step.z);
+
+            UnityEngine.Debug.Log("StartX: " + startX + " | neighbor offset: " + offset.x + " | current offset: " + current.offset.x + " | neighber step: " + step.x);
+
             //apply a start and end index to loop over
 
             //core logic is already present. Just have to find indices.
@@ -1317,9 +1339,9 @@ namespace DualContour
 
             //picks which is / are the fixed axes and chooses which one to instead iterate over
             ((int start,int end) x, (int start,int end) y, (int start, int end) z) boundaries = (
-                                                (rule & 0x4) != 0 ? (0, 1) : (0, sizeX - endCutoff),
-                                                (rule & 0x2) != 0 ? (0, 1) : (0, sizeY - endCutoff),
-                                                (rule & 0x1) != 0 ? (0, 1) : (0, sizeZ - endCutoff));
+                                                (rule & 0x4) != 0 ? (0, 1) : (startX, sizeX - endCutoff),
+                                                (rule & 0x2) != 0 ? (0, 1) : (startY, sizeY - endCutoff),
+                                                (rule & 0x1) != 0 ? (0, 1) : (startZ, sizeZ - endCutoff));
 
             (int x, int y, int z) cboundaries = ((rule & 0x4) != 0 ? indicesToCover - 1 : 0,
                                                 (rule & 0x2) != 0 ? indicesToCover - 1 : 0,
@@ -1349,14 +1371,15 @@ namespace DualContour
                             {
                                 for (cz = cboundaries.z; cz < indicesToCover; ++cz)
                                 {
-                                    ax = (rule & 0x4) != 0 ? (current.sizeX - 1) : (startX + (x * indicesToCover) + cx);
-                                    ay = (rule & 0x2) != 0 ? (current.sizeY - 1) : (startY + (y * indicesToCover) + cy);
-                                    az = (rule & 0x1) != 0 ? (current.sizeZ - 1) : (startZ + (z * indicesToCover) + cz);
-                                    
+                                    ax = (rule & 0x4) != 0 ? (current.sizeX - 1) : (((x-startX) * indicesToCover) + cx);
+                                    ay = (rule & 0x2) != 0 ? (current.sizeY - 1) : (((y-startY) * indicesToCover) + cy);
+                                    az = (rule & 0x1) != 0 ? (current.sizeZ - 1) : (((z-startZ) * indicesToCover) + cz);
+
+                                    if (startX == 16) UnityEngine.Debug.Log("ax: " + ax);
 
 
                                     dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
-                                    if (current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
+                                    if (dgIndex >= current.dualGrid.Length || current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
                                     current.dualGrid[dgIndex] = newdualgrid;
                                 }
 
