@@ -321,12 +321,13 @@ namespace DualContour
         public void Execute()
         {
             int x, y, z;
+            int spacing = (1 << resolution)-1;
 
             for (x = 0; x < sizeX - 1; ++x)
             {
                 for (y = 0; y < sizeY - 1; ++y)
                 {
-                    for (z= sizeZ - resolution - 1; z < sizeZ - 1; ++z)
+                    for (z= sizeZ - spacing - 1; z < sizeZ - 1; ++z)
                     {
                         DetermineVertex(x, y, z);
                         
@@ -338,7 +339,7 @@ namespace DualContour
 
             /////////////BROKEN THIS  LOOP
             ///
-            for (x = sizeX - resolution - 1; x < sizeX - 1; ++x)
+            for (x = sizeX - spacing - 1; x < sizeX - 1; ++x)
                     {
                 for (y = 0; y < sizeY - 1; ++y)
                 {
@@ -356,7 +357,7 @@ namespace DualContour
             {
                 for (z = 0; z < sizeZ - 1; ++z)
                 {
-                    for (y = sizeY - resolution - 1; y < sizeY - 1; ++y)
+                    for (y = sizeY - spacing - 1; y < sizeY - 1; ++y)
                     {
                         DetermineVertex(x, y, z);
                     }
@@ -364,22 +365,22 @@ namespace DualContour
             }
 
             
-            x = sizeX - resolution - 1;
-            y = sizeY - resolution - 1;
+            x = sizeX - spacing - 1;
+            y = sizeY - spacing - 1;
             for (; x < sizeX - 1; ++x)
             {
                 for (; y < sizeY - 1; ++y)
                 {
-                    for (z=0; z < sizeZ - resolution - 1; ++z)
+                    for (z=0; z < sizeZ - spacing - 1; ++z)
                     {
                         DetermineVertex(x, y, z);
                     }
                 }
             }
             
-            z = sizeZ - resolution - 1;
-            y = sizeY - resolution - 1;
-            for (x = 0; x < sizeX - resolution - 1; ++x)
+            z = sizeZ - spacing - 1;
+            y = sizeY - spacing - 1;
+            for (x = 0; x < sizeX - spacing - 1; ++x)
             {
                 for (; y < sizeY - 1; ++y)
                 {
@@ -390,11 +391,11 @@ namespace DualContour
                 }
             }
             
-            x = sizeX - resolution - 1;
-            z = sizeZ - resolution - 1;
+            x = sizeX - spacing - 1;
+            z = sizeZ - spacing - 1;
             for (; x < sizeX - 1; ++x)
             {
-                for (y = 0; y < sizeY - resolution - 1; ++y)
+                for (y = 0; y < sizeY - spacing - 1; ++y)
                 {
                     for (; z < sizeZ - 1; ++z)
                     {
@@ -403,9 +404,9 @@ namespace DualContour
                 }
             }
             
-            x = sizeX - resolution - 1;
-            y = sizeY - resolution - 1;
-            z = sizeZ - resolution - 1;
+            x = sizeX - spacing - 1;
+            y = sizeY - spacing - 1;
+            z = sizeZ - spacing - 1;
             for (; x < sizeX - 1; ++x)
             {
                 for (; y < sizeY - 1; ++y)
@@ -553,6 +554,7 @@ namespace DualContour
                                     if ((dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF) > vertices.Length)
                                     {
                                         UnityEngine.Debug.Log("dg index: "+(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF));
+                                        indices.Add(0);
                                         continue;
                                     }
                                     indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
@@ -1259,6 +1261,7 @@ namespace DualContour
             int x, y, z;
             int cx, cy, cz;
             int ax, ay, az;
+            int spacing = (1 << current.resolution) - 1;
 
             int dgIndex;
             int newdualgrid;
@@ -1303,8 +1306,10 @@ namespace DualContour
                             //add the vertex to the seam
                             current.vertices.Add(newVert);
 
+
                             //encode the dualgrid entry
                             newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
+
 
                             for (cx = cboundaries[i].x; cx < indicesToCover; ++cx)
                             {
@@ -1317,16 +1322,16 @@ namespace DualContour
 
 
 
-                                        ax = i == 0 ? (current.sizeX - 1) - resolution - 1 : ((x * indicesToCover) + cx);
-                                        ay = i == 1 ? (current.sizeY - 1) - resolution - 1 : ((y * indicesToCover) + cy);
-                                        az = i == 2 ? (current.sizeZ - 1) - resolution - 1 : ((z * indicesToCover) + cz);
+                                        ax = i == 0 ? (current.sizeX - 1) - spacing - 1 : ((x * indicesToCover) + cx);
+                                        ay = i == 1 ? (current.sizeY - 1) - spacing - 1 : ((y * indicesToCover) + cy);
+                                        az = i == 2 ? (current.sizeZ - 1) - spacing - 1 : ((z * indicesToCover) + cz);
 
-                                        if (relativeDensity > 1 && i != 0) UnityEngine.Debug.Log(ax);
+                                        //if (relativeDensity > 1 && i != 0) UnityEngine.Debug.Log(ax);
                                         //the x and y variables (NOT CX CY) need to be multiplied by something
 
                                         
                                         dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
-                                        //if (dgIndex >= current.dualGrid.Length || current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
+                                        if (dgIndex >= current.dualGrid.Length || current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
 
                                         current.dualGrid[dgIndex] = newdualgrid;
                                     }

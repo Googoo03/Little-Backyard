@@ -57,6 +57,9 @@ MonoBehaviour:
   cube: {fileID: 0}
   tree_obj: {fileID: 0}
   subdivide: 0
+  relativeResolution: 1
+  maxLod: 0
+  step: {x: 0, y: 0, z: 0}
   emptyMesh: 0
   tex: {fileID: 0}
   tree_pos: []

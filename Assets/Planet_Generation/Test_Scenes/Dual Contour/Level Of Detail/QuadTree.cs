@@ -308,7 +308,7 @@ namespace QuadTree
                 GetSeams(root, seamDC.GetDC(), false);
 
             }
-
+            /*
             //Grab neighboring seam nodes last
             for (int i = 0; i < negativeNeighbors.Count; ++i)
             {
@@ -319,6 +319,7 @@ namespace QuadTree
                 GetSeams(root, seamDC.GetDC(), true);
 
             }
+            */
 
             //Calculate quads / tris of seams
             for (int i = 0; i < negativeNeighbors.Count; ++i)
