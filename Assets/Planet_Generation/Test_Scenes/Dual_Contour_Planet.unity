@@ -160,6 +160,7 @@ MonoBehaviour:
   max: {x: 0, y: 0, z: 0}
   min: {x: 0, y: 0, z: 0}
   LODLevel: 0
+  offset: {x: 0, y: 0, z: 0}
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -227,6 +228,7 @@ MonoBehaviour:
   max: {x: 0, y: 0, z: 0}
   min: {x: 0, y: 0, z: 0}
   LODLevel: 0
+  offset: {x: 0, y: 0, z: 0}
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -595,7 +597,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1557406409}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1c12df4621dd3a43ae81b1027b3c24e, type: 3}
   m_Name: 
@@ -842,6 +844,7 @@ MonoBehaviour:
   max: {x: 0, y: 0, z: 0}
   min: {x: 0, y: 0, z: 0}
   LODLevel: 0
+  offset: {x: 0, y: 0, z: 0}
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -909,6 +912,7 @@ MonoBehaviour:
   max: {x: 0, y: 0, z: 0}
   min: {x: 0, y: 0, z: 0}
   LODLevel: 0
+  offset: {x: 0, y: 0, z: 0}
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -976,6 +980,7 @@ MonoBehaviour:
   max: {x: 0, y: 0, z: 0}
   min: {x: 0, y: 0, z: 0}
   LODLevel: 0
+  offset: {x: 0, y: 0, z: 0}
   mat: {fileID: 2100000, guid: b8b6d975aebcc9546ab283bad2f13ecf, type: 2}
   cube: {fileID: 0}
   tree_obj: {fileID: 1059816734}
@@ -1035,6 +1040,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cd70335be10bcc4e90828dd6dbd7936, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseLength: 65536
   mainCamera: {fileID: 0}
   LODLevel: 0
   chunkPrefab: {fileID: 344543328703040535, guid: 82cf3e795759e334087c40e96f9d1ad4,

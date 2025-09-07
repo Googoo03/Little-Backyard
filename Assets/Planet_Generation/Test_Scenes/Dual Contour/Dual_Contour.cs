@@ -552,9 +552,8 @@ namespace DualContour
                                     (dx, dy, dz) = verts[j * 3 + i];
                                     if ((dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF) > vertices.Length)
                                     {
-                                        
-                                        UnityEngine.Debug.Log(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))]);
-                                        //continue;
+                                        UnityEngine.Debug.Log("dg index: "+(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF));
+                                        continue;
                                     }
                                     indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
                                 }
@@ -732,6 +731,9 @@ namespace DualContour
         [SerializeField] bool IsSeam;
 
         //MESH DIMENSIONS
+        [SerializeField] private Vector3Int baseSize;
+        [SerializeField] private float baseCELL_SIZE;
+
         [SerializeField] private int sizeX;
         [SerializeField] private int sizeY;
         [SerializeField] private int sizeZ;
@@ -741,6 +743,9 @@ namespace DualContour
         [SerializeField] private int LOD_Level;
         [SerializeField] private int dir; //on spherical meshes, this defines the uv direction (on a uv sphere) and sign
         [SerializeField] private int resolution; //for seams, determines how many times it needs to subdivide to be on the same level as the highest fidelity neighbor
+
+        //REFRESH
+        [SerializeField] private bool initialized = false;
 
         //MESH MODE
         [SerializeField] private bool block_voxel;
@@ -786,9 +791,11 @@ namespace DualContour
 
         public Dual_Contour(Vector3 _global, Vector3Int scale, Vector3 ioffset, int ilodLevel, int length, bool mode, float iradius, int idir) {
             global = _global;
+            baseSize = scale;
             sizeX = scale.x;
             sizeY = scale.y;
             sizeZ = scale.z;
+            baseCELL_SIZE = length;
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
             Ground = 32768;
@@ -809,17 +816,18 @@ namespace DualContour
         private float function(Vector3 pos, float y)
         {
 
-
-            float domainWarp = 0;// simplexNoise.CalcPixel3D(pos.x * 5, pos.y * 5, pos.z * 5) * 2f;
             float frequency = .05f;
+            float domainWarp = 0;
+            
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
             Vector3 spherePos = pos.normalized * Ground;
 
             float radius = pos.magnitude;
-            float caveVal = simplexNoise.CalcPixel3D((pos.x + domainWarp), (pos.y + domainWarp), (pos.z + domainWarp)) * amplitude;
+            float caveVal = simplexNoise.CalcPixel3D(pos.x * frequency, pos.y * frequency, pos.z * frequency) * amplitude;
             float value = (1-Mathf.Abs(simplexNoise.CalcPixel3D((spherePos.x+domainWarp) * frequency, (spherePos.y+domainWarp)*frequency, (spherePos.z+domainWarp)*frequency)))*amplitude + Ground - radius;
-            //value -= caveVal;
+            //if(value < 0) value += caveVal;
+            //value *= caveVal;
             //float value = Ground - radius;
 
             return value;
@@ -861,28 +869,35 @@ namespace DualContour
             indices = ind;
             vertices = verts;
 
-            if (seam) {
+            //Clear data if refreshing
+            if (vertices.Length > 0) vertices.Clear();
+            if (indices.Length > 0) indices.Clear();
+            if (cellPacked != null) cellPacked.Dispose();
+            if (dualGrid != null) dualGrid.Dispose();
 
+            sizeX = baseSize.x;
+            sizeY = baseSize.y;
+            sizeZ = baseSize.z;
+            CELL_SIZE = baseCELL_SIZE;
+
+            if (seam) {
                 IsSeam = true;
                 CELL_SIZE += (CELL_SIZE / sizeX); //want to cover n+1 units, where n is the initial length
-
                 sizeX++;
                 sizeY++;
                 sizeZ++;
-
-                
             }
 
-            
-            
             sizeX *= resolution;
             sizeY *= resolution;
             sizeZ *= resolution;
-            
+
+            //LOD_Level += resolution - 1;
+
             //determines the "step" between vertices to cover 1 unit total
             step = new Vector3(1f / (sizeX), 1f / (sizeY), 1f / (sizeZ));
             step *= (1f / (1 << LOD_Level));
-            step *= CELL_SIZE;
+            step *= CELL_SIZE;        
 
 
             //BIGGEST BOTTLENECK ABOVE ALL
@@ -1133,6 +1148,8 @@ namespace DualContour
 
         public ref NativeList<Vector3> GetVerticesStruct() { return ref vertices; }
 
+        public Vector3 GetStep() { return step; }
+
         public int GetLODLevel() { return LOD_Level; }
 
         public float GetSideLength() { return max.x - min.x; }
@@ -1141,7 +1158,7 @@ namespace DualContour
 
 
 
-        public static int GetNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1f)
+        public static int GetPositiveNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1f)
         {
             //convert all 8 corners into warped space, compare 
 
@@ -1155,6 +1172,26 @@ namespace DualContour
             bool yNeighbor = Mathf.Abs(neighborMin.y - currentMax.y) < epsilon && inZBounds && inXBounds;
 
             bool zNeighbor = Mathf.Abs(neighborMin.z - currentMax.z) < epsilon && inXBounds && inYBounds;
+
+            if (xNeighbor) rule |= 4;
+            if (yNeighbor) rule |= 2;
+            if (zNeighbor) rule |= 1;
+
+            return rule;
+        }
+
+        public static int GetNegativeNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1f) {
+            int rule = 0;
+
+            bool inZBounds = neighborMax.z > currentMin.z - epsilon && neighborMin.z < currentMax.z + epsilon;
+            bool inYBounds = neighborMax.y > currentMin.y - epsilon && neighborMin.y < currentMax.y + epsilon;
+            bool inXBounds = neighborMax.x > currentMin.x - epsilon && neighborMin.x < currentMax.x + epsilon;
+
+            bool xNeighbor = Mathf.Abs(currentMin.x - neighborMax.x) < epsilon && inZBounds && inYBounds;
+
+            bool yNeighbor = Mathf.Abs(currentMin.y - neighborMax.y) < epsilon && inZBounds && inXBounds;
+
+            bool zNeighbor = Mathf.Abs(currentMin.z - neighborMax.z) < epsilon && inXBounds && inYBounds;
 
             if (xNeighbor) rule |= 4;
             if (yNeighbor) rule |= 2;
@@ -1224,22 +1261,18 @@ namespace DualContour
             int ax, ay, az;
 
             int dgIndex;
-            int newdualgrid = 0;
+            int newdualgrid;
             Vector3 newVert;
 
             //find difference in LOD levels, for a start x,y,z index (beginning of chunk, not beginning of loop)
 
             //it is guaranteed at this point that the density of the seam >= density of chunk
             float relativeDensity = step.x / current.step.x;
-            int indicesToCover = 1;// (int)relativeDensity;
-            int startX = 0, startY = 0, startZ = 0;
+            int indicesToCover = (int)relativeDensity;
 
             //apply offset to finding indices
 
             //CHANGE THIS SUCH THAT IT DOESNT RELY ON OFFSET AND STEP, SINCE THESE ARE CHANGED TO ACCOUNT FOR THE EXTRA LAYER
-            //startX += (int)((offset.x - current.offset.x) / current.step.x);
-            //startY += (int)((offset.y - current.offset.y) / current.step.y);
-            //startZ += (int)((offset.z - current.offset.z) / current.step.z);
 
             (int x,int y,int z)[] boundaries = new (int,int,int)[3] {
                 (sizeX-2,0,0),
@@ -1262,11 +1295,15 @@ namespace DualContour
                         for (z = boundaries[i].z; z < sizeZ - 1; ++z)
                         {
 
+                            //grab from parent
                             newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
                             if (newdualgrid == -1) continue;
                             newVert = vertices[newdualgrid >> 6 & 0x7FFF];
 
+                            //add the vertex to the seam
                             current.vertices.Add(newVert);
+
+                            //encode the dualgrid entry
                             newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
 
                             for (cx = cboundaries[i].x; cx < indicesToCover; ++cx)
@@ -1275,11 +1312,22 @@ namespace DualContour
                                 {
                                     for (cz = cboundaries[i].z; cz < indicesToCover; ++cz)
                                     {
-                                        ax = i == 0 ? (current.sizeX - 1) - resolution - 1 : (startX + (x * indicesToCover) + cx);
-                                        ay = i == 1 ? (current.sizeY - 1) - resolution - 1 : (startY + (y * indicesToCover) + cy);
-                                        az = i == 2 ? (current.sizeZ - 1) - resolution - 1 : (startZ + (z * indicesToCover) + cz);
+
+                                        //skipping over indices in the parent chunk?
+
+
+
+                                        ax = i == 0 ? (current.sizeX - 1) - resolution - 1 : ((x * indicesToCover) + cx);
+                                        ay = i == 1 ? (current.sizeY - 1) - resolution - 1 : ((y * indicesToCover) + cy);
+                                        az = i == 2 ? (current.sizeZ - 1) - resolution - 1 : ((z * indicesToCover) + cz);
+
+                                        if (relativeDensity > 1 && i != 0) UnityEngine.Debug.Log(ax);
                                         //the x and y variables (NOT CX CY) need to be multiplied by something
+
+                                        
                                         dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
+                                        //if (dgIndex >= current.dualGrid.Length || current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
+
                                         current.dualGrid[dgIndex] = newdualgrid;
                                     }
 
@@ -1301,10 +1349,9 @@ namespace DualContour
             if (vertices.Length == 0) return;
 
             //int rule = GetNeighborByCorners(current);
-            int rule = GetNeighborRule(cmin, cmax, min, max);
+            int rule = GetPositiveNeighborRule(cmin, cmax, min, max);
             if (rule == 0) return;
-            //UnityEngine.Debug.Log("neighbor at " + GetCenter() + " current at " + current.GetCenter() + "| rule: " + rule);
-
+            
             int x, y, z;
 
             //the in-plane offset when filling in subdivided space
@@ -1312,7 +1359,7 @@ namespace DualContour
             int ax, ay, az;
 
             int dgIndex;
-            int newdualgrid = 0;
+            int newdualgrid;
             Vector3 newVert;
 
             //find difference in LOD levels, for a start x,y,z index (beginning of chunk, not beginning of loop)
@@ -1327,7 +1374,11 @@ namespace DualContour
             startY += (int)((current.offset.y - offset.y) / step.y);
             startZ += (int)((current.offset.z - offset.z) / step.z);
 
-            UnityEngine.Debug.Log("StartX: " + startX + " | neighbor offset: " + offset.x + " | current offset: " + current.offset.x + " | neighber step: " + step.x);
+            startX = Mathf.Max(0, startX);
+            startY = Mathf.Max(0, startY);
+            startZ = Mathf.Max(0, startZ);
+
+            //UnityEngine.Debug.Log("StartX: " + startX + " | neighbor offset: " + offset.x + " | current offset: " + current.offset.x + " | neighber step: " + step.x);
 
             //apply a start and end index to loop over
 
@@ -1375,7 +1426,7 @@ namespace DualContour
                                     ay = (rule & 0x2) != 0 ? (current.sizeY - 1) : (((y-startY) * indicesToCover) + cy);
                                     az = (rule & 0x1) != 0 ? (current.sizeZ - 1) : (((z-startZ) * indicesToCover) + cz);
 
-                                    if (startX == 16) UnityEngine.Debug.Log("ax: " + ax);
+                                    //if (startX == 16) UnityEngine.Debug.Log("ax: " + ax);
 
 
                                     dgIndex = ax + current.sizeX * (ay + current.sizeY * az);

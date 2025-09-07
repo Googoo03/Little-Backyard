@@ -31,6 +31,9 @@ public class DC_Chunk : MonoBehaviour
     [SerializeField] private GameObject cube;
     [SerializeField] private GameObject tree_obj;
     public bool subdivide = false;
+    public int relativeResolution = 1;
+    public int maxLod = 0;
+    public Vector3 step;
 
     //MESH DETAILS
     private Mesh m;
@@ -118,13 +121,16 @@ public class DC_Chunk : MonoBehaviour
 
     public void InitializeDualContour() {
 
+
+        //improper use of space, it is very unlikely that there are n^3 vertices. Additionally, we may run into issues when seams are used
+        if(!vertices.IsEmpty) vertices.Dispose();
+        if (!indices.IsEmpty) indices.Dispose();
+
         vertices = new NativeList<Vector3>(scale.x * scale.y * scale.z, Allocator.Persistent);
         indices = new NativeList<int>(4 * scale.x * scale.y * scale.z, Allocator.Persistent);
 
-        vertices.Clear();
         vertices.Capacity = scale.x * scale.y * scale.z;
 
-        indices.Clear();
         indices.Capacity = 4 * scale.x * scale.y * scale.z;
 
         if(dc == null) dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
@@ -190,8 +196,8 @@ public class DC_Chunk : MonoBehaviour
             coll.sharedMesh = mf.sharedMesh;
         }
 
-        //vertices.Dispose();
-        //indices.Dispose();
+        if(vertices.Length == 0) vertices.Dispose();
+        if(indices.Length == 0) indices.Dispose();
 
     }
 
