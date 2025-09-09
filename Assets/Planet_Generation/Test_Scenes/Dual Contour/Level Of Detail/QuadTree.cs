@@ -10,7 +10,8 @@ using UnityEngine;
 namespace QuadTree
 {
 
-    public struct ChunkConfig {
+    public struct ChunkConfig
+    {
         public int lodLevel;
         public int dir; //contains the UAxis, VAxis, and their signs. WAxis can be derived by their cross product
         public Vector3 lodOffset;
@@ -19,14 +20,15 @@ namespace QuadTree
         public bool seam;
         public Transform transform;
 
-        public ChunkConfig(int ilodLevel, int idir, Vector3 ilodOffset, Vector3Int iscale, bool iseam, Transform itransform, float ibaseLength) {
+        public ChunkConfig(int ilodLevel, int idir, Vector3 ilodOffset, Vector3Int iscale, bool iseam, Transform itransform, float ibaseLength)
+        {
             lodLevel = ilodLevel;
             dir = idir;
             lodOffset = ilodOffset;
             scale = iscale;
             seam = iseam;
             transform = itransform;
-            baseLength= ibaseLength;
+            baseLength = ibaseLength;
         }
 
     }
@@ -44,11 +46,12 @@ namespace QuadTree
         private GameObject prefab;
         private GameObject go;
         private GameObject seamgo;
-        
+
         private static Vector3[] binaryOperator = { Vector3.zero, Vector3.right, new Vector3(1, 0, 1), new Vector3(1, 1, 0), Vector3.up, new Vector3(0, 1, 1), Vector3.one, Vector3.forward };
 
         //Constructors
-        public QuadTreeNode(ChunkConfig ichunkConfig) {
+        public QuadTreeNode(ChunkConfig ichunkConfig)
+        {
             chunkConfig = ichunkConfig;
         }
 
@@ -68,8 +71,10 @@ namespace QuadTree
             go.transform.parent = ichunkConfig.transform;
             DC_Chunk gonodeDC = go.GetComponent<DC_Chunk>();
 
+            Vector3 newOffset = (parent != null) ? parent.go.GetComponent<DC_Chunk>().GetDC().GetOffset() : Vector3.one * -chunkConfig.baseLength / 2;
+
             gonodeDC.SetChunkConfig(chunkConfig);
-            gonodeDC.InitializeDualContourBounds();
+            gonodeDC.InitializeDualContourBounds(newOffset);
             gonodeDC.InitializeDualContour();
 
 
@@ -82,7 +87,7 @@ namespace QuadTree
             chunkConfig.seam = true;
 
             seamnodeDC.SetChunkConfig(chunkConfig);
-            seamnodeDC.InitializeDualContourBounds();
+            seamnodeDC.InitializeDualContourBounds(newOffset);
 
             //For testing purposes only
             seamnodeDC.SetOffset(seamnodeDC.GetDC().GetOffset());
@@ -99,30 +104,33 @@ namespace QuadTree
 
         public void AddChild(QuadTreeNode newchild) { children.Add(newchild); }
 
-        public void NextLOD() {
+        public void NextLOD()
+        {
 
             QuadTreeNode root = GetRoot(this);
             float powerof2Frac = 1f / (1 << (chunkConfig.lodLevel + 1));
             Vector3 p2fracVec = new Vector3(powerof2Frac, powerof2Frac, powerof2Frac);
 
-            for (int i = 0; i < 8; ++i) {
+            for (int i = 0; i < 8; ++i)
+            {
                 Vector3 childLODOffset = chunkConfig.lodOffset + new Vector3(p2fracVec.x * binaryOperator[i].x, p2fracVec.y * binaryOperator[i].y, p2fracVec.z * binaryOperator[i].z);
-                ChunkConfig childChunkConfig = new ChunkConfig(chunkConfig.lodLevel+1,chunkConfig.dir,childLODOffset, chunkConfig.scale, false, chunkConfig.transform, chunkConfig.baseLength); 
+                ChunkConfig childChunkConfig = new ChunkConfig(chunkConfig.lodLevel + 1, chunkConfig.dir, childLODOffset, chunkConfig.scale, false, chunkConfig.transform, chunkConfig.baseLength);
 
                 QuadTreeNode newchild = new QuadTreeNode(childChunkConfig, prefab, this);
                 AddChild(newchild);
             }
 
             //Segments the mesh generation job into key steps
-            NativeArray<JobHandle> jobs = new NativeArray<JobHandle>(8,Allocator.TempJob,NativeArrayOptions.UninitializedMemory);
+            NativeArray<JobHandle> jobs = new NativeArray<JobHandle>(8, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             JobHandle combinedjobs;
 
-                //Calculate vertex positions
-                for (int i = 0; i < 8; ++i) {
-                    var vertJob = children[i].go.GetComponent<DC_Chunk>().GetDC().GetVertexParallel();
-                    JobHandle newHandle = vertJob.Schedule();
-                    jobs[i] = (newHandle);
-                }
+            //Calculate vertex positions
+            for (int i = 0; i < 8; ++i)
+            {
+                var vertJob = children[i].go.GetComponent<DC_Chunk>().GetDC().GetVertexParallel();
+                JobHandle newHandle = vertJob.Schedule();
+                jobs[i] = (newHandle);
+            }
 
             combinedjobs = JobHandle.CombineDependencies(jobs);
             combinedjobs.Complete();
@@ -133,15 +141,15 @@ namespace QuadTree
             ////SEAMS
 
 
-                //Calculate intermediary vertices of seam
-                for (int i = 0; i < 8; ++i)
-                {
-                    Dual_Contour seamdc = children[i].seamgo.GetComponent<DC_Chunk>().GetDC();
-                    var quadJob = seamdc.GetSeamVertexParallel();
-                    JobHandle newHandle = quadJob.Schedule();
+            //Calculate intermediary vertices of seam
+            for (int i = 0; i < 8; ++i)
+            {
+                Dual_Contour seamdc = children[i].seamgo.GetComponent<DC_Chunk>().GetDC();
+                var quadJob = seamdc.GetSeamVertexParallel();
+                JobHandle newHandle = quadJob.Schedule();
 
-                    jobs[i] = (newHandle);
-                }
+                jobs[i] = (newHandle);
+            }
 
             combinedjobs = JobHandle.CombineDependencies(jobs);
             combinedjobs.Complete();
@@ -158,7 +166,7 @@ namespace QuadTree
                 goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
 
                 //get seams from neighbors
-                GetSeams(root, seamDC.GetDC(),false);
+                GetSeams(root, seamDC.GetDC(), false);
 
             }
 
@@ -168,7 +176,7 @@ namespace QuadTree
                 DC_Chunk seamDC = children[i].seamgo.GetComponent<DC_Chunk>();
 
                 //get seams from neighbors
-                
+
                 GetSeams(root, seamDC.GetDC(), true);
 
             }
@@ -208,7 +216,8 @@ namespace QuadTree
             combinedjobs.Complete();
 
             //Apply mesh details
-            foreach (var child in children) {
+            foreach (var child in children)
+            {
                 child.go.GetComponent<DC_Chunk>().GenerateDCMesh();
                 child.seamgo.GetComponent<DC_Chunk>().GenerateDCMesh();
 
@@ -219,10 +228,16 @@ namespace QuadTree
 
             RefreshNeighborSeams();
 
+            /*foreach (var child in children)
+            {
+                child.go.GetComponent<DC_Chunk>().DisposeBuffers();
+            }*/
+
         }
 
-        private void RefreshNeighborSeams() {
-            
+        private void RefreshNeighborSeams()
+        {
+
 
             QuadTreeNode root = GetRoot(this);
 
@@ -243,7 +258,8 @@ namespace QuadTree
 
                 if (current.empty) continue;
 
-                if (!current.HasChildren() && rule != 0) {
+                if (!current.HasChildren() && rule != 0)
+                {
                     negativeNeighbors.Add(current);
                 }
 
@@ -258,12 +274,12 @@ namespace QuadTree
             //reinitialize the grids with the new resolution
             Dual_Contour refreshNeighborDC;
             ChunkConfig refreshNeighborConfig;
-            foreach (QuadTreeNode node in negativeNeighbors) {
+            foreach (QuadTreeNode node in negativeNeighbors)
+            {
                 refreshNeighborDC = node.seamgo.GetComponent<DC_Chunk>().GetDC();
                 refreshNeighborConfig = node.GetChunkConfig();
 
                 int maxLOD = Mathf.Max(refreshNeighborConfig.lodLevel, GetHighestLOD(root, refreshNeighborDC.GetMax(), refreshNeighborDC.GetMin()));
-                UnityEngine.Debug.Log("resolution: " + (1 << (maxLOD - refreshNeighborConfig.lodLevel)));
                 if (maxLOD > refreshNeighborConfig.lodLevel)
                 {
                     refreshNeighborDC.SetResolution(1 << (maxLOD - refreshNeighborConfig.lodLevel));
@@ -282,7 +298,8 @@ namespace QuadTree
             JobHandle combinedjobs;
 
             //Calculate intermediary vertices of seam
-            for(int i = 0; i < negativeNeighbors.Count; ++i) {
+            for (int i = 0; i < negativeNeighbors.Count; ++i)
+            {
                 Dual_Contour seamdc = negativeNeighbors[i].seamgo.GetComponent<DC_Chunk>().GetDC();
                 var quadJob = seamdc.GetSeamVertexParallel();
                 JobHandle newHandle = quadJob.Schedule();
@@ -293,7 +310,7 @@ namespace QuadTree
             combinedjobs = JobHandle.CombineDependencies(jobs);
             combinedjobs.Complete();
 
-            
+
             //Gather Vertices from surrounding chunks into seams
             for (int i = 0; i < negativeNeighbors.Count; ++i)
             {
@@ -347,7 +364,8 @@ namespace QuadTree
 
         }
 
-        public void RenderChunk() {
+        public void RenderChunk()
+        {
             //Segments the mesh generation job into key steps
 
             //Calculate vertex positions
@@ -391,7 +409,8 @@ namespace QuadTree
             empty = go.GetComponent<DC_Chunk>().HasEmptyMesh();
         }
 
-        public void PrevLOD() {
+        public void PrevLOD()
+        {
             foreach (QuadTreeNode child in children)
             {
                 child.DestroyGO();
@@ -400,8 +419,10 @@ namespace QuadTree
         }
 
         //Reverse DFS to get root of tree
-        public QuadTreeNode GetRoot(QuadTreeNode node) {
-            if (node.GetParent() != null) { 
+        public QuadTreeNode GetRoot(QuadTreeNode node)
+        {
+            if (node.GetParent() != null)
+            {
                 return GetRoot(node.GetParent());
             }
             return node;
@@ -409,7 +430,8 @@ namespace QuadTree
 
         public ChunkConfig GetChunkConfig() { return chunkConfig; }
 
-        public void GetSeams(QuadTreeNode node, Dual_Contour current, bool seam) {
+        public void GetSeams(QuadTreeNode node, Dual_Contour current, bool seam)
+        {
 
             //if outside the max range, stop
             Vector3 omin = node.go.GetComponent<DC_Chunk>().GetDC().GetMin();
@@ -427,15 +449,17 @@ namespace QuadTree
                     GetSeams(child, current, seam);
                 }
             }
-            else {
+            else
+            {
                 //is leaf, gather nodes
                 Dual_Contour neighborDC = seam ? node.seamgo.GetComponent<DC_Chunk>().GetDC() : node.go.GetComponent<DC_Chunk>().GetDC();
 
-                neighborDC.ConstructSeamNodes( current);
+                neighborDC.ConstructSeamNodes(current);
             }
         }
 
-        public int GetHighestLOD(QuadTreeNode node, Vector3 cmax, Vector3 cmin) {
+        public int GetHighestLOD(QuadTreeNode node, Vector3 cmax, Vector3 cmin)
+        {
             int lodLevel = 0;
             Dual_Contour nodeDC = node.go.GetComponent<DC_Chunk>().GetDC();
 
@@ -450,7 +474,8 @@ namespace QuadTree
 
                 return lodLevel;
             }
-            else {
+            else
+            {
                 if (Dual_Contour.GetPositiveNeighborRule(cmin, cmax, omin, omax) == 0) return -1;
 
                 lodLevel = nodeDC.GetLODLevel();
@@ -468,17 +493,19 @@ namespace QuadTree
 
         public bool IsEmpty() { return empty; }
 
-        public QuadTreeNode GetParent() {
+        public QuadTreeNode GetParent()
+        {
             return parent;
         }
 
-        public QuadTreeNode GetChild(int i) { 
-            if(i > 0 && i < children.Count) return children[i]; 
+        public QuadTreeNode GetChild(int i)
+        {
+            if (i > 0 && i < children.Count) return children[i];
             return null;
         }
 
         //In C#, reference types return references when in C++ they are copied.
-        public List<QuadTreeNode> GetChildren() { return children;}
+        public List<QuadTreeNode> GetChildren() { return children; }
 
         public int GetLODLevel() { return chunkConfig.lodLevel; }
 

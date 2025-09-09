@@ -28,6 +28,8 @@ public class BaseFreeCam : MonoBehaviour
 
     private float forward;
 
+    private Vector3 delta;
+
     // Update is called once per frame
     void Update()
     {
@@ -65,7 +67,7 @@ public class BaseFreeCam : MonoBehaviour
 
         ///////////////////////
 
-        transform.position += (transform.forward * forward) * currentSpeed * Time.deltaTime;
+        delta = (transform.forward * forward) * currentSpeed * Time.deltaTime;
 
     }
 
@@ -109,5 +111,10 @@ public class BaseFreeCam : MonoBehaviour
             axis += axisChange * Time.deltaTime; //smooth rolling
             axis = Mathf.Clamp(axis, -1f, 1f); //prevents infinite speed increase
         }
+    }
+
+    public Vector3 GetDelta()
+    {
+        return delta;
     }
 }

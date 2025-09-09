@@ -48,7 +48,7 @@ public class DC_Chunk : MonoBehaviour
     [SerializeField] private bool emptyMesh;
 
     //Voxel Data
-    [SerializeField]private Texture3D tex;
+    [SerializeField] private Texture3D tex;
     [SerializeField] private ChunkConfig chunkConfig;
 
     //Tree Data
@@ -86,10 +86,12 @@ public class DC_Chunk : MonoBehaviour
         dir = chunkConfig.dir;
     }
 
-    private void GenerateFoliage() {
+    private void GenerateFoliage()
+    {
 
         Vector3 treePos = Vector3.zero;
-        tree_pos.ForEach(pos => {
+        tree_pos.ForEach(pos =>
+        {
             treePos = new Vector3(pos.x, FindSurface(pos), pos.z) - (scale / 2);
             treePos = dc.FindTransformedCoord(treePos, (int)treePos.y + (scale.y / 2));
             GameObject tree = Instantiate(tree_obj, transform.position + treePos, Quaternion.identity);
@@ -103,47 +105,52 @@ public class DC_Chunk : MonoBehaviour
 
     public bool HasEmptyMesh() { return emptyMesh; }
 
-    private int FindSurface(Vector3 pos) {
-        int y = scale.y-1;
-        while (y > 0) {
+    private int FindSurface(Vector3 pos)
+    {
+        int y = scale.y - 1;
+        while (y > 0)
+        {
             int index = (int)pos.x + scale.x * (y + scale.y * (int)pos.z);
-            
+
             if (voxel_data[index] != 15) return y;
             y--;
         }
         return 0;
     }
 
-    public void InitializeDualContourBounds() {
-        if (dc == null) dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
-        dc.InitializeBounds();
+    public void InitializeDualContourBounds(Vector3 parentGlobal)
+    {
+        dc ??= new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
+        dc.InitializeBounds(parentGlobal);
     }
 
-    public void InitializeDualContour() {
+    public void InitializeDualContour()
+    {
 
 
         //improper use of space, it is very unlikely that there are n^3 vertices. Additionally, we may run into issues when seams are used
-        if(!vertices.IsEmpty) vertices.Dispose();
+        if (!vertices.IsEmpty) vertices.Dispose();
         if (!indices.IsEmpty) indices.Dispose();
 
-        vertices = new NativeList<Vector3>(scale.x * scale.y * scale.z, Allocator.Persistent);
-        indices = new NativeList<int>(4 * scale.x * scale.y * scale.z, Allocator.Persistent);
+        vertices = new NativeList<Vector3>(scale.x * scale.y * scale.z, Allocator.TempJob);
+        indices = new NativeList<int>(4 * scale.x * scale.y * scale.z, Allocator.TempJob);
 
         vertices.Capacity = scale.x * scale.y * scale.z;
 
         indices.Capacity = 4 * scale.x * scale.y * scale.z;
 
-        if(dc == null) dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
+        if (dc == null) dc = new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
 
         dc.InitializeGrid(chunkConfig.seam, ref vertices, ref indices);
 
         min = dc.GetMin();
         max = dc.GetMax();
         LODLevel = dc.GetLODLevel();
-        
+
     }
 
-    public void GenerateDCMesh() {
+    public void GenerateDCMesh()
+    {
 
         //REASSIGN MESH RENDERING COMPONENTS.
         if (!rend) rend = this.gameObject.AddComponent<MeshRenderer>();
@@ -191,40 +198,50 @@ public class DC_Chunk : MonoBehaviour
         {
             coll = this.gameObject.AddComponent<MeshCollider>();
         }
-        else {
+        else
+        {
             coll.sharedMesh = null;
             coll.sharedMesh = mf.sharedMesh;
         }
 
-        if(vertices.Length == 0) vertices.Dispose();
-        if(indices.Length == 0) indices.Dispose();
+        if (vertices.Length == 0) vertices.Dispose();
+        if (indices.Length == 0) indices.Dispose();
 
     }
 
 
 
 
-    public void UpdateChunk(ref List<chunk_event> points) {
+    public void UpdateChunk(ref List<chunk_event> points)
+    {
         dc.UpdateVoxelData(ref points);
         GenerateDCMesh();
     }
 
-    private void CreateDataTexture() {
+    private void CreateDataTexture()
+    {
         tex = new Texture3D(scale.x, scale.y, scale.z, TextureFormat.R16, false);
         tex.filterMode = FilterMode.Point;
         tex.SetPixelData(voxel_data, 0, 0);
         tex.Apply();
     }
 
-    public void SetChunkConfig( ChunkConfig ichunkConfig) { chunkConfig = ichunkConfig; }
+    public void SetChunkConfig(ChunkConfig ichunkConfig) { chunkConfig = ichunkConfig; }
 
     public void SetOffset(Vector3 ioffset) { offset = ioffset; }
 
-    private void InitComputeShader() {
+    public void DisposeBuffers()
+    {
+        if (!vertices.IsEmpty) vertices.Dispose();
+        if (!indices.IsEmpty) indices.Dispose();
+    }
 
-        
+    private void InitComputeShader()
+    {
 
-        verts = new ComputeBuffer(scale.x*scale.y*scale.z, sizeof(float) * 3);
+
+
+        verts = new ComputeBuffer(scale.x * scale.y * scale.z, sizeof(float) * 3);
         dualGrid = new ComputeBuffer(scale.x * scale.y * scale.z, sizeof(int));
 
         int shaderHandle = DC_Compute.FindKernel("CSMain");
@@ -256,12 +273,13 @@ public class DC_Chunk : MonoBehaviour
 
     }
 
-    private void MeshHelper() {
+    private void MeshHelper()
+    {
         AssignIndices();
 
         verts.Release(); dualGrid.Release(); //ind.Release();
 
-        
+
 
         computeStopWatch.Stop();
         UnityEngine.Debug.Log("Compute took " + computeStopWatch.ElapsedMilliseconds.ToString() + " milliseconds");
@@ -328,10 +346,12 @@ public class DC_Chunk : MonoBehaviour
         return;
     }
 
-    private Vector3[] condense(ref Vector3[] old, Vector3 nullVal) {
+    private Vector3[] condense(ref Vector3[] old, Vector3 nullVal)
+    {
         List<Vector3> newValues = new List<Vector3>();
 
-        for (int i = 0; i < old.Length; ++i) {
+        for (int i = 0; i < old.Length; ++i)
+        {
             if (!old[i].Equals(nullVal)) newValues.Add(old[i]);
         }
 
@@ -350,7 +370,8 @@ public class DC_Chunk : MonoBehaviour
         return newValues.ToArray();
     }
 
-    void AssignIndices() {
+    void AssignIndices()
+    {
         for (int x = 0; x < scale.x - 1; ++x)
         {
             for (int y = 0; y < scale.y - 1; ++y)
@@ -379,9 +400,9 @@ public class DC_Chunk : MonoBehaviour
             {
                 notSatisfy = false;
                 notSatisfy |= dual_arr[index] >> 6 == -1;
-                notSatisfy |= dual_arr[(x + 1) + scale.x * (y + scale.y * z)]>> 6 == -1;
-                notSatisfy |= dual_arr[(x + 1) + scale.x * ((y + 1) + scale.y * z)]>> 6 == -1;
-                notSatisfy |= dual_arr[x + scale.x * ((y + 1) + scale.y * z)]>> 6 == -1;
+                notSatisfy |= dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6 == -1;
+                notSatisfy |= dual_arr[(x + 1) + scale.x * ((y + 1) + scale.y * z)] >> 6 == -1;
+                notSatisfy |= dual_arr[x + scale.x * ((y + 1) + scale.y * z)] >> 6 == -1;
 
                 if (!notSatisfy)
                 {
@@ -442,7 +463,7 @@ public class DC_Chunk : MonoBehaviour
                 if (!notSatisfy)
                 {
                     ind_serial_arr.Add(dual_arr[index] >> 6);
-                    ind_serial_arr.Add((dual_arr[(x    ) + scale.x * (y + scale.y * (z + 1))] >> 6));
+                    ind_serial_arr.Add((dual_arr[(x) + scale.x * (y + scale.y * (z + 1))] >> 6));
                     ind_serial_arr.Add((dual_arr[(x + 1) + scale.x * (y + scale.y * (z + 1))] >> 6));
                     ind_serial_arr.Add((dual_arr[(x + 1) + scale.x * (y + scale.y * z)] >> 6));
                 }

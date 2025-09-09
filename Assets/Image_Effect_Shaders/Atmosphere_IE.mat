@@ -69,19 +69,19 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AtmosphereHeight: 0.78
-    - _Blowout: 0
+    - _AtmosphereHeight: 439
+    - _Blowout: 0.18
     - _BumpScale: 1
     - _CloudDensity: 0
     - _CloudFalloff: 4.54
     - _CloudSpeed: 0.1
     - _Color_Band: 3.04
     - _Cutoff: 0.5
-    - _Density: 0.021679686
+    - _Density: 6.2
     - _DetailNormalMapScale: 1
     - _DomainWarp: 0.44
     - _DstBlend: 0
-    - _Generate: 0
+    - _Generate: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
@@ -91,10 +91,10 @@ Material:
     - _NebulaScale: 200
     - _NebulaThreshold: 0.97
     - _OcclusionStrength: 1
-    - _Ocean: 1
+    - _Ocean: 0
     - _OceanRad: 0
     - _Parallax: 0.02
-    - _Radius: 5.5
+    - _Radius: 32678
     - _Samples: 5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -106,12 +106,12 @@ Material:
     m_Colors:
     - _CloudCoeff: {r: 0.69, g: 0.54, b: 0, a: 0}
     - _CloudColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 0.1328125, g: 0.390625, b: 0.36132812, a: 1}
+    - _Color: {r: 0.2003631, g: 0.9924528, b: 0.896442, a: 1}
     - _Color2: {r: 1, g: 0.6296108, b: 0.19607842, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _NebulaCoeff: {r: 0.36, g: 0.7, b: 0.14, a: 0}
     - _NebulaCol: {r: 1, g: 0.5871031, b: 0, a: 1}
     - _OceanCol: {r: 0, g: 0.85660374, b: 0.84494936, a: 1}
-    - _PlanetPos: {r: 28.447681, g: -72.17688, b: 482.09503, a: 0}
-    - _SunPos: {r: -20.025288, g: -72.17688, b: 494.35764, a: 0}
+    - _PlanetPos: {r: 0, g: 0, b: 0, a: 0}
+    - _SunPos: {r: 0, g: 100000, b: 0, a: 0}
   m_BuildTextureStacks: []

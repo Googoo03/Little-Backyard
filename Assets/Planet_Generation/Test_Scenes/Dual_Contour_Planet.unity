@@ -525,6 +525,53 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &1496400220
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1496400221}
+  - component: {fileID: 1496400222}
+  m_Layer: 0
+  m_Name: Floating Origin Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1496400221
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1496400220}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -535.3671, y: 35922.375, z: -3610.7446}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1496400222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1496400220}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6e5fae1aee986242822c507e5bd053e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerDelta: {fileID: 1557406414}
+  objectsToMove: []
+  lastPlayerPosition: {x: 0, y: 0, z: 0}
 --- !u!1 &1557406409
 GameObject:
   m_ObjectHideFlags: 0
@@ -603,7 +650,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1557406409}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1c12df4621dd3a43ae81b1027b3c24e, type: 3}
   m_Name: 
@@ -1037,8 +1084,8 @@ GameObject:
   - component: {fileID: 1987582529}
   - component: {fileID: 1987582528}
   m_Layer: 0
-  m_Name: Chunk_Manager
-  m_TagString: Untagged
+  m_Name: Planet
+  m_TagString: Planet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1062,7 +1109,7 @@ MonoBehaviour:
     type: 3}
   next: 0
   prev: 0
-  maxLOD: 13
+  maxLOD: 10
 --- !u!4 &1987582529
 Transform:
   m_ObjectHideFlags: 0
@@ -1178,3 +1225,4 @@ SceneRoots:
   - {fileID: 730744057}
   - {fileID: 1059816735}
   - {fileID: 1987582529}
+  - {fileID: 1496400221}
