@@ -16,10 +16,12 @@ public class Chunk_Manager : MonoBehaviour
     [SerializeField] private bool next;
     [SerializeField] private bool prev;
 
+    [SerializeField] private int maxLOD;
+
     void Start()
     {   
         mainCamera = Camera.main;
-        ChunkConfig rootConfig = new ChunkConfig(0,201,Vector2.zero, Vector3Int.one * 16, false, transform, baseLength);
+        ChunkConfig rootConfig = new ChunkConfig(0,201,Vector2.zero, Vector3Int.one * 8, false, transform, baseLength);
         quadTree = new QuadTreeNode(rootConfig, chunkPrefab, null);
         quadTree.GetGameObject().GetComponent<DC_Chunk>().InitializeDualContourBounds();
         quadTree.GetGameObject().GetComponent<DC_Chunk>().InitializeDualContour();
@@ -85,7 +87,7 @@ public class Chunk_Manager : MonoBehaviour
 
         Dual_Contour nodeDC = node.GetGameObject().GetComponent<DC_Chunk>().GetDC();
         float distance = (nodeDC.GetCornerCenter() + transform.position - mainCamera.transform.position).magnitude;
-        if (!node.HasChildren() && !node.IsEmpty() && node.GetLODLevel() < 8 && ( (distance < (baseLength / (1 << node.GetChunkConfig().lodLevel))) || node.GetGameObject().GetComponent<DC_Chunk>().subdivide    )) {
+        if (!node.HasChildren() && !node.IsEmpty() && node.GetLODLevel() < maxLOD && ( (distance < (baseLength / (1 << node.GetChunkConfig().lodLevel))) || node.GetGameObject().GetComponent<DC_Chunk>().subdivide    )) {
             node.NextLOD();
             node.GetGameObject().SetActive(false);
             node.GetSeamGameObject().SetActive(false);

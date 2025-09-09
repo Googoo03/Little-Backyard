@@ -321,7 +321,7 @@ namespace DualContour
         public void Execute()
         {
             int x, y, z;
-            int spacing = (1 << resolution)-1;
+            int spacing = 3*resolution - 1;
 
             for (x = 0; x < sizeX - 1; ++x)
             {
@@ -500,29 +500,25 @@ namespace DualContour
 
         public void Execute()
         {
-
-            for (int x = 0; x < sizeX-1; ++x)
+            for (int x = 0; x < sizeX - 1; ++x)
             {
-
-                for (int y = 0; y < sizeY-1; ++y)
+                for (int y = 0; y < sizeY - 1; ++y)
                 {
-
-                    for (int z = 0; z < sizeZ-1; ++z)
+                    for (int z = 0; z < sizeZ - 1; ++z)
                     {
-                        int index = (int)(x + sizeX * (y + sizeY * z));
-                        int dualGrid_index = dualGrid[index];
+                        int index = x + sizeX * (y + sizeY * z);
+                        int dualGridValue = dualGrid[index];
 
-                        if (dualGrid_index == -1) continue;
-
+                        if (dualGridValue == -1) continue; // No vertex for this cell
 
                         foreach (Trirule rule in rules)
                         {
-
-                            if ((dualGrid_index & rule.axis) != rule.axis) continue;
+                            if ((dualGridValue & rule.axis) != rule.axis) continue;
 
                             var verts = rule;
-                            if ((dualGrid_index & rule.sign) != rule.sign)
+                            if ((dualGridValue & rule.sign) != rule.sign)
                             {
+                                // Flip winding
                                 verts = new Trirule
                                 {
                                     axis = rule.axis,
@@ -551,16 +547,15 @@ namespace DualContour
                                 for (int i = 0; i < 3; ++i)
                                 {
                                     (dx, dy, dz) = verts[j * 3 + i];
-                                    if ((dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF) > vertices.Length)
-                                    {
-                                        UnityEngine.Debug.Log("dg index: "+(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF));
+                                    if ((dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF) > vertices.Length) {
+                                        
                                         indices.Add(0);
                                         continue;
                                     }
+
                                     indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
                                 }
                             }
-
                         }
                     }
                 }
@@ -1082,13 +1077,6 @@ namespace DualContour
             //Given a grid position, convert the point into a shell point
             //dir contains the u and v direction, which are masks for the x and z positions.
 
-            /*
-            Vector3 step = new Vector3(1f / (sizeX-1), 1f / (sizeY-1), 1f / (sizeZ - 1));
-            step *= (1f / (1 << LOD_Level));
-            step *= CELL_SIZE;
-            */
-
-
             float radius = 32768;
 
             int uSign = ((dir & 0x80) != 0) ? 1 : -1;
@@ -1182,26 +1170,6 @@ namespace DualContour
             return rule;
         }
 
-        public static int GetNegativeNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1f) {
-            int rule = 0;
-
-            bool inZBounds = neighborMax.z > currentMin.z - epsilon && neighborMin.z < currentMax.z + epsilon;
-            bool inYBounds = neighborMax.y > currentMin.y - epsilon && neighborMin.y < currentMax.y + epsilon;
-            bool inXBounds = neighborMax.x > currentMin.x - epsilon && neighborMin.x < currentMax.x + epsilon;
-
-            bool xNeighbor = Mathf.Abs(currentMin.x - neighborMax.x) < epsilon && inZBounds && inYBounds;
-
-            bool yNeighbor = Mathf.Abs(currentMin.y - neighborMax.y) < epsilon && inZBounds && inXBounds;
-
-            bool zNeighbor = Mathf.Abs(currentMin.z - neighborMax.z) < epsilon && inXBounds && inYBounds;
-
-            if (xNeighbor) rule |= 4;
-            if (yNeighbor) rule |= 2;
-            if (zNeighbor) rule |= 1;
-
-            return rule;
-        }
-
         public int GetNeighborByCorners(Dual_Contour current, float epsilon = 1f) {
             int rule = 0;
             int endCutoff = IsSeam ? 1 : 2;
@@ -1231,11 +1199,7 @@ namespace DualContour
                 CurrentCorners[i] = current.cellPacked[(xPos + current.sizeX * (yPos + current.sizeY * zPos))];
                 
             }
-            /*
-            UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[4]);
-            UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[2]);
-            UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Current " + Neighborcorners[1]);
-            */
+
             //Check difference of neighbor chunk corners and current chunk corners
             bool xNeighbor = (Neighborcorners[0] - CurrentCorners[4]).magnitude < epsilon;
 
@@ -1261,7 +1225,7 @@ namespace DualContour
             int x, y, z;
             int cx, cy, cz;
             int ax, ay, az;
-            int spacing = (1 << current.resolution) - 1;
+            int spacing = 3*current.resolution;
 
             int dgIndex;
             int newdualgrid;
@@ -1274,8 +1238,6 @@ namespace DualContour
             int indicesToCover = (int)relativeDensity;
 
             //apply offset to finding indices
-
-            //CHANGE THIS SUCH THAT IT DOESNT RELY ON OFFSET AND STEP, SINCE THESE ARE CHANGED TO ACCOUNT FOR THE EXTRA LAYER
 
             (int x,int y,int z)[] boundaries = new (int,int,int)[3] {
                 (sizeX-2,0,0),
@@ -1320,18 +1282,22 @@ namespace DualContour
 
                                         //skipping over indices in the parent chunk?
 
+                                        //make sure the other chunk has a vertex there
 
+                                        ax = i == 0 ? (current.sizeX - 1) - spacing + cx: ((x * indicesToCover) + cx);
+                                        ay = i == 1 ? (current.sizeY - 1) - spacing + cy: ((y * indicesToCover) + cy);
+                                        az = i == 2 ? (current.sizeZ - 1) - spacing + cz: ((z * indicesToCover) + cz);
 
-                                        ax = i == 0 ? (current.sizeX - 1) - spacing - 1 : ((x * indicesToCover) + cx);
-                                        ay = i == 1 ? (current.sizeY - 1) - spacing - 1 : ((y * indicesToCover) + cy);
-                                        az = i == 2 ? (current.sizeZ - 1) - spacing - 1 : ((z * indicesToCover) + cz);
-
-                                        //if (relativeDensity > 1 && i != 0) UnityEngine.Debug.Log(ax);
-                                        //the x and y variables (NOT CX CY) need to be multiplied by something
-
-                                        
                                         dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
-                                        if (dgIndex >= current.dualGrid.Length || current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
+                                        int currentDG = current.dualGrid[dgIndex];
+                                        if (dgIndex >= current.dualGrid.Length) continue;
+
+                                        if (currentDG != -1 && currentDG != 0) {
+                                            //keep voxel data, replace vertex with current one
+                                            int newaxes = currentDG & 0x3f;
+                                            newdualgrid = (newdualgrid & ~(0x3f)) | newaxes;
+
+                                        }
 
                                         current.dualGrid[dgIndex] = newdualgrid;
                                     }
