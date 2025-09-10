@@ -7,6 +7,26 @@ namespace SparseVoxelOctree
 
     public class SVO
     {
+        /// <summary>
+        /// Traverses the SVO from the root to the leaf node containing the given position.
+        /// Returns the leaf node, or null if the path does not exist.
+        /// </summary>
+        public SVONode TraversePath(Vector3Int targetPos)
+        {
+            SVONode node = root;
+            while (node != null && !node.isLeaf)
+            {
+                int half = node.size / 2;
+                int childIndex = 0;
+                if (targetPos.x >= node.position.x + half) childIndex |= 1 << 2;
+                if (targetPos.y >= node.position.y + half) childIndex |= 1 << 1;
+                if (targetPos.z >= node.position.z + half) childIndex |= 1;
+                if (node.children == null || node.children[childIndex] == null) return null;
+                node = node.children[childIndex];
+            }
+            return node;
+        }
+
         public SVONode root;
 
         public SVO(SVONode root = null)
@@ -157,3 +177,4 @@ namespace SparseVoxelOctree
 
     }
 }
+

@@ -5,6 +5,7 @@ using SparseVoxelOctree;
 
 public class SVOTest : MonoBehaviour
 {
+    [SerializeField] private Transform cube;
     // Start is called before the first frame update
     SVO svo;
     void Start()
@@ -25,6 +26,7 @@ public class SVOTest : MonoBehaviour
     {
         SVONode start = svo.root.children[0].children[3];
         SVONode neighbor = start.GetNeighborLOD(1); // +z
+        SVONode destination = svo.TraversePath(new Vector3Int((int)cube.position.x, (int)cube.position.y, (int)cube.position.z));
         Debug.Log("Start Parent: " + start.parent.position.ToString());
         Debug.Log("Neighbor: " + (neighbor != null ? neighbor.position.ToString() : "null"));
         void action(SVONode node)
@@ -36,6 +38,10 @@ public class SVOTest : MonoBehaviour
             else if (node == neighbor)
             {
                 Gizmos.color = Color.blue;
+            }
+            else if (node == destination)
+            {
+                Gizmos.color = Color.green;
             }
             else
             {
