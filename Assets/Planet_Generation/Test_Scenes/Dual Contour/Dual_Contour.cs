@@ -159,11 +159,13 @@ namespace DualContour
                                 if (dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == 0) continue;
 
 
+
                                 for (int i = 0; i < 3; ++i)
                                 {
                                     (dx, dy, dz) = verts[j * 3 + i];
                                     indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
                                 }
+
                             }
 
                         }
@@ -548,6 +550,13 @@ namespace DualContour
                                 (dx, dy, dz) = verts[j + 2];
                                 if (dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == -1 || dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] == 0) continue;
 
+                                /*
+                                (dx, dy, dz) = verts[j];
+                                indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
+                                indices.Add(0);
+                                indices.Add(1);
+                                */
+
 
                                 for (int i = 0; i < 3; ++i)
                                 {
@@ -561,6 +570,7 @@ namespace DualContour
 
                                     indices.Add(dualGrid[(x + dx) + sizeX * ((y + dy) + sizeY * (z + dz))] >> 6 & 0x7FFF);
                                 }
+
                             }
                         }
                     }
@@ -1342,7 +1352,7 @@ namespace DualContour
 
             Vector3 cmin = current.min;
             Vector3 cmax = current.max;
-            int endCutoff = IsSeam ? 1 : 1;
+            int endCutoff = IsSeam ? 0 : 1;
 
             int rule = GetPositiveNeighborRule(cmin, cmax, min, max);
             if (rule == 0 || vertices.Length == 0 || (cmin == min && cmax == max)) return;

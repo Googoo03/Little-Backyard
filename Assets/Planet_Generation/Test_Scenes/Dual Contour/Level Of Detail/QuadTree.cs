@@ -225,14 +225,6 @@ namespace QuadTree
             }
             ////////////////////////////////////////////////
             ///
-
-            RefreshNeighborSeams();
-
-            /*foreach (var child in children)
-            {
-                child.go.GetComponent<DC_Chunk>().DisposeBuffers();
-            }*/
-
         }
 
         private void RefreshNeighborSeams()
