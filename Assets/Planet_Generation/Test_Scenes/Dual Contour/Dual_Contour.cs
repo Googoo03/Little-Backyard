@@ -806,7 +806,7 @@ namespace DualContour
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
             Ground = 32768;
-            amplitude = 150;
+            amplitude = 35;
             block_voxel = mode;
             radius = iradius;
             dir = idir;
@@ -1169,7 +1169,7 @@ namespace DualContour
 
 
 
-        public static int GetPositiveNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1f)
+        public static int GetPositiveNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1e-4f)
         {
             //convert all 8 corners into warped space, compare 
 
@@ -1309,9 +1309,9 @@ namespace DualContour
 
 
 
-                                        ax = i == 0 ? (current.sizeX - 1) - spacing + cx : ((x * indicesToCover) + cx);
-                                        ay = i == 1 ? (current.sizeY - 1) - spacing + cy : ((y * indicesToCover) + cy);
-                                        az = i == 2 ? (current.sizeZ - 1) - spacing + cz : ((z * indicesToCover) + cz);
+                                        ax = i == 0 ? (current.sizeX - 1) - spacing + 1 : ((x * indicesToCover) + cx);
+                                        ay = i == 1 ? (current.sizeY - 1) - spacing + 1 : ((y * indicesToCover) + cy);
+                                        az = i == 2 ? (current.sizeZ - 1) - spacing + 1 : ((z * indicesToCover) + cz);
 
                                         dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
                                         int currentDG = current.dualGrid[dgIndex];
@@ -1342,13 +1342,10 @@ namespace DualContour
 
             Vector3 cmin = current.min;
             Vector3 cmax = current.max;
-            int endCutoff = IsSeam ? 0 : 1;
+            int endCutoff = IsSeam ? 1 : 1;
 
-            if (vertices.Length == 0) return;
-
-            //int rule = GetNeighborByCorners(current);
             int rule = GetPositiveNeighborRule(cmin, cmax, min, max);
-            if (rule == 0) return;
+            if (rule == 0 || vertices.Length == 0 || (cmin == min && cmax == max)) return;
 
             int x, y, z;
 
@@ -1428,7 +1425,7 @@ namespace DualContour
 
 
                                     dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
-                                    if (dgIndex >= current.dualGrid.Length || current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0) continue;
+                                    if (dgIndex >= current.dualGrid.Length || (current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0)) continue;
                                     current.dualGrid[dgIndex] = newdualgrid;
                                 }
 

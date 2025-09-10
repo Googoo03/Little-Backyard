@@ -243,8 +243,8 @@ namespace QuadTree
 
             Dual_Contour baseChunk = this.go.GetComponent<DC_Chunk>().GetDC();
 
-            List<QuadTreeNode> negativeNeighbors = new List<QuadTreeNode>();
-            Stack<QuadTreeNode> DFSStack = new Stack<QuadTreeNode>();
+            List<QuadTreeNode> negativeNeighbors = new();
+            Stack<QuadTreeNode> DFSStack = new();
             DFSStack.Push(root);
 
 
@@ -280,10 +280,11 @@ namespace QuadTree
                 refreshNeighborConfig = node.GetChunkConfig();
 
                 int maxLOD = Mathf.Max(refreshNeighborConfig.lodLevel, GetHighestLOD(root, refreshNeighborDC.GetMax(), refreshNeighborDC.GetMin()));
+                int LODdifference = (1 << (maxLOD - refreshNeighborConfig.lodLevel));
                 if (maxLOD > refreshNeighborConfig.lodLevel)
                 {
-                    refreshNeighborDC.SetResolution(1 << (maxLOD - refreshNeighborConfig.lodLevel));
-                    node.seamgo.GetComponent<DC_Chunk>().relativeResolution = (1 << (maxLOD - refreshNeighborConfig.lodLevel));
+                    refreshNeighborDC.SetResolution(LODdifference);
+                    node.seamgo.GetComponent<DC_Chunk>().relativeResolution = LODdifference;
                     node.seamgo.GetComponent<DC_Chunk>().maxLod = maxLOD;
                     node.go.GetComponent<DC_Chunk>().step = node.go.GetComponent<DC_Chunk>().GetDC().GetStep();
                     node.seamgo.GetComponent<DC_Chunk>().step = refreshNeighborDC.GetStep();
@@ -294,7 +295,7 @@ namespace QuadTree
             //gather seam data. 
 
             ////SEAMS
-            NativeArray<JobHandle> jobs = new NativeArray<JobHandle>(negativeNeighbors.Count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            NativeArray<JobHandle> jobs = new(negativeNeighbors.Count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             JobHandle combinedjobs;
 
             //Calculate intermediary vertices of seam
@@ -325,7 +326,7 @@ namespace QuadTree
                 GetSeams(root, seamDC.GetDC(), false);
 
             }
-            /*
+
             //Grab neighboring seam nodes last
             for (int i = 0; i < negativeNeighbors.Count; ++i)
             {
@@ -336,7 +337,7 @@ namespace QuadTree
                 GetSeams(root, seamDC.GetDC(), true);
 
             }
-            */
+
 
             //Calculate quads / tris of seams
             for (int i = 0; i < negativeNeighbors.Count; ++i)
@@ -440,7 +441,7 @@ namespace QuadTree
             Vector3 cmax = current.GetMax();
 
             //ignore the same chunk
-            if (cmin == omin && cmax == omax) return;
+            //if (cmin == omin && cmax == omax) return;
 
             if (node.HasChildren())
             {
