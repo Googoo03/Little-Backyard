@@ -163,7 +163,7 @@ namespace QuadTree
 
 
                 //gather vertices from parent chunk of seam
-                goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
+                //goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
 
                 //get seams from neighbors
                 GetSeams(root, seamDC.GetDC(), false);
@@ -312,7 +312,7 @@ namespace QuadTree
 
 
                 //gather vertices from parent chunk of seam
-                goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
+                //goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
 
                 //get seams from neighbors
                 GetSeams(root, seamDC.GetDC(), false);
@@ -382,7 +382,7 @@ namespace QuadTree
             GetSeams(root, seamDC.GetDC(), false);
 
             //gather vertices from parent chunk of seam
-            goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
+            //goDC.GetDC().ConstructSeamFromParentChunk(seamDC.GetDC());
 
             //Calculate quads / tris of seams
             var seamTriJob = seamDC.GetDC().GetSeamQuadParallel();
@@ -447,7 +447,7 @@ namespace QuadTree
                 //is leaf, gather nodes
                 Dual_Contour neighborDC = seam ? node.seamgo.GetComponent<DC_Chunk>().GetDC() : node.go.GetComponent<DC_Chunk>().GetDC();
 
-                neighborDC.ConstructSeamNodes(current);
+                //neighborDC.ConstructSeamNodes(current);
             }
         }
 

@@ -20,3 +20,25 @@ public class ChunkEditorUI : Editor
 
     }
 }
+
+[CustomEditor(typeof(SVOTest))]
+public class SVOTestEditorUI : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        var myScript = target as SVOTest;
+        if (GUILayout.Button("Generate Vertices"))
+        {
+            myScript.GetSVO().GenerateVerticesForLeaves();
+        }
+
+        if (GUILayout.Button("Generate Chunks"))
+        {
+            myScript.GetSVO().GenerateChunks();
+        }
+
+
+    }
+}

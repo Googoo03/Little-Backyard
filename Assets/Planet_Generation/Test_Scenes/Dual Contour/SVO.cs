@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using DualContour;
 using UnityEngine;
 
 namespace SparseVoxelOctree
@@ -27,11 +28,17 @@ namespace SparseVoxelOctree
             return node;
         }
 
+        public Dual_Contour meshingAlgorithm;
         public SVONode root;
+        public List<Vector3> vertices = new();
 
-        public SVO(SVONode root = null)
+        public Dictionary<Vector3, GameObject> chunks = new();
+
+        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null)
         {
             this.root = root;
+            this.meshingAlgorithm = meshingAlgorithm;
+            meshingAlgorithm.SetVertexList(vertices);
         }
 
 
@@ -60,6 +67,106 @@ namespace SparseVoxelOctree
                 if (node.children[i] != null)
                     TraverseLeavesRecursive(node.children[i], action);
             }
+        }
+
+        private void TraverseNodes(System.Action<SVONode> action)
+        {
+            if (root == null) return;
+            TraverseNodesRecursive(root, action);
+        }
+
+        private void TraverseNodesRecursive(SVONode node, System.Action<SVONode> action)
+        {
+            action(node);
+            if (node.children == null) return;
+            for (int i = 0; i < 8; i++)
+            {
+                if (node.children[i] != null)
+                    TraverseNodesRecursive(node.children[i], action);
+            }
+        }
+
+        public void GenerateChunks()
+        {
+            int chunkSize = 32; // Example chunk size
+            void generateChunk(SVONode node)
+            {
+
+                if (node.size == chunkSize && !node.IsEmpty())
+                {
+
+                    GameObject chunkObject;
+                    //Generate gameObject for chunk
+                    chunkObject = !chunks.ContainsKey(node.position) ? new("Chunk_" + node.position.ToString())
+                        : chunks[node.position];
+
+                    // Generate mesh for this chunk
+
+                    //Gather vertex nodes for home chunk
+                    Dictionary<Vector3Int, SVONode> verticesDict = new();
+                    List<Vector3> verticesList = new();
+
+                    //should have a dictionary and a list of vertices?
+                    List<int> indices = new();
+
+                    //adds to local list of vertices and dictionary of vertex nodes
+                    node.GatherChunkVertices(this, verticesDict, verticesList);
+
+                    //for each of the vertex nodes, generate indices
+                    Debug.Log("dictionary values: " + verticesDict.Values.Count);
+
+                    foreach (var v in verticesDict.Values)
+                    {
+                        if (v.dualVertexIndex == -1) continue;
+
+                        UnityEngine.Debug.Log("Meshing quad");
+                        meshingAlgorithm.SVOQuad(v, indices);
+
+                    }
+
+                    //Apply mesh data to gameObject
+                    MeshFilter mf = chunkObject.AddComponent<MeshFilter>();
+                    MeshRenderer rend = chunkObject.AddComponent<MeshRenderer>();
+                    Mesh m = mf.sharedMesh = new Mesh();
+
+
+                    m.vertices = verticesList.ToArray();
+                    m.normals = new Vector3[verticesList.Count]; //placeholders
+
+
+                    //IF WE WANT TEXTURES, WE HAVE TO CALCULATE THE UVS MANUALLY
+                    //m.uv = uvs;
+                    ////////////////////////////////////////////////////////////
+                    if (indices.Count < 3) return;
+
+
+                    m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
+                    m.RecalculateBounds();
+                    m.RecalculateNormals();
+
+                }
+
+
+            }
+
+            TraverseNodes(generateChunk);
+
+        }
+
+        public void GenerateVerticesForLeaves(System.Action<SVONode> vertexFunc = null)
+        {
+            vertexFunc ??= meshingAlgorithm.SVOVertex; //default to class vertex generation
+
+            TraverseLeaves((node) =>
+            {
+                if (node.dualVertexIndex == -1)
+                {
+                    //assigns index and axis information
+                    //adds to vertex list
+                    vertexFunc(node);
+                }
+            });
+
         }
     }
 
@@ -105,11 +212,53 @@ namespace SparseVoxelOctree
 
             isLeaf = false;
             dualVertexIndex = -1; // No dual vertex for non-leaf nodes
+
+            //what happens to vertices that are no longer referenced? Do we simply keep them?
+        }
+
+        public void Collapse()
+        {
+            if (isLeaf) return; // Already a leaf
+
+            children = null;
+            isLeaf = true;
+            dualVertexIndex = -1; // Reset dual vertex index
         }
 
         public bool IsEmpty() { return isLeaf && dualVertexIndex == -1; }
 
+        public Vector3 GetCenter() { return position + 0.5f * size * Vector3.one; }
 
+
+        public void GatherChunkVertices(SVO svo, Dictionary<Vector3Int, SVONode> existingVertices = null, List<Vector3> vertexList = null)
+        {
+            void gatherVertex(SVONode node)
+            {
+                if (node.dualVertexIndex == -1) return; // No vertex to gather
+                Vector3Int key = node.position;
+                if (!existingVertices.ContainsKey(key))
+                {
+                    existingVertices[key] = node;
+                    vertexList?.Add(svo.vertices[node.dualVertexIndex >> 6 & 0x7FFF]);
+
+                }
+            }
+            TraverseLeaves(gatherVertex);
+
+        }
+        public void TraverseLeaves(System.Action<SVONode> action)
+        {
+            if (isLeaf)
+            {
+                action(this);
+                return;
+            }
+            if (children == null) return;
+            for (int i = 0; i < 8; i++)
+            {
+                children[i]?.TraverseLeaves(action);
+            }
+        }
         /// <summary>
         /// Finds the neighbor node in the given direction, handling differing LODs.
         /// direction: 000 2bit is x, 1bit is y, 0bit is z
@@ -137,10 +286,9 @@ namespace SparseVoxelOctree
                 {
                     int neighborIndex = parentChildIndex ^ direction;
                     SVONode neighbor = current.parent.children[neighborIndex];
-                    Debug.Log("Neighbor Index: " + neighborIndex);
+
                     if (neighbor == null)
                     {
-                        Debug.Log("Neighbor is null in direction " + direction);
                         return null;
                     }
 
@@ -158,11 +306,9 @@ namespace SparseVoxelOctree
                     }
                     return neighbor;
                 }
-                Debug.Log("Moving up from child index: " + parentChildIndex);
                 path.Add(parentChildIndex);
                 current = current.parent;
             }
-            Debug.Log("No neighbor found in direction " + direction);
             return null;
         }
 
