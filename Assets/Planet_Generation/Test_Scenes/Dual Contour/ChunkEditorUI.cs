@@ -39,6 +39,11 @@ public class SVOTestEditorUI : Editor
             myScript.GetSVO().GenerateChunks();
         }
 
+        if (GUILayout.Button("Freeze Subdivision"))
+        {
+            myScript.SetFreeze(true);
+        }
+
 
     }
 }

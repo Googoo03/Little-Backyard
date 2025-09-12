@@ -113,13 +113,11 @@ namespace SparseVoxelOctree
                     node.GatherChunkVertices(this, verticesDict, verticesList);
 
                     //for each of the vertex nodes, generate indices
-                    Debug.Log("dictionary values: " + verticesDict.Values.Count);
 
                     foreach (var v in verticesDict.Values)
                     {
                         if (v.dualVertexIndex == -1) continue;
 
-                        UnityEngine.Debug.Log("Meshing quad");
                         meshingAlgorithm.SVOQuad(v, indices);
 
                     }
@@ -129,9 +127,10 @@ namespace SparseVoxelOctree
                     MeshRenderer rend = chunkObject.AddComponent<MeshRenderer>();
                     Mesh m = mf.sharedMesh = new Mesh();
 
+                    rend.material = Resources.Load("Test") as Material;
 
-                    m.vertices = verticesList.ToArray();
-                    m.normals = new Vector3[verticesList.Count]; //placeholders
+                    m.vertices = vertices.ToArray();
+                    m.normals = new Vector3[vertices.Count]; //placeholders
 
 
                     //IF WE WANT TEXTURES, WE HAVE TO CALCULATE THE UVS MANUALLY
@@ -144,6 +143,10 @@ namespace SparseVoxelOctree
                     m.RecalculateBounds();
                     m.RecalculateNormals();
 
+                }
+                else
+                {
+                    UnityEngine.Debug.Log("chunk size: " + node.size);
                 }
 
 
@@ -213,7 +216,8 @@ namespace SparseVoxelOctree
             isLeaf = false;
             dualVertexIndex = -1; // No dual vertex for non-leaf nodes
 
-            //what happens to vertices that are no longer referenced? Do we simply keep them?
+
+            //what happens to vertices that are no longer referenced? Do we simply keep them? Should remove?
         }
 
         public void Collapse()
@@ -239,6 +243,8 @@ namespace SparseVoxelOctree
                 if (!existingVertices.ContainsKey(key))
                 {
                     existingVertices[key] = node;
+
+                    //the indices dont line up, they 
                     vertexList?.Add(svo.vertices[node.dualVertexIndex >> 6 & 0x7FFF]);
 
                 }
@@ -267,8 +273,12 @@ namespace SparseVoxelOctree
         public SVONode GetNeighborLOD(int direction)
         {
             SVONode current = this;
-            List<int> path = new() { childIndex };
+            List<int> path = new() { };
 
+
+            bool xdir = ((direction >> 2) & 1) == 1;
+            bool ydir = ((direction >> 1) & 1) == 1;
+            bool zdir = ((direction) & 1) == 1;
             // Traverse up until we can move sideways in the given direction
             while (current.parent != null)
             {
@@ -276,10 +286,6 @@ namespace SparseVoxelOctree
                 bool xbit = ((parentChildIndex >> 2) & 1) == 1;
                 bool ybit = ((parentChildIndex >> 1) & 1) == 1;
                 bool zbit = ((parentChildIndex) & 1) == 1;
-
-                bool xdir = ((direction >> 2) & 1) == 1;
-                bool ydir = ((direction >> 1) & 1) == 1;
-                bool zdir = ((direction) & 1) == 1;
 
                 // If we can move in the given direction at this level
                 if ((!xdir || !xbit) && (!ydir || !ybit) && (!zdir || !zbit))
@@ -294,16 +300,21 @@ namespace SparseVoxelOctree
 
                     // Descend to the deepest adjacent node(s)
                     // For each level down, flip the axis bit for the direction moved
+                    int descendIndex;
                     for (int i = path.Count - 1; i >= 0; i--)
                     {
                         if (neighbor.isLeaf || neighbor.children == null) break;
-                        int descendIndex = path[i];
+                        descendIndex = path[i];
                         // Flip the axis bit for the direction moved
+
+                        //it flips it everytime, we dont want that
                         if (xdir) descendIndex ^= (1 << 2);
                         if (ydir) descendIndex ^= (1 << 1);
                         if (zdir) descendIndex ^= 1;
                         neighbor = neighbor.children[descendIndex];
                     }
+
+                    //same depth or lower depth (LOD) neighbor
                     return neighbor;
                 }
                 path.Add(parentChildIndex);
@@ -312,6 +323,68 @@ namespace SparseVoxelOctree
             return null;
         }
 
+        public List<SVONode> GetFace(int dir)
+        {
+            List<SVONode> neighborFace = new();
+            void action(SVONode node)
+            {
+
+                if (node.isLeaf && IsOnFace(node, this, dir))
+                {
+                    neighborFace.Add(node);
+                }
+            }
+
+            TraverseNodes(action, this);
+
+            return neighborFace;
+        }
+
+        private bool IsOnFace(SVONode node, SVONode root, int dir)
+        {
+            bool xdir = ((dir >> 2) & 1) == 1;
+            bool ydir = ((dir >> 1) & 1) == 1;
+            bool zdir = ((dir) & 1) == 1;
+
+            // Walk upward until we reach the subtree root
+            SVONode current = node;
+            while (current != null && current != root)
+            {
+                int idx = current.childIndex;
+                bool xbit = ((idx >> 2) & 1) == 1;
+                bool ybit = ((idx >> 1) & 1) == 1;
+                bool zbit = ((idx >> 0) & 1) == 1;
+
+                // Check required bits
+                if (xdir && !xbit) return false;  // +X face requires all xbits=1
+                if (!xdir && xbit) return false;  // -X face requires all xbits=0
+                if (ydir && !ybit) return false;
+                if (!ydir && ybit) return false;
+                if (zdir && !zbit) return false;
+                if (!zdir && zbit) return false;
+
+                current = current.parent;
+            }
+
+            return true;
+        }
+
+        private void TraverseNodes(System.Action<SVONode> action, SVONode node)
+        {
+            if (node == null) return;
+            TraverseNodesRecursive(node, action);
+        }
+
+        private void TraverseNodesRecursive(SVONode node, System.Action<SVONode> action)
+        {
+            action(node);
+            if (node.children == null) return;
+            for (int i = 0; i < 8; i++)
+            {
+                if (node.children[i] != null)
+                    TraverseNodesRecursive(node.children[i], action);
+            }
+        }
         /// <summary>
         /// Returns the child index of this node in its parent (0-7), or -1 if no parent.
         /// </summary>

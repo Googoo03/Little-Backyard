@@ -9,6 +9,7 @@ public class SVOTest : MonoBehaviour
     [SerializeField] private Transform cube;
 
     [SerializeField] private int patchSize = 65536;
+    [SerializeField] private bool freezeSubdivision = false;
 
     // Start is called before the first frame update
     SVO svo;
@@ -30,7 +31,7 @@ public class SVOTest : MonoBehaviour
         svo.TraverseLeaves(node =>
         {
             float distance = (node.GetCenter() - cube.position).magnitude;
-            if (distance < node.size * 0.5f && !node.IsEmpty())
+            if (!freezeSubdivision && !node.IsEmpty() && distance < node.size * 1.5f && node.size > 4)
             {
                 node.Subdivide(); // Just a placeholder
 
@@ -38,6 +39,7 @@ public class SVOTest : MonoBehaviour
 
 
                 svo.GenerateVerticesForLeaves();
+                //svo.GenerateChunks();
             }
         });
     }
@@ -46,20 +48,24 @@ public class SVOTest : MonoBehaviour
         SVONode start = svo.root.children[0].children[3];
         SVONode destination = svo.TraversePath(new Vector3Int((int)cube.position.x, (int)cube.position.y, (int)cube.position.z));
         SVONode xNeighbor = destination.GetNeighborLOD(4); // +x
-        SVONode yNeighbor = destination.GetNeighborLOD(2); // +y
+        SVONode xzNeighbor = xNeighbor.GetNeighborLOD(1); // +y
         SVONode zNeighbor = destination.GetNeighborLOD(1); // +z
+
+        List<SVONode> xface = xNeighbor.GetFace(4);
 
         void action(SVONode node)
         {
+
+            Gizmos.color = node.IsEmpty() ? new Color(1, 0, 0, 0.5f) : new Color(1, 1, 1, 0.5f);
             if (node == start)
             {
-                Gizmos.color = Color.red;
+                //Gizmos.color = Color.red;
             }
-            else if (node == xNeighbor)
+            else if (xface.Contains(node))
             {
                 Gizmos.color = Color.blue;
             }
-            else if (node == yNeighbor)
+            else if (node == xzNeighbor)
             {
                 Gizmos.color = Color.yellow;
             }
@@ -73,15 +79,16 @@ public class SVOTest : MonoBehaviour
             }
             else
             {
-                Gizmos.color = Color.white;
+                //Gizmos.color = Color.white;
             }
 
-            Gizmos.color = node.IsEmpty() ? new Color(1, 0, 0, 0.5f) : new Color(1, 1, 1, 0.5f);
-            Gizmos.DrawCube(node.position + Vector3.one * node.size * 0.5f, Vector3.one * node.size);
+
+            Gizmos.DrawWireCube(node.position + 0.5f * node.size * Vector3.one, Vector3.one * node.size);
 
         }
         svo.TraverseLeaves(action);
     }
 
     public SVO GetSVO() { return svo; }
+    public void SetFreeze(bool b) { freezeSubdivision = b; }
 }

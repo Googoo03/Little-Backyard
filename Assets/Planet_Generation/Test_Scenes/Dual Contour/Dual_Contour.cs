@@ -814,6 +814,9 @@ namespace DualContour
         private NativeArray<float> cellvalues;
 
 
+        float[] vertValues = new float[8];
+        Vector3[] vertPos = new Vector3[8];
+
         //NOISE FUNCTIONS TEMPORARY
         Noise simplexNoise = new Noise();
 
@@ -844,8 +847,8 @@ namespace DualContour
             baseCELL_SIZE = length;
             CELL_SIZE = length;
             LOD_Level = ilodLevel;
-            Ground = 32768;
-            amplitude = 35;
+            Ground = 32;
+            amplitude = 3;
             block_voxel = mode;
             radius = iradius;
             dir = idir;
@@ -868,19 +871,20 @@ namespace DualContour
         private float function(Vector3 pos, float y)
         {
 
-            float frequency = .05f;
+            float frequency = 1f;
             float domainWarp = 0;
             Vector3 worldPos = pos - global;
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
-            Vector3 spherePos = worldPos.normalized * Ground;
+            Vector3 spherePos = pos;
 
-            float radius = worldPos.magnitude;
+            float radius = 5;//worldPos.magnitude;
             float caveVal = simplexNoise.CalcPixel3D(pos.x * frequency, pos.y * frequency, pos.z * frequency) * amplitude;
-            float value = (1 - Mathf.Abs(simplexNoise.CalcPixel3D((spherePos.x + domainWarp) * frequency, (spherePos.y + domainWarp) * frequency, (spherePos.z + domainWarp) * frequency))) * amplitude + Ground - radius;
+            float value = simplexNoise.CalcPixel3D((spherePos.x + domainWarp) * frequency, (spherePos.y + domainWarp) * frequency, (spherePos.z + domainWarp) * frequency) * 3;
             //if(value < 0) value += caveVal;
             //value *= caveVal;
             //float value = Ground - radius;
+            UnityEngine.Debug.Log("Value is: " + value);
 
             return value;
         }
@@ -1485,8 +1489,7 @@ namespace DualContour
         public void SVOVertex(SVONode node)
         {
             //these are being allocated every frame, which is bad
-            float[] vertValues = new float[8];
-            Vector3[] vertPos = new Vector3[8];
+
 
             int xPos, yPos, zPos;
 
@@ -1498,8 +1501,7 @@ namespace DualContour
 
                 //evaluate the position and value of each vertex in the unit cube
                 vertPos[i] = new Vector3(xPos, yPos, zPos);
-                vertValues[i] = yPos - 10; //base SDF
-                //UnityEngine.Debug.Log("Vertex " + i + " at " + vertPos[i] + " with value " + vertValues[i]);
+                vertValues[i] = vertPos[i].y - 10;//function(vertPos[i], yPos); //base SDF
             }
             //calculate the adapt of only the edges that cross, rather than the whole thing
             //calculate the positions of the edges itself
@@ -1607,11 +1609,10 @@ namespace DualContour
             Vector3 vertex = block_voxel ? vertPos[0] : avg;
 
             vertices.Add(vertex);
-            UnityEngine.Debug.Log("Added vertex at " + vertex);
             //This should reference a biome texture and current elevation
             UInt16 voxelData = 0;
 
-            node.dualVertexIndex = (newedge | ((vertices.Count - 1) << 6) | (voxelData << 21));
+            node.dualVertexIndex = newedge | ((vertices.Count - 1) << 6) | (voxelData << 21);
 
 
         }
@@ -1622,13 +1623,13 @@ namespace DualContour
 
         public void SVOQuad(SVONode node, List<int> indices)
         {
-            SVONode xNeighbor = node.GetNeighborLOD(4);
-            SVONode yNeighbor = node.GetNeighborLOD(2);
             SVONode zNeighbor = node.GetNeighborLOD(1);
-            SVONode xyNeighbor = node.GetNeighborLOD(6);
-            SVONode xzNeighbor = node.GetNeighborLOD(5);
-            SVONode yzNeighbor = node.GetNeighborLOD(3);
-            SVONode[] neighbors = { zNeighbor, yNeighbor, yzNeighbor, xNeighbor, xzNeighbor, xyNeighbor };
+            SVONode yNeighbor = node.GetNeighborLOD(2);
+            SVONode yzNeighbor = yNeighbor?.GetNeighborLOD(1);//node.GetNeighborLOD(3);
+            SVONode xNeighbor = node.GetNeighborLOD(4);
+            SVONode xzNeighbor = zNeighbor?.GetNeighborLOD(4);//node.GetNeighborLOD(5);
+            SVONode xyNeighbor = xNeighbor?.GetNeighborLOD(2);//node.GetNeighborLOD(6);
+            SVONode[] neighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, xzNeighbor, xyNeighbor };
 
             Trirule[] rules = {
             new() { //x axis
@@ -1673,6 +1674,7 @@ namespace DualContour
 
 
 
+
             foreach (Trirule rule in rules)
             {
                 if ((dualGrid_index & rule.axis) != rule.axis) continue;
@@ -1692,28 +1694,43 @@ namespace DualContour
                         v5 = rule[5]
                     };
                 }
+                //get entire face of neighbor node.
+
+                //if neighbor along certain axis is not a leaf, gather the face
+                //then, we need to repeat the logic for neighbor detection as many times as there are children in the faces. This would go on the outside
+                //
+
+                //OR IF THE NEIGHBOR ALONG AN AXIS IS NOT A LEAF, REVERSE such that its now going from high to low rather than low to high.
+                //have a traverse leaf action along the specific face. Pass in the base node as the negative neighbor
+
 
                 //two triangles to make a quad
                 for (int j = 0; j < 2; ++j)
                 {
-                    UnityEngine.Debug.Log("RUNNING");
-
+                    //UnityEngine.Debug.Log("RUNNING at " + node.position + " " + neighbors[verts[j]].dualVertexIndex);
                     var neighbor = neighbors[verts[j]];
-
-
-                    if (neighbor.IsEmpty()) continue;
+                    if (neighbor == null || neighbor.IsEmpty()) continue;
 
                     neighbor = neighbors[verts[j + 1]];
-                    if (neighbor.IsEmpty()) continue;
+                    if (neighbor == null || neighbor.IsEmpty()) continue;
 
                     neighbor = neighbors[verts[j + 2]];
-                    if (neighbor.IsEmpty()) continue;
+                    if (neighbor == null || neighbor.IsEmpty()) continue;
+
+                    //
+
 
 
 
                     for (int i = 0; i < 3; ++i)
                     {
                         neighbor = neighbors[verts[j * 3 + i]];
+                        if ((neighbor.dualVertexIndex >> 6 & 0x7fff) > vertices.Count)
+                        {
+                            UnityEngine.Debug.Log("neighbor index: " + (neighbor.dualVertexIndex >> 6 & 0x7fff));
+                            indices.Add(0);
+                            continue;
+                        }
                         indices.Add(neighbor.dualVertexIndex >> 6 & 0x7FFF);
                     }
 
