@@ -100,6 +100,11 @@ namespace SparseVoxelOctree
                     chunkObject = !chunks.ContainsKey(node.position) ? new("Chunk_" + node.position.ToString())
                         : chunks[node.position];
 
+                    if (!chunks.ContainsKey(node.position))
+                    {
+                        chunks[node.position] = chunkObject;
+                    }
+
                     // Generate mesh for this chunk
 
                     //Gather vertex nodes for home chunk
@@ -123,8 +128,11 @@ namespace SparseVoxelOctree
                     }
 
                     //Apply mesh data to gameObject
-                    MeshFilter mf = chunkObject.AddComponent<MeshFilter>();
-                    MeshRenderer rend = chunkObject.AddComponent<MeshRenderer>();
+                    MeshFilter mf = chunkObject.GetComponent<MeshFilter>();
+                    if (mf == null) mf = chunkObject.AddComponent<MeshFilter>();
+                    MeshRenderer rend = chunkObject.GetComponent<MeshRenderer>();
+                    if (rend == null) rend = chunkObject.AddComponent<MeshRenderer>();
+
                     Mesh m = mf.sharedMesh = new Mesh();
 
                     rend.material = Resources.Load("Test") as Material;
@@ -143,10 +151,6 @@ namespace SparseVoxelOctree
                     m.RecalculateBounds();
                     m.RecalculateNormals();
 
-                }
-                else
-                {
-                    UnityEngine.Debug.Log("chunk size: " + node.size);
                 }
 
 
@@ -356,12 +360,9 @@ namespace SparseVoxelOctree
                 bool zbit = ((idx >> 0) & 1) == 1;
 
                 // Check required bits
-                if (xdir && !xbit) return false;  // +X face requires all xbits=1
-                if (!xdir && xbit) return false;  // -X face requires all xbits=0
-                if (ydir && !ybit) return false;
-                if (!ydir && ybit) return false;
-                if (zdir && !zbit) return false;
-                if (!zdir && zbit) return false;
+                if (xdir && xbit) return false;  // +X face requires all xbits=1
+                if (ydir && ybit) return false;
+                if (zdir && zbit) return false;
 
                 current = current.parent;
             }

@@ -246,7 +246,7 @@ namespace QuadTree
                 //UnityEngine.Debug.Log("neighbors size:" + negativeNeighbors.Count);
                 QuadTreeNode current = DFSStack.Pop();
                 Dual_Contour currentDC = current.seamgo.GetComponent<DC_Chunk>().GetDC();
-                int rule = Dual_Contour.GetPositiveNeighborRule(currentDC.GetMin(), currentDC.GetMax(), baseChunk.GetMin(), baseChunk.GetMax());
+                int rule = 0;//Dual_Contour.GetPositiveNeighborRule(currentDC.GetMin(), currentDC.GetMax(), baseChunk.GetMin(), baseChunk.GetMax());
 
                 if (current.empty) continue;
 
@@ -469,7 +469,7 @@ namespace QuadTree
             }
             else
             {
-                if (Dual_Contour.GetPositiveNeighborRule(cmin, cmax, omin, omax) == 0) return -1;
+                if (/*Dual_Contour.GetPositiveNeighborRule(cmin, cmax, omin, omax)*/ 0 == 0) return -1;
 
                 lodLevel = nodeDC.GetLODLevel();
                 return lodLevel;

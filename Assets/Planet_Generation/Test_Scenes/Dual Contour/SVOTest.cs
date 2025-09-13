@@ -22,6 +22,8 @@ public class SVOTest : MonoBehaviour
         root.Subdivide();
         root.children[0].Subdivide();
         root.children[0].children[0].Subdivide();
+        root.children[5].Subdivide();
+        root.children[5].children[0].Subdivide();
         root.children[7].Subdivide();
     }
 
@@ -39,7 +41,7 @@ public class SVOTest : MonoBehaviour
 
 
                 svo.GenerateVerticesForLeaves();
-                //svo.GenerateChunks();
+                svo.GenerateChunks();
             }
         });
     }
@@ -52,11 +54,12 @@ public class SVOTest : MonoBehaviour
         SVONode zNeighbor = destination.GetNeighborLOD(1); // +z
 
         List<SVONode> xface = xNeighbor.GetFace(4);
+        List<SVONode> zface = zNeighbor.GetFace(1);
 
         void action(SVONode node)
         {
 
-            Gizmos.color = node.IsEmpty() ? new Color(1, 0, 0, 0.5f) : new Color(1, 1, 1, 0.5f);
+            Gizmos.color = node.IsEmpty() ? new Color(1, 0, 0, 0.0f) : new Color(1, 1, 1, 0.5f);
             if (node == start)
             {
                 //Gizmos.color = Color.red;
@@ -69,7 +72,7 @@ public class SVOTest : MonoBehaviour
             {
                 Gizmos.color = Color.yellow;
             }
-            else if (node == zNeighbor)
+            else if (zface.Contains(node))
             {
                 Gizmos.color = Color.magenta;
             }

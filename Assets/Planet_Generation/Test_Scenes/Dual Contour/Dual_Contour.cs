@@ -878,13 +878,13 @@ namespace DualContour
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
             Vector3 spherePos = pos;
 
-            float radius = 5;//worldPos.magnitude;
+            float radius = pos.y;//worldPos.magnitude;
             float caveVal = simplexNoise.CalcPixel3D(pos.x * frequency, pos.y * frequency, pos.z * frequency) * amplitude;
-            float value = simplexNoise.CalcPixel3D((spherePos.x + domainWarp) * frequency, (spherePos.y + domainWarp) * frequency, (spherePos.z + domainWarp) * frequency) * 3;
+            float value = simplexNoise.CalcPixel3D((spherePos.x + domainWarp) * frequency, (spherePos.y + domainWarp) * frequency, (spherePos.z + domainWarp) * frequency) * 10 - radius + 10;
             //if(value < 0) value += caveVal;
             //value *= caveVal;
             //float value = Ground - radius;
-            UnityEngine.Debug.Log("Value is: " + value);
+            //UnityEngine.Debug.Log("Value is: " + value);
 
             return value;
         }
@@ -1215,275 +1215,6 @@ namespace DualContour
 
         public Vector3 GetOffset() { return offset; }
 
-
-
-        public static int GetPositiveNeighborRule(Vector3 currentMin, Vector3 currentMax, Vector3 neighborMin, Vector3 neighborMax, float epsilon = 1e-4f)
-        {
-            //convert all 8 corners into warped space, compare 
-
-            int rule = 0;
-            bool inZBounds = neighborMax.z > currentMin.z - epsilon && neighborMin.z < currentMax.z + epsilon;
-            bool inYBounds = neighborMax.y > currentMin.y - epsilon && neighborMin.y < currentMax.y + epsilon;
-            bool inXBounds = neighborMax.x > currentMin.x - epsilon && neighborMin.x < currentMax.x + epsilon;
-
-            bool xNeighbor = Mathf.Abs(neighborMin.x - currentMax.x) < epsilon && inZBounds && inYBounds;
-
-            bool yNeighbor = Mathf.Abs(neighborMin.y - currentMax.y) < epsilon && inZBounds && inXBounds;
-
-            bool zNeighbor = Mathf.Abs(neighborMin.z - currentMax.z) < epsilon && inXBounds && inYBounds;
-
-            if (xNeighbor) rule |= 4;
-            if (yNeighbor) rule |= 2;
-            if (zNeighbor) rule |= 1;
-
-            return rule;
-        }
-
-        public int GetNeighborByCorners(Dual_Contour current, float epsilon = 1f)
-        {
-            int rule = 0;
-            int endCutoff = IsSeam ? 1 : 2;
-            Vector3[] Neighborcorners = new Vector3[8];
-            Vector3[] CurrentCorners = new Vector3[8];
-
-            int xPos, yPos, zPos;
-            for (int i = 0; i < 8; ++i)
-            {
-                xPos = ((sizeX - 1) * ((i >> 2) & 0x01));
-                yPos = ((sizeY - 1) * ((i >> 1) & 0x01));
-                zPos = ((sizeZ - 1) * (i & 0x01));
-
-
-                Neighborcorners[i] = cellPacked[(xPos + sizeX * (yPos + sizeY * zPos))];
-
-            }
-            //UnityEngine.Debug.Log((IsSeam ? "Seam" : "Chunk") + "Neighbor " + Neighborcorners[0] + " | " + new Vector3(0,0,0));
-
-            for (int i = 0; i < 8; ++i)
-            {
-                xPos = ((current.sizeX - 1) * ((i >> 2) & 0x01));
-                yPos = ((current.sizeY - 1) * ((i >> 1) & 0x01));
-                zPos = ((current.sizeZ - 1) * (i & 0x01));
-
-
-                CurrentCorners[i] = current.cellPacked[(xPos + current.sizeX * (yPos + current.sizeY * zPos))];
-
-            }
-
-            //Check difference of neighbor chunk corners and current chunk corners
-            bool xNeighbor = (Neighborcorners[0] - CurrentCorners[4]).magnitude < epsilon;
-
-            bool yNeighbor = (Neighborcorners[0] - CurrentCorners[2]).magnitude < epsilon;
-
-            bool zNeighbor = (Neighborcorners[0] - CurrentCorners[1]).magnitude < epsilon;
-
-            if (xNeighbor) rule |= 4;
-            if (yNeighbor) rule |= 2;
-            if (zNeighbor) rule |= 1;
-
-
-
-            return rule;
-        }
-
-        /*
-        public void ConstructSeamFromParentChunk(Dual_Contour current)
-        {
-
-            //current is the seam
-
-            int x, y, z;
-            int cx, cy, cz;
-            int ax, ay, az;
-            int spacing = 3 * current.resolution;
-
-            int dgIndex;
-            int newdualgrid;
-            Vector3 newVert;
-
-            //find difference in LOD levels, for a start x,y,z index (beginning of chunk, not beginning of loop)
-
-            //it is guaranteed at this point that the density of the seam >= density of chunk
-            float relativeDensity = step.x / current.step.x;
-            int indicesToCover = (int)relativeDensity;
-
-            //apply offset to finding indices
-
-            (int x, int y, int z)[] boundaries = new (int, int, int)[3] {
-                (sizeX-2,0,0),
-                (0,sizeY-2,0),
-                (0,0,sizeZ-2)
-            };
-
-            (int x, int y, int z)[] cboundaries = new (int, int, int)[3] {
-                (indicesToCover-1,0,0),
-                (0,indicesToCover-1,0),
-                (0,0,indicesToCover-1)
-            };
-
-            for (int i = 0; i < boundaries.Length; ++i)
-            {
-
-                for (x = boundaries[i].x; x < sizeX - 1; ++x)
-                {
-                    for (y = boundaries[i].y; y < sizeY - 1; ++y)
-                    {
-                        for (z = boundaries[i].z; z < sizeZ - 1; ++z)
-                        {
-
-                            //grab from parent
-                            newdualgrid = dualGrid[(x + sizeX * (y + sizeY * z))];
-                            if (newdualgrid == -1) continue;
-                            newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                            //add the vertex to the seam
-                            current.vertices.Add(newVert);
-
-
-                            //encode the dualgrid entry
-                            newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-
-                            for (cx = cboundaries[i].x; cx < indicesToCover; ++cx)
-                            {
-                                for (cy = cboundaries[i].y; cy < indicesToCover; ++cy)
-                                {
-                                    for (cz = cboundaries[i].z; cz < indicesToCover; ++cz)
-                                    {
-
-                                        //skipping over indices in the parent chunk?
-
-                                        //make sure the other chunk has a vertex there
-
-
-
-                                        ax = i == 0 ? (current.sizeX - 1) - spacing + 1 : ((x * indicesToCover) + cx);
-                                        ay = i == 1 ? (current.sizeY - 1) - spacing + 1 : ((y * indicesToCover) + cy);
-                                        az = i == 2 ? (current.sizeZ - 1) - spacing + 1 : ((z * indicesToCover) + cz);
-
-                                        dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
-                                        int currentDG = current.dualGrid[dgIndex];
-                                        if (dgIndex >= current.dualGrid.Length) continue;
-
-                                        if (currentDG != -1 && currentDG != 0)
-                                        {
-                                            //keep voxel data, replace vertex with current one
-                                            int newaxes = currentDG & 0x3f;
-                                            newdualgrid = (newdualgrid & ~(0x3f)) | newaxes;
-
-                                        }
-
-                                        current.dualGrid[dgIndex] = newdualgrid;
-                                    }
-
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        /*
-                public void ConstructSeamNodes(Dual_Contour current)
-                {
-
-                    Vector3 cmin = current.min;
-                    Vector3 cmax = current.max;
-                    int endCutoff = IsSeam ? 0 : 1;
-
-                    int rule = GetPositiveNeighborRule(cmin, cmax, min, max);
-                    if (rule == 0 || vertices.Length == 0 || (cmin == min && cmax == max)) return;
-
-                    int x, y, z;
-
-                    //the in-plane offset when filling in subdivided space
-                    int cx, cy, cz;
-                    int ax, ay, az;
-
-                    int dgIndex;
-                    int newdualgrid;
-                    Vector3 newVert;
-
-                    //find difference in LOD levels, for a start x,y,z index (beginning of chunk, not beginning of loop)
-
-                    //it is guaranteed at this point that the density of the seam >= density of chunk
-                    float relativeDensity = step.x / current.step.x;
-                    int indicesToCover = (int)relativeDensity;
-                    int startX = 0, startY = 0, startZ = 0;
-
-                    //apply offset to finding indices
-                    startX += (int)((current.offset.x - offset.x) / step.x);
-                    startY += (int)((current.offset.y - offset.y) / step.y);
-                    startZ += (int)((current.offset.z - offset.z) / step.z);
-
-                    startX = Mathf.Max(0, startX);
-                    startY = Mathf.Max(0, startY);
-                    startZ = Mathf.Max(0, startZ);
-
-                    //UnityEngine.Debug.Log("StartX: " + startX + " | neighbor offset: " + offset.x + " | current offset: " + current.offset.x + " | neighber step: " + step.x);
-
-                    //apply a start and end index to loop over
-
-                    //core logic is already present. Just have to find indices.
-
-                    //all neighboring chunks will add to the outside of the array based on where they are as neighbors
-
-                    //start and end indices
-
-                    //picks which is / are the fixed axes and chooses which one to instead iterate over
-                    ((int start, int end) x, (int start, int end) y, (int start, int end) z) boundaries = (
-                                                        (rule & 0x4) != 0 ? (0, 1) : (startX, sizeX - endCutoff),
-                                                        (rule & 0x2) != 0 ? (0, 1) : (startY, sizeY - endCutoff),
-                                                        (rule & 0x1) != 0 ? (0, 1) : (startZ, sizeZ - endCutoff));
-
-                    (int x, int y, int z) cboundaries = ((rule & 0x4) != 0 ? indicesToCover - 1 : 0,
-                                                        (rule & 0x2) != 0 ? indicesToCover - 1 : 0,
-                                                        (rule & 0x1) != 0 ? indicesToCover - 1 : 0);
-
-                    for (x = boundaries.x.start; x < boundaries.x.end; ++x)
-                    {
-                        for (y = boundaries.y.start; y < boundaries.y.end; ++y)
-                        {
-                            for (z = boundaries.z.start; z < boundaries.z.end; ++z)
-                            {
-                                int index = (x + sizeX * (y + sizeY * z));
-
-                                newdualgrid = dualGrid[index];
-                                if (newdualgrid == -1) continue;
-
-                                newVert = vertices[newdualgrid >> 6 & 0x7FFF];
-
-                                current.vertices.Add(newVert);
-                                newdualgrid = (newdualgrid & ~(0x7FFF << 6)) | ((current.vertices.Length - 1) << 6);
-
-                                //UnityEngine.Debug.Log(newdualgrid >> 6 & 0x7FFF);
-
-                                for (cx = cboundaries.x; cx < indicesToCover; ++cx)
-                                {
-                                    for (cy = cboundaries.y; cy < indicesToCover; ++cy)
-                                    {
-                                        for (cz = cboundaries.z; cz < indicesToCover; ++cz)
-                                        {
-                                            ax = (rule & 0x4) != 0 ? (current.sizeX - 1) : (((x - startX) * indicesToCover) + cx);
-                                            ay = (rule & 0x2) != 0 ? (current.sizeY - 1) : (((y - startY) * indicesToCover) + cy);
-                                            az = (rule & 0x1) != 0 ? (current.sizeZ - 1) : (((z - startZ) * indicesToCover) + cz);
-
-                                            //if (startX == 16) UnityEngine.Debug.Log("ax: " + ax);
-
-
-                                            dgIndex = ax + current.sizeX * (ay + current.sizeY * az);
-                                            if (dgIndex >= current.dualGrid.Length || (current.dualGrid[dgIndex] != -1 && current.dualGrid[dgIndex] != 0)) continue;
-                                            current.dualGrid[dgIndex] = newdualgrid;
-                                        }
-
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }*/
-
         float Adapt(float x0, float x1) => (-x0) / (x1 - x0);
 
         public void SVOVertex(SVONode node)
@@ -1501,7 +1232,7 @@ namespace DualContour
 
                 //evaluate the position and value of each vertex in the unit cube
                 vertPos[i] = new Vector3(xPos, yPos, zPos);
-                vertValues[i] = vertPos[i].y - 10;//function(vertPos[i], yPos); //base SDF
+                vertValues[i] = function(vertPos[i], yPos); //base SDF
             }
             //calculate the adapt of only the edges that cross, rather than the whole thing
             //calculate the positions of the edges itself
@@ -1625,10 +1356,10 @@ namespace DualContour
         {
             SVONode zNeighbor = node.GetNeighborLOD(1);
             SVONode yNeighbor = node.GetNeighborLOD(2);
-            SVONode yzNeighbor = yNeighbor?.GetNeighborLOD(1);//node.GetNeighborLOD(3);
+            SVONode yzNeighbor = yNeighbor?.GetNeighborLOD(1);
             SVONode xNeighbor = node.GetNeighborLOD(4);
-            SVONode xzNeighbor = zNeighbor?.GetNeighborLOD(4);//node.GetNeighborLOD(5);
-            SVONode xyNeighbor = xNeighbor?.GetNeighborLOD(2);//node.GetNeighborLOD(6);
+            SVONode xzNeighbor = zNeighbor?.GetNeighborLOD(4);
+            SVONode xyNeighbor = xNeighbor?.GetNeighborLOD(2);
             SVONode[] neighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, xzNeighbor, xyNeighbor };
 
             Trirule[] rules = {
@@ -1697,6 +1428,7 @@ namespace DualContour
                 //get entire face of neighbor node.
 
                 //if neighbor along certain axis is not a leaf, gather the face
+
                 //then, we need to repeat the logic for neighbor detection as many times as there are children in the faces. This would go on the outside
                 //
 
@@ -1707,31 +1439,83 @@ namespace DualContour
                 //two triangles to make a quad
                 for (int j = 0; j < 2; ++j)
                 {
-                    //UnityEngine.Debug.Log("RUNNING at " + node.position + " " + neighbors[verts[j]].dualVertexIndex);
-                    var neighbor = neighbors[verts[j]];
-                    if (neighbor == null || neighbor.IsEmpty()) continue;
-
-                    neighbor = neighbors[verts[j + 1]];
-                    if (neighbor == null || neighbor.IsEmpty()) continue;
-
-                    neighbor = neighbors[verts[j + 2]];
-                    if (neighbor == null || neighbor.IsEmpty()) continue;
-
-                    //
+                    SVONode n0 = neighbors[verts[j * 3]];
+                    SVONode n1 = neighbors[verts[j * 3 + 1]];
+                    SVONode n2 = neighbors[verts[j * 3 + 2]];
 
 
-
-
-                    for (int i = 0; i < 3; ++i)
+                    var neighbor = neighbors[verts[j * 3]];
+                    if (n0 == null || n1 == null || n2 == null) continue;
+                    if (n0.isLeaf && n1.isLeaf && n2.isLeaf)
                     {
-                        neighbor = neighbors[verts[j * 3 + i]];
-                        if ((neighbor.dualVertexIndex >> 6 & 0x7fff) > vertices.Count)
+                        if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
+
+                        for (int i = 0; i < 3; ++i)
                         {
-                            UnityEngine.Debug.Log("neighbor index: " + (neighbor.dualVertexIndex >> 6 & 0x7fff));
-                            indices.Add(0);
-                            continue;
+                            neighbor = neighbors[verts[j * 3 + i]];
+
+                            if ((neighbor.dualVertexIndex >> 6 & 0x7fff) > vertices.Count)
+                            {
+                                indices.Add(0);
+                                continue;
+                            }
+                            indices.Add(neighbor.dualVertexIndex >> 6 & 0x7FFF);
                         }
-                        indices.Add(neighbor.dualVertexIndex >> 6 & 0x7FFF);
+                    }
+                    else
+                    {
+                        int directionAxis;
+                        if (rule.axis == 0x20) //x axis
+                        {
+                            directionAxis = j == 0 ? 4 : 2;
+                        }
+                        else if (rule.axis == 0x8) // y axis
+                        {
+                            directionAxis = j == 0 ? 4 : 1;
+                        }
+                        else //z axis
+                        {
+                            directionAxis = j == 0 ? 2 : 1;
+                        }
+
+                        //get the correct face
+                        List<SVONode> face = neighbors[directionAxis]?.GetFace(directionAxis);
+                        if (face == null) continue;
+                        for (int k = 0; k < face.Count; ++k)
+                        {
+                            zNeighbor = directionAxis == 1 ? face[k] : node.GetNeighborLOD(1);
+                            yNeighbor = directionAxis == 2 ? face[k] : node.GetNeighborLOD(2);
+                            yzNeighbor = directionAxis == 2 ? yNeighbor?.GetNeighborLOD(1) : zNeighbor?.GetNeighborLOD(2);
+                            xNeighbor = directionAxis == 4 ? face[k] : node.GetNeighborLOD(4);
+                            xzNeighbor = directionAxis == 4 ? xNeighbor?.GetNeighborLOD(1) : zNeighbor?.GetNeighborLOD(4);
+                            xyNeighbor = directionAxis == 4 ? xNeighbor?.GetNeighborLOD(2) : yNeighbor?.GetNeighborLOD(4);
+                            neighbors = new SVONode[] { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, xzNeighbor, xyNeighbor };
+
+                            n0 = neighbors[verts[j * 3]];
+                            if (n0 == null || n0.IsEmpty()) continue;
+
+                            n1 = neighbors[verts[j * 3 + 1]];
+                            if (n1 == null || n1.IsEmpty()) continue;
+
+                            n2 = neighbors[verts[j * 3 + 2]];
+                            if (n2 == null || n2.IsEmpty()) continue;
+
+                            for (int i = 0; i < 3; ++i)
+                            {
+                                neighbor = neighbors[verts[j * 3 + i]];
+
+                                if ((neighbor.dualVertexIndex >> 6 & 0x7fff) > vertices.Count)
+                                {
+
+                                    UnityEngine.Debug.Log("neighbor index: " + (neighbor.dualVertexIndex >> 6 & 0x7fff));
+
+                                    indices.Add(0);
+                                    continue;
+                                }
+                                indices.Add(neighbor.dualVertexIndex >> 6 & 0x7FFF);
+                            }
+                        }
+
                     }
 
                 }
