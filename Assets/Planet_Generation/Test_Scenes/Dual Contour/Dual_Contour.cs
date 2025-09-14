@@ -1232,7 +1232,7 @@ namespace DualContour
 
                 //evaluate the position and value of each vertex in the unit cube
                 vertPos[i] = new Vector3(xPos, yPos, zPos);
-                vertValues[i] = function(vertPos[i], yPos); //base SDF
+                vertValues[i] = vertPos[i].y - 10; //function(vertPos[i], yPos); //base SDF
             }
             //calculate the adapt of only the edges that cross, rather than the whole thing
             //calculate the positions of the edges itself
@@ -1402,10 +1402,6 @@ namespace DualContour
 
             int dualGrid_index = node.dualVertexIndex;
 
-
-
-
-
             foreach (Trirule rule in rules)
             {
                 if ((dualGrid_index & rule.axis) != rule.axis) continue;
@@ -1439,83 +1435,58 @@ namespace DualContour
                 //two triangles to make a quad
                 for (int j = 0; j < 2; ++j)
                 {
-                    SVONode n0 = neighbors[verts[j * 3]];
-                    SVONode n1 = neighbors[verts[j * 3 + 1]];
-                    SVONode n2 = neighbors[verts[j * 3 + 2]];
 
+                    int directionAxis = j == 0 ? rule.v1 : rule.v4;
 
-                    var neighbor = neighbors[verts[j * 3]];
-                    if (n0 == null || n1 == null || n2 == null) continue;
-                    if (n0.isLeaf && n1.isLeaf && n2.isLeaf)
+                    List<SVONode> face = neighbors[directionAxis]?.GetFace(directionAxis);
+                    if (face == null) continue;
+                    for (int k = 0; k < face.Count; ++k)
                     {
-                        if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
+                        zNeighbor = directionAxis == 1 ? face[k] : node.GetNeighborLOD(1);
+                        yNeighbor = directionAxis == 2 ? face[k] : node.GetNeighborLOD(2);
+                        xNeighbor = directionAxis == 4 ? face[k] : node.GetNeighborLOD(4);
 
-                        for (int i = 0; i < 3; ++i)
+                        yzNeighbor = directionAxis == 2 ? yNeighbor?.GetNeighborLOD(1) : zNeighbor?.GetNeighborLOD(2);
+                        xzNeighbor = directionAxis == 4 ? xNeighbor?.GetNeighborLOD(1) : zNeighbor?.GetNeighborLOD(4);
+                        xyNeighbor = directionAxis == 4 ? xNeighbor?.GetNeighborLOD(2) : yNeighbor?.GetNeighborLOD(4);
+
+                        neighbors = new SVONode[] { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, xzNeighbor, xyNeighbor };
+
+                        List<SVONode> diagonal = neighbors[verts[2]]?.GetFace(rule.v2);
+
+                        int diagonalSize = diagonal != null ? diagonal.Count : 0;
+                        for (int l = 0; l < diagonalSize; ++l)
                         {
-                            neighbor = neighbors[verts[j * 3 + i]];
+                            if (diagonal[l].IsEmpty()) continue;
+                            var neighbor = neighbors[verts[j * 3]];
 
-                            if ((neighbor.dualVertexIndex >> 6 & 0x7fff) > vertices.Count)
-                            {
-                                indices.Add(0);
-                                continue;
-                            }
-                            indices.Add(neighbor.dualVertexIndex >> 6 & 0x7FFF);
-                        }
-                    }
-                    else
-                    {
-                        int directionAxis;
-                        if (rule.axis == 0x20) //x axis
-                        {
-                            directionAxis = j == 0 ? 4 : 2;
-                        }
-                        else if (rule.axis == 0x8) // y axis
-                        {
-                            directionAxis = j == 0 ? 4 : 1;
-                        }
-                        else //z axis
-                        {
-                            directionAxis = j == 0 ? 2 : 1;
-                        }
+                            SVONode n0 = neighbors[verts[j * 3]];
+                            SVONode n1 = neighbors[verts[j * 3 + 1]];
+                            SVONode n2 = neighbors[verts[j * 3 + 2]];
 
-                        //get the correct face
-                        List<SVONode> face = neighbors[directionAxis]?.GetFace(directionAxis);
-                        if (face == null) continue;
-                        for (int k = 0; k < face.Count; ++k)
-                        {
-                            zNeighbor = directionAxis == 1 ? face[k] : node.GetNeighborLOD(1);
-                            yNeighbor = directionAxis == 2 ? face[k] : node.GetNeighborLOD(2);
-                            yzNeighbor = directionAxis == 2 ? yNeighbor?.GetNeighborLOD(1) : zNeighbor?.GetNeighborLOD(2);
-                            xNeighbor = directionAxis == 4 ? face[k] : node.GetNeighborLOD(4);
-                            xzNeighbor = directionAxis == 4 ? xNeighbor?.GetNeighborLOD(1) : zNeighbor?.GetNeighborLOD(4);
-                            xyNeighbor = directionAxis == 4 ? xNeighbor?.GetNeighborLOD(2) : yNeighbor?.GetNeighborLOD(4);
-                            neighbors = new SVONode[] { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, xzNeighbor, xyNeighbor };
+                            if (n0 == null || n1 == null || n2 == null) continue;
+                            if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
 
-                            n0 = neighbors[verts[j * 3]];
-                            if (n0 == null || n0.IsEmpty()) continue;
-
-                            n1 = neighbors[verts[j * 3 + 1]];
-                            if (n1 == null || n1.IsEmpty()) continue;
-
-                            n2 = neighbors[verts[j * 3 + 2]];
-                            if (n2 == null || n2.IsEmpty()) continue;
 
                             for (int i = 0; i < 3; ++i)
                             {
                                 neighbor = neighbors[verts[j * 3 + i]];
 
-                                if ((neighbor.dualVertexIndex >> 6 & 0x7fff) > vertices.Count)
+                                if (!neighbor.isLeaf)
                                 {
+                                    //UnityEngine.Debug.Log("vert " + (j * 3 + i) + "on direction " + directionAxis);
+                                    neighbor = diagonal[l];
 
-                                    UnityEngine.Debug.Log("neighbor index: " + (neighbor.dualVertexIndex >> 6 & 0x7fff));
+                                }
 
+                                if ((neighbor?.dualVertexIndex >> 6 & 0x7fff) > vertices.Count)
+                                {
                                     indices.Add(0);
                                     continue;
                                 }
                                 indices.Add(neighbor.dualVertexIndex >> 6 & 0x7FFF);
                             }
                         }
-
                     }
 
                 }
