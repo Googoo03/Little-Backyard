@@ -7,6 +7,7 @@ using DualContour;
 public class SVOTest : MonoBehaviour
 {
     [SerializeField] private Transform cube;
+    [SerializeField] private int getFaceNum;
 
     [SerializeField] private int patchSize = 65536;
     [SerializeField] private bool freezeSubdivision = false;
@@ -50,10 +51,11 @@ public class SVOTest : MonoBehaviour
         SVONode start = svo.root.children[0].children[3];
         SVONode destination = svo.TraversePath(new Vector3Int((int)cube.position.x, (int)cube.position.y, (int)cube.position.z));
         SVONode xNeighbor = destination.GetNeighborLOD(4); // +x
-        SVONode xzNeighbor = xNeighbor.GetNeighborLOD(1); // +y
-        SVONode zNeighbor = destination.GetNeighborLOD(1); // +z
 
-        List<SVONode> xface = xNeighbor.GetFace(4);
+        SVONode zNeighbor = destination.GetNeighborLOD(1); // +z
+        SVONode zyNeighbor = zNeighbor.GetNeighborLOD(2); // +y
+
+        List<SVONode> xface = xNeighbor.GetFace(getFaceNum);
         List<SVONode> zface = zNeighbor.GetFace(1);
 
         void action(SVONode node)
@@ -68,7 +70,7 @@ public class SVOTest : MonoBehaviour
             {
                 Gizmos.color = Color.blue;
             }
-            else if (node == xzNeighbor)
+            else if (node == zyNeighbor)
             {
                 Gizmos.color = Color.yellow;
             }

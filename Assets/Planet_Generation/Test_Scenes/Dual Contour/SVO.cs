@@ -277,54 +277,60 @@ namespace SparseVoxelOctree
         public SVONode GetNeighborLOD(int direction)
         {
             SVONode current = this;
-            List<int> path = new() { };
+            List<int> path = new();
 
-
+            // Decode requested direction
             bool xdir = ((direction >> 2) & 1) == 1;
             bool ydir = ((direction >> 1) & 1) == 1;
             bool zdir = ((direction) & 1) == 1;
-            // Traverse up until we can move sideways in the given direction
+
+            // Go upward until all requested directions can flip
             while (current.parent != null)
             {
                 int parentChildIndex = current.childIndex;
+
                 bool xbit = ((parentChildIndex >> 2) & 1) == 1;
                 bool ybit = ((parentChildIndex >> 1) & 1) == 1;
                 bool zbit = ((parentChildIndex) & 1) == 1;
 
-                // If we can move in the given direction at this level
-                if ((!xdir || !xbit) && (!ydir || !ybit) && (!zdir || !zbit))
+                // Condition: for every axis we want to move in, we must NOT already be on the far side
+                bool canMove =
+                    (!xdir || !xbit) &&
+                    (!ydir || !ybit) &&
+                    (!zdir || !zbit);
+
+                if (canMove)
                 {
+                    // XOR full direction at once (can include multiple axes)
                     int neighborIndex = parentChildIndex ^ direction;
                     SVONode neighbor = current.parent.children[neighborIndex];
 
                     if (neighbor == null)
-                    {
                         return null;
-                    }
 
-                    // Descend to the deepest adjacent node(s)
-                    // For each level down, flip the axis bit for the direction moved
-                    int descendIndex;
+                    // Descend down, flipping axes as needed
                     for (int i = path.Count - 1; i >= 0; i--)
                     {
                         if (neighbor.isLeaf || neighbor.children == null) break;
-                        descendIndex = path[i];
-                        // Flip the axis bit for the direction moved
 
-                        //it flips it everytime, we dont want that
+                        int descendIndex = path[i];
+
                         if (xdir) descendIndex ^= (1 << 2);
                         if (ydir) descendIndex ^= (1 << 1);
                         if (zdir) descendIndex ^= 1;
+
                         neighbor = neighbor.children[descendIndex];
                     }
 
-                    //same depth or lower depth (LOD) neighbor
-                    return neighbor;
+                    return neighbor; // Found orthogonal or diagonal neighbor
                 }
+
+                // Otherwise, keep going up
                 path.Add(parentChildIndex);
                 current = current.parent;
             }
-            return null;
+
+            return null; // No neighbor in that direction
         }
 
         public List<SVONode> GetFace(int dir)
