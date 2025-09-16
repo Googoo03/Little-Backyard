@@ -154,8 +154,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cube: {fileID: 1557406413}
   getFaceNum: 0
-  patchSize: 128
+  patchSize: 1024
   freezeSubdivision: 0
+  timeToRefresh: 5
+  elapsedTime: 0
 --- !u!4 &67079602
 Transform:
   m_ObjectHideFlags: 0

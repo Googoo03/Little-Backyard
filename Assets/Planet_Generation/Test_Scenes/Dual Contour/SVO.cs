@@ -69,7 +69,7 @@ namespace SparseVoxelOctree
             }
         }
 
-        private void TraverseNodes(System.Action<SVONode> action)
+        public void TraverseNodes(System.Action<SVONode> action)
         {
             if (root == null) return;
             TraverseNodesRecursive(root, action);
@@ -94,28 +94,22 @@ namespace SparseVoxelOctree
 
                 if (node.size == chunkSize && !node.IsEmpty())
                 {
-
-                    GameObject chunkObject;
                     //Generate gameObject for chunk
-                    chunkObject = !chunks.ContainsKey(node.position) ? new("Chunk_" + node.position.ToString())
+                    GameObject chunkObject = !chunks.ContainsKey(node.position) ? new("Chunk_" + node.position.ToString())
                         : chunks[node.position];
 
-                    if (!chunks.ContainsKey(node.position))
-                    {
-                        chunks[node.position] = chunkObject;
-                    }
+                    if (!chunks.ContainsKey(node.position)) chunks[node.position] = chunkObject;
 
                     // Generate mesh for this chunk
 
                     //Gather vertex nodes for home chunk
                     Dictionary<Vector3Int, SVONode> verticesDict = new();
-                    List<Vector3> verticesList = new();
 
                     //should have a dictionary and a list of vertices?
                     List<int> indices = new();
 
                     //adds to local list of vertices and dictionary of vertex nodes
-                    node.GatherChunkVertices(this, verticesDict, verticesList);
+                    node.GatherChunkVertices(this, verticesDict);
 
                     //for each of the vertex nodes, generate indices
 
@@ -188,6 +182,8 @@ namespace SparseVoxelOctree
         public bool isLeaf;         // True if this node is a leaf
         public int dualVertexIndex; // Index in the mesh vertex list (if leaf)
 
+        public bool voteToCollapse;
+
 
         public SVONode(Vector3Int pos, int s, SVONode parent = null, int childIndex = -1)
         {
@@ -196,6 +192,7 @@ namespace SparseVoxelOctree
             children = null;
             isLeaf = true;
             dualVertexIndex = -1;
+            voteToCollapse = false;
             this.parent = parent;
             this.childIndex = childIndex;
         }
@@ -218,6 +215,7 @@ namespace SparseVoxelOctree
             }
 
             isLeaf = false;
+            voteToCollapse = false;
             dualVertexIndex = -1; // No dual vertex for non-leaf nodes
 
 
@@ -248,7 +246,7 @@ namespace SparseVoxelOctree
                 {
                     existingVertices[key] = node;
 
-                    //the indices dont line up, they 
+                    //Add to vertex list
                     vertexList?.Add(svo.vertices[node.dualVertexIndex >> 6 & 0x7FFF]);
 
                 }

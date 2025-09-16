@@ -11,12 +11,17 @@ public class SVOTest : MonoBehaviour
 
     [SerializeField] private int patchSize = 65536;
     [SerializeField] private bool freezeSubdivision = false;
+    private bool refreshChunks;
+    [SerializeField] private float timeToRefresh;
+    [SerializeField] private float elapsedTime;
 
     // Start is called before the first frame update
     SVO svo;
     Dual_Contour dualContour;
     void Start()
     {
+        refreshChunks = false;
+
         dualContour = new();
         SVONode root = new(new Vector3Int(0, 0, 0), patchSize);
         svo = new SVO(root, dualContour);
@@ -37,14 +42,44 @@ public class SVOTest : MonoBehaviour
             if (!freezeSubdivision && !node.IsEmpty() && distance < node.size * 5f && node.size > 1)
             {
                 node.Subdivide(); // Just a placeholder
-
+                refreshChunks = true;
                 //GENERATE VERTICES
-
-
-                svo.GenerateVerticesForLeaves();
-                svo.GenerateChunks();
+            }
+            else if (!freezeSubdivision && distance > node.size * 10f)
+            {
+                node.voteToCollapse = true;
             }
         });
+
+        svo.TraverseNodes(node =>
+        {
+            if (node.isLeaf) return;
+            bool collapse = true;
+
+            foreach (SVONode child in node.children)
+            {
+                collapse &= child.voteToCollapse;
+            }
+            if (collapse)
+            {
+                node.Collapse();
+            }
+        });
+
+
+
+        svo.GenerateVerticesForLeaves();
+        elapsedTime += Time.deltaTime;
+        if (elapsedTime > timeToRefresh)
+        {
+
+            if (refreshChunks)
+            {
+                svo.GenerateChunks();
+            }
+            elapsedTime = 0;
+            refreshChunks = false;
+        }
     }
     void OnDrawGizmos()
     {
