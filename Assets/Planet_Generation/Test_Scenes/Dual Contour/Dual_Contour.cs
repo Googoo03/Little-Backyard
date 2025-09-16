@@ -1232,7 +1232,7 @@ namespace DualContour
 
                 //evaluate the position and value of each vertex in the unit cube
                 vertPos[i] = new Vector3(xPos, yPos, zPos);
-                //vertValues[i] = Mathf.Min(vertPos[i].y - 10, Mathf.Min(vertPos[i].x - 10, vertPos[i].z - 10));
+                //vertValues[i] = -vertPos[i].y + 10 + Mathf.Sin(vertPos[i].x) * 2;
                 vertValues[i] = function(vertPos[i], yPos); //base SDF
             }
             //calculate the adapt of only the edges that cross, rather than the whole thing
@@ -1325,7 +1325,7 @@ namespace DualContour
             if (xCross)
             {
                 newedge |= 1 << 5;
-                newedge |= (((vertValues[6] > 0) && !(vertValues[7] > 0)) ? 1 : 0) << 4;
+                newedge |= (((vertValues[3] > 0) && !(vertValues[7] > 0)) ? 1 : 0) << 4;
             }
             if (yCross)
             {
@@ -1335,9 +1335,9 @@ namespace DualContour
             if (zCross)
             {
                 newedge |= 1 << 1;
-                newedge |= ((vertValues[3] > 0) && !(vertValues[7] > 0)) ? 1 : 0;
+                newedge |= ((vertValues[6] > 0) && !(vertValues[7] > 0)) ? 1 : 0;
             }
-
+            //block_voxel = true;
             Vector3 vertex = block_voxel ? vertPos[0] : avg;
 
             vertices.Add(vertex);
@@ -1422,16 +1422,6 @@ namespace DualContour
                         v5 = rule[5]
                     };
                 }
-                //get entire face of neighbor node.
-
-                //if neighbor along certain axis is not a leaf, gather the face
-
-                //then, we need to repeat the logic for neighbor detection as many times as there are children in the faces. This would go on the outside
-                //
-
-                //OR IF THE NEIGHBOR ALONG AN AXIS IS NOT A LEAF, REVERSE such that its now going from high to low rather than low to high.
-                //have a traverse leaf action along the specific face. Pass in the base node as the negative neighbor
-
 
                 //two triangles to make a quad
                 for (int j = 0; j < 2; ++j)
@@ -1463,35 +1453,14 @@ namespace DualContour
                         SVONode[] neighbors = new SVONode[] { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
 
                         int getfaceVal = verts.v2;
-                        List<SVONode> diagonal = neighbors[verts[2]]?.GetFace(getfaceVal);
+                        List<SVONode> diagonal = neighbors[getfaceVal]?.GetFace(getfaceVal);
 
                         //if the first neighbor we're working with has disparate sizes with the second neighbor, do diagonal. Else, diagonal should be 1
 
                         int diagonalSize = diagonal?.Count ?? 0;
                         if (diagonalSize == 0)
                         {
-                            // fall back to the coarse neighbor directly
-                            SVONode n0 = neighbors[verts[j * 3]];
-                            SVONode n1 = neighbors[verts[j * 3 + 1]];
-                            SVONode n2 = neighbors[verts[j * 3 + 2]];
 
-                            if (n0 != null && n1 != null && n2 != null &&
-                                !n0.IsEmpty() && !n1.IsEmpty() && !n2.IsEmpty())
-                            {
-                                if ((dualGrid_index & rule.sign) == 0)
-                                {
-                                    indices.Add(n0.dualVertexIndex >> 6 & 0x7FFF);
-                                    indices.Add(n2.dualVertexIndex >> 6 & 0x7FFF);
-                                    indices.Add(n1.dualVertexIndex >> 6 & 0x7FFF);
-                                }
-                                else
-                                {
-                                    indices.Add(n0.dualVertexIndex >> 6 & 0x7FFF);
-                                    indices.Add(n1.dualVertexIndex >> 6 & 0x7FFF);
-                                    indices.Add(n2.dualVertexIndex >> 6 & 0x7FFF);
-                                }
-
-                            }
                         }
                         else
                         {
@@ -1505,9 +1474,6 @@ namespace DualContour
 
                                 if (n0 == null || n1 == null || n2 == null) continue;
                                 if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
-
-
-
 
                                 for (int i = 0; i < 3; ++i)
                                 {

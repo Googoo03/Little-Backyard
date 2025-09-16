@@ -34,7 +34,7 @@ public class SVOTest : MonoBehaviour
         svo.TraverseLeaves(node =>
         {
             float distance = (node.GetCenter() - cube.position).magnitude;
-            if (!freezeSubdivision && !node.IsEmpty() && distance < node.size * 1.5f && node.size > 4)
+            if (!freezeSubdivision && !node.IsEmpty() && distance < node.size * 5f && node.size > 1)
             {
                 node.Subdivide(); // Just a placeholder
 

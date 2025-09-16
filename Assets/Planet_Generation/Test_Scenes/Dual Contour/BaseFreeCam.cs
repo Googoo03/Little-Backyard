@@ -68,6 +68,7 @@ public class BaseFreeCam : MonoBehaviour
         ///////////////////////
 
         delta = (transform.forward * forward) * currentSpeed * Time.deltaTime;
+        transform.position += delta;
 
     }
 
