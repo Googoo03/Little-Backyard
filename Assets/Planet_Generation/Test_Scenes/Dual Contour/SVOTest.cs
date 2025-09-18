@@ -14,6 +14,7 @@ public class SVOTest : MonoBehaviour
     private bool refreshChunks;
     [SerializeField] private float timeToRefresh;
     [SerializeField] private float elapsedTime;
+    [SerializeField] private int nodeSizeLimit;
 
     // Start is called before the first frame update
     SVO svo;
@@ -39,9 +40,11 @@ public class SVOTest : MonoBehaviour
         svo.TraverseLeaves(node =>
         {
             float distance = (node.GetCenter() - cube.position).magnitude;
-            if (!freezeSubdivision && !node.IsEmpty() && distance < node.size * 5f && node.size > 1)
+            if (!freezeSubdivision && node.MayContainCrossing() && distance < node.size * 5f && node.size > nodeSizeLimit)
             {
                 node.Subdivide(); // Just a placeholder
+                node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
+                svo.MarkChunk(node);
                 refreshChunks = true;
                 //GENERATE VERTICES
             }
@@ -63,12 +66,14 @@ public class SVOTest : MonoBehaviour
             if (collapse)
             {
                 node.Collapse();
+                node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
+                svo.MarkChunk(node);
             }
         });
 
 
 
-        svo.GenerateVerticesForLeaves();
+        //svo.GenerateVerticesForLeaves();
         elapsedTime += Time.deltaTime;
         if (elapsedTime > timeToRefresh)
         {
@@ -119,7 +124,7 @@ public class SVOTest : MonoBehaviour
             }
             else
             {
-                //Gizmos.color = Color.white;
+                Gizmos.color = Color.white;
             }
 
 

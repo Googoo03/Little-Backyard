@@ -871,22 +871,30 @@ namespace DualContour
         private float function(Vector3 pos, float y)
         {
 
-            float frequency = 1f;
+            float frequency = .5f;
             float domainWarp = 0;
             Vector3 worldPos = pos - global;
 
             float elevation = (-CELL_SIZE / 2) + (-offset).y + (y * step.y);
-            Vector3 spherePos = pos;
+            Vector3 spherePos = new Vector3(pos.x, 0, pos.z);
 
             float radius = pos.y;//worldPos.magnitude;
             float caveVal = simplexNoise.CalcPixel3D(pos.x * frequency, pos.y * frequency, pos.z * frequency) * amplitude;
-            float value = simplexNoise.CalcPixel3D((spherePos.x + domainWarp) * frequency, (spherePos.y + domainWarp) * frequency, (spherePos.z + domainWarp) * frequency) * 10 - radius + 10;
-            //if(value < 0) value += caveVal;
-            //value *= caveVal;
-            //float value = Ground - radius;
-            //UnityEngine.Debug.Log("Value is: " + value);
+            float value = -radius + 20;
+            amplitude = 20;
+            int octaves = 10;
+            float lacunarity = 2;
+            float persistence = 0.5f;
+            float totalValue = 0;
+            for (int i = 0; i < octaves; ++i)
+            {
+                value += simplexNoise.CalcPixel3D((spherePos.x + domainWarp) * frequency, (spherePos.y + domainWarp) * frequency, (spherePos.z + domainWarp) * frequency) * amplitude;
+                totalValue += amplitude;
+                frequency *= lacunarity;
+                amplitude *= persistence;
+            }
 
-            return value;
+            return value / totalValue;
         }
 
         ///INITIALIZE GRID INFORMATION UPON STARTUP/----------------------------------------------------------------------------
@@ -1223,6 +1231,7 @@ namespace DualContour
 
 
             int xPos, yPos, zPos;
+            float min = float.PositiveInfinity, max = float.NegativeInfinity;
 
             for (int i = 0; i < 8; ++i)
             {
@@ -1234,9 +1243,14 @@ namespace DualContour
                 vertPos[i] = new Vector3(xPos, yPos, zPos);
                 //vertValues[i] = -vertPos[i].y + 10 + Mathf.Sin(vertPos[i].x) * 2;
                 vertValues[i] = function(vertPos[i], yPos); //base SDF
+                max = vertValues[i] > max ? vertValues[i] : max;
+                min = vertValues[i] < min ? vertValues[i] : min;
             }
             //calculate the adapt of only the edges that cross, rather than the whole thing
             //calculate the positions of the edges itself
+
+            node.minSDF = min;
+            node.maxSDF = max;
 
             Vector3 avg = Vector3.zero;
             int count = 0;
@@ -1460,7 +1474,26 @@ namespace DualContour
                         int diagonalSize = diagonal?.Count ?? 0;
                         if (diagonalSize == 0)
                         {
+                            SVONode n0 = neighbors[verts[j * 3]];
+                            SVONode n1 = neighbors[verts[j * 3 + 1]];
+                            SVONode n2 = neighbors[verts[j * 3 + 2]];
 
+                            if (n0 == null || n1 == null || n2 == null) continue;
+                            if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
+                            for (int i = 0; i < 3; ++i)
+                            {
+                                var neighbor = neighbors[verts[j * 3 + i]];
+
+                                if ((neighbor?.dualVertexIndex >> 6 & 0x7fff) > vertices.Count)
+                                {
+                                    indices.Add(0);
+                                    continue;
+                                }
+                                // Push indices with winding safety
+                                // Determine if you need to flip: for example, flip if diagonal is used and j==1
+                                indices.Add(neighbor.dualVertexIndex >> 6 & 0x7FFF);
+
+                            }
                         }
                         else
                         {

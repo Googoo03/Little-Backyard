@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Ocean
-  m_Shader: {fileID: 4800000, guid: ff18334b2357ee54eabadda632315d92, type: 3}
+  m_Name: Dithering
+  m_Shader: {fileID: 4800000, guid: 9efa74b13adf8114e9ddd769d9043cdf, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -23,14 +23,14 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _Bubbles:
-        m_Texture: {fileID: 2800000, guid: cf8b293b959ef61458dae801cd61dc29, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _BumpMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _CloudTex:
+        m_Texture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
+        m_Scale: {x: 0.03, y: 0.03}
+        m_Offset: {x: 0.03, y: 0.1}
     - _DetailAlbedoMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -63,41 +63,40 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _WaveA:
-        m_Texture: {fileID: 2800000, guid: 52fa51f9f5303204980c7f021e2ab1c9, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _WaveB:
-        m_Texture: {fileID: 2800000, guid: 52fa51f9f5303204980c7f021e2ab1c9, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Bands: 11.36
     - _BumpScale: 1
+    - _CloudDensity: 2.25
     - _Cutoff: 0.5
-    - _DepthCoef: 1.25
-    - _DepthVal: 19.3
     - _DetailNormalMapScale: 1
+    - _DitherStrength: 0.67
     - _DstBlend: 0
     - _GlossMapScale: 1
-    - _Glossiness: 1
+    - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _Levels: 3
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _ScatterCoef: 0.002
+    - _SkyLine: 40
     - _SmoothnessTextureChannel: 0
-    - _Specular: 12
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _Threshold: 0.35
+    - _Threshold: 0.91
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.9154153, g: 0.94716984, b: 0.90606624, a: 1}
-    - _Deep: {r: 0, g: 0.25335053, b: 0.97735846, a: 1}
+    - _AtmoColor: {r: 0, g: 0.43151248, b: 0.7294118, a: 1}
+    - _CloudCoeff: {r: 0.3, g: 0.23, b: 0.55, a: 0}
+    - _CloudColor: {r: 1, g: 1, b: 1, a: 0}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Shallow: {r: 0, g: 1, b: 0.8642497, a: 1}
-    - _SunPos: {r: 4.31, g: 400, b: 21.91, a: 1}
+    - _MoonColor: {r: 1, g: 1, b: 1, a: 0}
+    - _NightColor: {r: 0.079522945, g: 0.105023235, b: 0.2, a: 0}
+    - _SecondSunColor: {r: 1, g: 0.77534574, b: 0.4509434, a: 0}
+    - _SunColor: {r: 1, g: 1, b: 1, a: 1}
+    - _SunPos: {r: 106.01409, g: 400, b: 0, a: 0}
+    - _WindVec: {r: 0.2, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

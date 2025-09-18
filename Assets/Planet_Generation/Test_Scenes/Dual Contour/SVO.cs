@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using DualContour;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 namespace SparseVoxelOctree
@@ -12,6 +14,9 @@ namespace SparseVoxelOctree
         /// Traverses the SVO from the root to the leaf node containing the given position.
         /// Returns the leaf node, or null if the path does not exist.
         /// </summary>
+        public Dual_Contour meshingAlgorithm;
+        public SVONode root;
+        public int chunkSize = 32;
         public SVONode TraversePath(Vector3Int targetPos)
         {
             SVONode node = root;
@@ -28,11 +33,27 @@ namespace SparseVoxelOctree
             return node;
         }
 
-        public Dual_Contour meshingAlgorithm;
-        public SVONode root;
+        public void MarkChunk(SVONode start)
+        {
+            SVONode node = start;
+
+            // climb up until we find a node at least chunkSize
+            while (node != null && node.size < chunkSize)
+            {
+                node = node.parent;
+            }
+
+            if (node == null) return; // went past root
+
+            if (!chunks.TryGetValue(node.position, out var entry))
+                return;
+
+            // mark for renewal
+            chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
+        }
         public List<Vector3> vertices = new();
 
-        public Dictionary<Vector3, GameObject> chunks = new();
+        public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
 
         public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null)
         {
@@ -88,29 +109,40 @@ namespace SparseVoxelOctree
 
         public void GenerateChunks()
         {
-            int chunkSize = 32; // Example chunk size
             void generateChunk(SVONode node)
             {
 
-                if (node.size == chunkSize && !node.IsEmpty())
+                if (node.size != chunkSize || node.IsEmpty()) return;
+
+                //Generate gameObject for chunk
+                GameObject chunkObject = !chunks.ContainsKey(node.position) ? new("Chunk_" + node.position.ToString())
+                    : chunks[node.position].Item2;
+
+
+
+                //if not marked for renewal, dont regenerate
+
+                if (!chunks.ContainsKey(node.position) || chunks[node.position].Item1 == true)
                 {
-                    //Generate gameObject for chunk
-                    GameObject chunkObject = !chunks.ContainsKey(node.position) ? new("Chunk_" + node.position.ToString())
-                        : chunks[node.position];
 
-                    if (!chunks.ContainsKey(node.position)) chunks[node.position] = chunkObject;
 
-                    // Generate mesh for this chunk
+
+                    //add if not present already, renew
+                    chunks[node.position] = new Tuple<bool, GameObject>(false, chunkObject);
+
+                    // Assumed all chunks beyond this point are brand new or marked for renewal. Regenerate mesh
 
                     //Gather vertex nodes for home chunk
                     Dictionary<Vector3Int, SVONode> verticesDict = new();
+                    List<Vector3> verts = new();
 
                     //should have a dictionary and a list of vertices?
                     List<int> indices = new();
 
                     //adds to local list of vertices and dictionary of vertex nodes
-                    node.GatherChunkVertices(this, verticesDict);
+                    node.GatherChunkVertices(this, verticesDict, verts);
 
+                    UnityEngine.Debug.Log("Running");
                     //for each of the vertex nodes, generate indices
 
                     foreach (var v in verticesDict.Values)
@@ -144,9 +176,7 @@ namespace SparseVoxelOctree
                     m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
                     m.RecalculateBounds();
                     m.RecalculateNormals();
-
                 }
-
 
             }
 
@@ -183,6 +213,8 @@ namespace SparseVoxelOctree
         public int dualVertexIndex; // Index in the mesh vertex list (if leaf)
 
         public bool voteToCollapse;
+
+        public float minSDF, maxSDF;
 
 
         public SVONode(Vector3Int pos, int s, SVONode parent = null, int childIndex = -1)
@@ -246,12 +278,33 @@ namespace SparseVoxelOctree
                 {
                     existingVertices[key] = node;
 
+                    //change dualgrid index to vertexList length
+                    int newdualgrid = node.dualVertexIndex;
+
+
                     //Add to vertex list
                     vertexList?.Add(svo.vertices[node.dualVertexIndex >> 6 & 0x7FFF]);
+
 
                 }
             }
             TraverseLeaves(gatherVertex);
+
+        }
+
+
+
+        public void GenerateVerticesForLeaves(System.Action<SVONode> vertexFunc)
+        {
+            TraverseLeaves((node) =>
+            {
+                if (node.dualVertexIndex == -1)
+                {
+                    //assigns index and axis information
+                    //adds to vertex list
+                    vertexFunc(node);
+                }
+            });
 
         }
         public void TraverseLeaves(System.Action<SVONode> action)
@@ -396,6 +449,11 @@ namespace SparseVoxelOctree
         public int GetChildIndex()
         {
             return childIndex;
+        }
+
+        public bool MayContainCrossing()
+        {
+            return Mathf.Min(minSDF, maxSDF) <= size;
         }
 
 
