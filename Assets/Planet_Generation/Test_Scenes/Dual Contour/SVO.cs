@@ -134,22 +134,23 @@ namespace SparseVoxelOctree
 
                     //Gather vertex nodes for home chunk
                     Dictionary<Vector3Int, SVONode> verticesDict = new();
+                    Dictionary<int, int> globalToLocal = new();
                     List<Vector3> verts = new();
 
                     //should have a dictionary and a list of vertices?
                     List<int> indices = new();
 
                     //adds to local list of vertices and dictionary of vertex nodes
-                    node.GatherChunkVertices(this, verticesDict, verts);
+                    node.GatherChunkVertices(this, verticesDict, verts, globalToLocal);
 
-                    UnityEngine.Debug.Log("Running");
                     //for each of the vertex nodes, generate indices
 
                     foreach (var v in verticesDict.Values)
                     {
                         if (v.dualVertexIndex == -1) continue;
 
-                        meshingAlgorithm.SVOQuad(v, indices);
+
+                        meshingAlgorithm.SVOQuad(v, indices, globalToLocal, verts);
 
                     }
 
@@ -163,15 +164,15 @@ namespace SparseVoxelOctree
 
                     rend.material = Resources.Load("Test") as Material;
 
-                    m.vertices = vertices.ToArray();
-                    m.normals = new Vector3[vertices.Count]; //placeholders
-
-
                     //IF WE WANT TEXTURES, WE HAVE TO CALCULATE THE UVS MANUALLY
                     //m.uv = uvs;
                     ////////////////////////////////////////////////////////////
                     if (indices.Count < 3) return;
 
+
+
+                    m.vertices = verts.ToArray();
+                    m.normals = new Vector3[verts.Count]; //placeholders
 
                     m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
                     m.RecalculateBounds();
@@ -268,7 +269,7 @@ namespace SparseVoxelOctree
         public Vector3 GetCenter() { return position + 0.5f * size * Vector3.one; }
 
 
-        public void GatherChunkVertices(SVO svo, Dictionary<Vector3Int, SVONode> existingVertices = null, List<Vector3> vertexList = null)
+        public void GatherChunkVertices(SVO svo, Dictionary<Vector3Int, SVONode> existingVertices = null, List<Vector3> vertexList = null, Dictionary<int, int> globalToLocal = null)
         {
             void gatherVertex(SVONode node)
             {
@@ -281,7 +282,9 @@ namespace SparseVoxelOctree
                     //change dualgrid index to vertexList length
                     int newdualgrid = node.dualVertexIndex;
 
-
+                    // ensure local index assignment
+                    int localIndex = vertexList.Count;
+                    globalToLocal[node.dualVertexIndex >> 6 & 0x7FFF] = localIndex;
                     //Add to vertex list
                     vertexList?.Add(svo.vertices[node.dualVertexIndex >> 6 & 0x7FFF]);
 

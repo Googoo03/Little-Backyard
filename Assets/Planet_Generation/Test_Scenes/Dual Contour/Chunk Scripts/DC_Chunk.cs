@@ -9,8 +9,6 @@ using Unity.Collections;
 using Poisson;
 using chunk_events;
 
-using QuadTree;
-
 public class DC_Chunk : MonoBehaviour
 {
     private Dual_Contour dc;
@@ -49,7 +47,6 @@ public class DC_Chunk : MonoBehaviour
 
     //Voxel Data
     [SerializeField] private Texture3D tex;
-    [SerializeField] private ChunkConfig chunkConfig;
 
     //Tree Data
     [SerializeField] private List<Vector3> tree_pos;
@@ -82,8 +79,8 @@ public class DC_Chunk : MonoBehaviour
 
     private void Start()
     {
-        scale = chunkConfig.scale;
-        dir = chunkConfig.dir;
+        //scale = chunkConfig.scale;
+        //dir = chunkConfig.dir;
     }
 
     private void GenerateFoliage()
@@ -118,13 +115,7 @@ public class DC_Chunk : MonoBehaviour
         return 0;
     }
 
-    public void InitializeDualContourBounds(Vector3 parentGlobal)
-    {
-        dc ??= new Dual_Contour(transform.position, chunkConfig.scale, chunkConfig.lodOffset, chunkConfig.lodLevel, length, block_voxel, editRadius, chunkConfig.dir);
-        dc.InitializeBounds(parentGlobal);
-    }
-
-    public void InitializeDualContour()
+    /*public void InitializeDualContour()
     {
 
 
@@ -147,7 +138,7 @@ public class DC_Chunk : MonoBehaviour
         max = dc.GetMax();
         LODLevel = dc.GetLODLevel();
 
-    }
+    }*/
 
     public void GenerateDCMesh()
     {
@@ -214,7 +205,7 @@ public class DC_Chunk : MonoBehaviour
 
     public void UpdateChunk(ref List<chunk_event> points)
     {
-        dc.UpdateVoxelData(ref points);
+        //dc.UpdateVoxelData(ref points);
         GenerateDCMesh();
     }
 
@@ -225,8 +216,6 @@ public class DC_Chunk : MonoBehaviour
         tex.SetPixelData(voxel_data, 0, 0);
         tex.Apply();
     }
-
-    public void SetChunkConfig(ChunkConfig ichunkConfig) { chunkConfig = ichunkConfig; }
 
     public void SetOffset(Vector3 ioffset) { offset = ioffset; }
 

@@ -5,7 +5,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-
+/*
 
 namespace QuadTree
 {
@@ -469,9 +469,7 @@ namespace QuadTree
             }
             else
             {
-                if (/*Dual_Contour.GetPositiveNeighborRule(cmin, cmax, omin, omax)*/ 0 == 0) return -1;
-
-                lodLevel = nodeDC.GetLODLevel();
+                if (/*Dual_Contour.GetPositiveNeighborRule(cmin, cmax, omin, omax) 0 == 0) return -1;
                 return lodLevel;
             }
         }
@@ -504,3 +502,4 @@ namespace QuadTree
 
     }
 }
+*/

@@ -29,8 +29,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _CloudTex:
         m_Texture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
-        m_Scale: {x: 0.03, y: 0.03}
-        m_Offset: {x: 0.03, y: 0.1}
+        m_Scale: {x: 0.2, y: 0.2}
+        m_Offset: {x: 0.2, y: 0.1}
     - _DetailAlbedoMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -67,7 +67,7 @@ Material:
     m_Floats:
     - _Bands: 11.36
     - _BumpScale: 1
-    - _CloudDensity: 2.25
+    - _CloudDensity: 5.86
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DitherStrength: 0.67
@@ -80,16 +80,16 @@ Material:
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _ScatterCoef: 0.002
-    - _SkyLine: 40
+    - _SkyLine: 42.32
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _Threshold: 0.91
+    - _Threshold: 0.84
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
     - _AtmoColor: {r: 0, g: 0.43151248, b: 0.7294118, a: 1}
-    - _CloudCoeff: {r: 0.3, g: 0.23, b: 0.55, a: 0}
+    - _CloudCoeff: {r: 0.25, g: 0.25, b: 0.5, a: 0}
     - _CloudColor: {r: 1, g: 1, b: 1, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}

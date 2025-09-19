@@ -1,5 +1,4 @@
 using DualContour;
-using QuadTree;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Experimental.GraphView;
@@ -7,6 +6,7 @@ using UnityEngine;
 
 public class Chunk_Manager : MonoBehaviour
 {
+    /*
     // Start is called before the first frame update
     private QuadTreeNode quadTree;
     [SerializeField] private float baseLength;
@@ -115,4 +115,5 @@ public class Chunk_Manager : MonoBehaviour
         foreach (QuadTreeNode child in children) { DFSPrevLod(child); }
 
     }
+    */
 }
