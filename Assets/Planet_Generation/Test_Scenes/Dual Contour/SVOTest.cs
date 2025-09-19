@@ -14,7 +14,7 @@ public class SVOTest : MonoBehaviour
     private bool refreshChunks;
     [SerializeField] private float timeToRefresh;
     [SerializeField] private float elapsedTime;
-    [SerializeField] private int nodeSizeLimit;
+    [SerializeField] private float nodeSizeLimit;
 
     [SerializeField] private int vertexLength;
     [SerializeField] private bool blockVoxel;
@@ -91,6 +91,8 @@ public class SVOTest : MonoBehaviour
     }
     void OnDrawGizmos()
     {
+        if (svo == null) return;
+
         SVONode start = svo.root.children[0].children[3];
         SVONode destination = svo.TraversePath(new Vector3Int((int)cube.position.x, (int)cube.position.y, (int)cube.position.z));
         SVONode xNeighbor = destination.GetNeighborLOD(4); // +x

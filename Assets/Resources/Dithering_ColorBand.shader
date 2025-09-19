@@ -89,6 +89,8 @@ Shader "Hidden/Dithering_ColorBand"
             //Moon Parameters
             fixed4 _MoonColor;
 
+            float4 __ScreenParams;
+
             fixed4 frag (v2f i) : SV_Target
             {
                 int4x4 dither = int4x4(
@@ -101,9 +103,9 @@ Shader "Hidden/Dithering_ColorBand"
                 // just invert the colors
                 
 
-                int column = ((int)(i.uv.x * 320)) % 4;
+                int column = ((int)(i.uv.x * __ScreenParams.x)) % 4;
                 
-                int row = (int)((i.uv.y * 223)) % 4;
+                int row = (int)((i.uv.y * __ScreenParams.y)) % 4;
                 
                 float dither_val = (float)dither[column][row] / _Bands;
 
@@ -152,7 +154,7 @@ Shader "Hidden/Dithering_ColorBand"
                 density /= iterator;
                 density *= _CloudDensity;
                         
-                // Step 1: Scale to 0–(bands-1)
+                // Step 1: Scale to 0ï¿½(bands-1)
                 if(dither_val > 1000){
                     col.rgb = float4(1,0,0,1);
                     return col;

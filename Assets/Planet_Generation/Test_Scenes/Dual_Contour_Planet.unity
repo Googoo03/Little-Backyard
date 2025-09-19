@@ -156,9 +156,9 @@ MonoBehaviour:
   getFaceNum: 0
   patchSize: 1024
   freezeSubdivision: 0
-  timeToRefresh: 0.1
+  timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 1
+  nodeSizeLimit: 0.25
   vertexLength: 0
   blockVoxel: 0
 --- !u!4 &67079602
@@ -554,7 +554,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1080299010
 MonoBehaviour:
   m_ObjectHideFlags: 0

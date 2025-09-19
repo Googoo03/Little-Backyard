@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using DualContour;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
@@ -18,16 +19,17 @@ namespace SparseVoxelOctree
         public SVONode root;
         public int chunkSize = 32;
         public List<Vector3> vertices = new();
+        private Material testMat = Resources.Load("Test") as Material;
 
         public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
 
-        public SVONode TraversePath(Vector3Int targetPos)
+        public SVONode TraversePath(Vector3 targetPos)
 
         {
             SVONode node = root;
             while (node != null && !node.isLeaf)
             {
-                int half = node.size / 2;
+                float half = node.size / 2;
                 int childIndex = 0;
                 if (targetPos.x >= node.position.x + half) childIndex |= 1 << 2;
                 if (targetPos.y >= node.position.y + half) childIndex |= 1 << 1;
@@ -110,6 +112,11 @@ namespace SparseVoxelOctree
 
         public void GenerateChunks()
         {
+
+            List<Vector3> verts = new();
+            List<int> indices = new();
+            //should have a dictionary and a list of vertices?
+
             void generateChunk(SVONode node)
             {
 
@@ -134,26 +141,30 @@ namespace SparseVoxelOctree
                     // Assumed all chunks beyond this point are brand new or marked for renewal. Regenerate mesh
 
                     //Gather vertex nodes for home chunk
-                    Dictionary<Vector3Int, SVONode> verticesDict = new();
+                    Dictionary<Vector3, SVONode> verticesDict = new();
+                    List<SVONode> nodes = new();
                     Dictionary<Vector3, int> globalToLocal = new();
-                    List<Vector3> verts = new();
-
-                    //should have a dictionary and a list of vertices?
-                    List<int> indices = new();
+                    verts.Clear();
+                    indices.Clear();
 
                     //adds to local list of vertices and dictionary of vertex nodes
-                    node.GatherChunkVertices(this, verticesDict, verts, globalToLocal);
+                    node.GatherChunkVertices(this, verticesDict, nodes, verts, globalToLocal);
+                    indices.Capacity = 3 * verts.Count;
 
                     //for each of the vertex nodes, generate indices
-
-                    foreach (var v in verticesDict.Values)
+                    Stopwatch stopwatch = new Stopwatch();
+                    stopwatch.Start();
+                    for (int i = 0; i < nodes.Count; ++i)
                     {
-                        if (v.edge == -1) continue;
+                        if (nodes[i].edge == -1) continue;
 
 
-                        meshingAlgorithm.SVOQuad(v, indices, globalToLocal, verts);
+                        meshingAlgorithm.SVOQuad(nodes[i], indices, globalToLocal, verts);
 
                     }
+                    stopwatch.Stop();
+                    UnityEngine.Debug.Log("Quads Took " + stopwatch.ElapsedMilliseconds + " milliseconds");
+
 
                     //Apply mesh data to gameObject
                     MeshFilter mf = chunkObject.GetComponent<MeshFilter>();
@@ -171,29 +182,31 @@ namespace SparseVoxelOctree
                         mf.sharedMesh.Clear();
                     }
                     Mesh m = mf.sharedMesh;
-                    rend.material = Resources.Load("Test") as Material;
+                    rend.material = testMat;
 
                     //IF WE WANT TEXTURES, WE HAVE TO CALCULATE THE UVS MANUALLY
                     //m.uv = uvs;
                     ////////////////////////////////////////////////////////////
                     if (indices.Count < 3) return;
 
-
+                    stopwatch.Restart();
+                    stopwatch.Start();
 
                     m.vertices = verts.ToArray();
                     m.normals = new Vector3[verts.Count]; //placeholders
                     Vector2[] uvs = new Vector2[verts.Count];
 
-                    for (int i = 0; i < uvs.Length; ++i)
-                    {
-                        uvs[i] = verts[i];
-                    }
+                    for (int i = 0; i < uvs.Length; ++i) { uvs[i] = verts[i]; }
 
                     m.uv = uvs;
 
                     m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
                     m.RecalculateBounds();
                     m.RecalculateNormals();
+
+                    stopwatch.Stop();
+
+                    UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds + " milliseconds");
                 }
 
             }
@@ -223,8 +236,8 @@ namespace SparseVoxelOctree
     public class SVONode
     {
         // Start is called before the first frame update
-        public Vector3Int position; // Min corner of the node
-        public int size;            // Length of the node's edge
+        public Vector3 position; // Min corner of the node
+        public float size;            // Length of the node's edge
         public int childIndex;     // Index in parent's children array (0-7) Also corresponds to direction
         public SVONode parent; // Reference to parent node
         public SVONode[] children;  // 8 children, null if not subdivided
@@ -237,7 +250,7 @@ namespace SparseVoxelOctree
         public float minSDF, maxSDF;
 
 
-        public SVONode(Vector3Int pos, int s, SVONode parent = null, int childIndex = -1)
+        public SVONode(Vector3 pos, float s, SVONode parent = null, int childIndex = -1)
         {
             position = pos;
             size = s;
@@ -255,11 +268,11 @@ namespace SparseVoxelOctree
             if (!isLeaf) return; // Already subdivided
 
             children = new SVONode[8];
-            int halfSize = size / 2;
+            float halfSize = size / 2;
 
             for (int i = 0; i < 8; i++)
             {
-                Vector3Int childPos = position + new Vector3Int(
+                Vector3 childPos = position + new Vector3(
                     ((i >> 2) & 1) * halfSize,
                     ((i >> 1) & 1) * halfSize,
                     ((i) & 1) * halfSize
@@ -294,12 +307,12 @@ namespace SparseVoxelOctree
         public Vector3 GetCenter() { return position + 0.5f * size * Vector3.one; }
 
 
-        public void GatherChunkVertices(SVO svo, Dictionary<Vector3Int, SVONode> existingVertices = null, List<Vector3> vertexList = null, Dictionary<Vector3, int> globalToLocal = null)
+        public void GatherChunkVertices(SVO svo, Dictionary<Vector3, SVONode> existingVertices = null, List<SVONode> nodes = null, List<Vector3> vertexList = null, Dictionary<Vector3, int> globalToLocal = null)
         {
             void gatherVertex(SVONode node)
             {
                 if (node.edge == -1) return; // No vertex to gather
-                Vector3Int key = node.position;
+                Vector3 key = node.position;
                 if (!existingVertices.ContainsKey(key))
                 {
                     existingVertices[key] = node;
@@ -311,6 +324,7 @@ namespace SparseVoxelOctree
                     globalToLocal[vertex] = index;
                     //Add to vertex list
                     vertexList?.Add(vertex);
+                    nodes?.Add(node);
 
 
                 }

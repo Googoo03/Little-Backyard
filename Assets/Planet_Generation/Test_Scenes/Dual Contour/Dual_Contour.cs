@@ -86,6 +86,46 @@ namespace DualContour
         float[] vertValues = new float[8];
         Vector3[] vertPos = new Vector3[8];
 
+        //Quad local vars
+        SVONode[] neighbors = new SVONode[8];
+        Trirule[] rules = {
+            new() { //x axis
+                axis = 0x20,
+                sign = 0x10,
+
+                v0 = 0,
+                v1 = 2,
+                v2 = 3,
+                v3 = 3,
+                v4 = 1,
+                v5 = 0
+            },
+            new () { //y axis
+                axis = 0x08,
+                sign = 0x04,
+
+                v0 = 0,
+                v1 = 4,
+                v2 = 5,
+                v3 = 5,
+                v4 = 1,
+                v5 = 0
+
+            },
+            new () { //z axis
+                axis = 0x02,
+                sign = 0x01,
+
+                v0 = 0,
+                v1 = 4,
+                v2 = 6,
+                v3 = 6,
+                v4 = 2,
+                v5 = 0
+
+            },
+        };
+
         //NOISE FUNCTIONS TEMPORARY
         Noise simplexNoise = new Noise();
 
@@ -122,14 +162,15 @@ namespace DualContour
         {
 
             float frequency = .1f;
-            float domainWarp = 0;
+
 
             Vector3 spherePos = new Vector3(pos.x, 0, pos.z);
 
             float radius = pos.y;
             float value = -radius + 20;
             float amplitude = 20;
-            int octaves = 10;
+            float domainWarp = simplexNoise.CalcPixel3D(pos.x, pos.y, pos.z) * amplitude;
+            int octaves = 15;
             float lacunarity = 2;
             float persistence = 0.5f;
             float totalValue = 0;
@@ -236,7 +277,7 @@ namespace DualContour
             //these are being allocated every frame, which is bad
 
 
-            int xPos, yPos, zPos;
+            float xPos, yPos, zPos;
             float min = float.PositiveInfinity, max = float.NegativeInfinity;
 
             for (int i = 0; i < 8; ++i)
@@ -383,43 +424,7 @@ namespace DualContour
             SVONode xyNeighbor = xNeighbor?.GetNeighborLOD(2);
             SVONode[] baseNeighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
 
-            Trirule[] rules = {
-            new() { //x axis
-                axis = 0x20,
-                sign = 0x10,
 
-                v0 = 0,
-                v1 = 2,
-                v2 = 3,
-                v3 = 3,
-                v4 = 1,
-                v5 = 0
-            },
-            new () { //y axis
-                axis = 0x08,
-                sign = 0x04,
-
-                v0 = 0,
-                v1 = 4,
-                v2 = 5,
-                v3 = 5,
-                v4 = 1,
-                v5 = 0
-
-            },
-            new () { //z axis
-                axis = 0x02,
-                sign = 0x01,
-
-                v0 = 0,
-                v1 = 4,
-                v2 = 6,
-                v3 = 6,
-                v4 = 2,
-                v5 = 0
-
-            },
-        };
 
             int edge = node.edge;
 
@@ -470,7 +475,7 @@ namespace DualContour
                             ? (xNeighbor.size < yNeighbor.size ? xNeighbor.GetNeighborLOD(2) : yNeighbor.GetNeighborLOD(4))
                             : (xNeighbor ?? yNeighbor)?.GetNeighborLOD((xNeighbor != null) ? 2 : 4);
 
-                        SVONode[] neighbors = new SVONode[] { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
+                        SVONode[] neighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
 
                         int getfaceVal = verts.v2;
                         List<SVONode> diagonal = neighbors[getfaceVal]?.GetFace(getfaceVal);
@@ -478,86 +483,44 @@ namespace DualContour
                         //if the first neighbor we're working with has disparate sizes with the second neighbor, do diagonal. Else, diagonal should be 1
 
                         int diagonalSize = diagonal?.Count ?? 0;
-                        if (diagonalSize == 0)
+
+                        for (int l = 0; l < diagonalSize; ++l)
                         {
+                            if (diagonal[l].IsEmpty()) continue;
+
                             SVONode n0 = neighbors[verts[j * 3]];
                             SVONode n1 = neighbors[verts[j * 3 + 1]];
                             SVONode n2 = neighbors[verts[j * 3 + 2]];
 
-                            if (n0 == null || n1 == null || n2 == null) continue;
+                            //if (n0 == null || n1 == null || n2 == null) continue;
                             if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
+
                             for (int i = 0; i < 3; ++i)
                             {
                                 var neighbor = neighbors[verts[j * 3 + i]];
 
-                                if (neighbor?.edge == -1)
+
+                                if (!neighbor.isLeaf)
                                 {
-                                    indices.Add(0);
-                                    continue;
+                                    neighbor = diagonal[l];
+
                                 }
-                                // Push indices with winding safety
-                                // Determine if you need to flip: for example, flip if diagonal is used and j==1
+
                                 //if vertex doesn't exist in chunk yet, add it. Otherwise, change the index to find the vertex
-                                if (!chunkVerts.Contains(neighbor.vertex))
+                                if (!globalToLocal.TryGetValue(neighbor.vertex, out int localIndex))
                                 {
-                                    int localIndex = chunkVerts.Count;
+                                    localIndex = chunkVerts.Count;
                                     globalToLocal[neighbor.vertex] = localIndex;
-                                    //Add to local vertex list
-                                    chunkVerts?.Add(neighbor.vertex);
+                                    chunkVerts.Add(neighbor.vertex);
                                 }
 
                                 int newdualgrid = globalToLocal[neighbor.vertex];
                                 indices.Add(newdualgrid);
-
                             }
+
+
                         }
-                        else
-                        {
-                            for (int l = 0; l < diagonalSize; ++l)
-                            {
-                                if (diagonal[l].IsEmpty()) continue;
 
-                                SVONode n0 = neighbors[verts[j * 3]];
-                                SVONode n1 = neighbors[verts[j * 3 + 1]];
-                                SVONode n2 = neighbors[verts[j * 3 + 2]];
-
-                                if (n0 == null || n1 == null || n2 == null) continue;
-                                if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
-                                //if (!globalToLocal.ContainsKey(n0.dualVertexIndex) || !globalToLocal.ContainsKey(n1.dualVertexIndex) || !globalToLocal.ContainsKey(n2.dualVertexIndex)) continue;
-
-                                for (int i = 0; i < 3; ++i)
-                                {
-                                    var neighbor = neighbors[verts[j * 3 + i]];
-
-
-                                    if (!neighbor.isLeaf)
-                                    {
-                                        neighbor = diagonal[l];
-
-                                    }
-
-                                    if (neighbor?.edge == -1)
-                                    {
-                                        indices.Add(0);
-                                        continue;
-                                    }
-
-                                    //if vertex doesn't exist in chunk yet, add it. Otherwise, change the index to find the vertex
-                                    if (!chunkVerts.Contains(neighbor.vertex))
-                                    {
-                                        int localIndex = chunkVerts.Count;
-                                        globalToLocal[neighbor.vertex] = localIndex;
-                                        //Add to local vertex list
-                                        chunkVerts?.Add(neighbor.vertex);
-                                    }
-                                    if (neighbor.edge == -1) UnityEngine.Debug.Log("Infinity detected");
-                                    int newdualgrid = globalToLocal[neighbor.vertex];
-                                    indices.Add(newdualgrid);
-                                }
-
-
-                            }
-                        }
                     }
 
                 }
