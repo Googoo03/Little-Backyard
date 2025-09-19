@@ -159,6 +159,8 @@ MonoBehaviour:
   timeToRefresh: 0.1
   elapsedTime: 0
   nodeSizeLimit: 1
+  vertexLength: 0
+  blockVoxel: 0
 --- !u!4 &67079602
 Transform:
   m_ObjectHideFlags: 0
@@ -1011,7 +1013,7 @@ Transform:
   m_GameObject: {fileID: 1853306553}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 274.82193, y: -430.07666, z: 497.8089}
+  m_LocalPosition: {x: 274.82193, y: 20, z: 497.8089}
   m_LocalScale: {x: 1024, y: 1024, z: 1024}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -1364,14 +1366,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cd70335be10bcc4e90828dd6dbd7936, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseLength: 65536
-  mainCamera: {fileID: 0}
-  LODLevel: 0
-  chunkPrefab: {fileID: 344543328703040535, guid: 82cf3e795759e334087c40e96f9d1ad4,
-    type: 3}
-  next: 0
-  prev: 0
-  maxLOD: 10
 --- !u!4 &1987582529
 Transform:
   m_ObjectHideFlags: 0

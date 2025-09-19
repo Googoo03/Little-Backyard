@@ -16,6 +16,9 @@ public class SVOTest : MonoBehaviour
     [SerializeField] private float elapsedTime;
     [SerializeField] private int nodeSizeLimit;
 
+    [SerializeField] private int vertexLength;
+    [SerializeField] private bool blockVoxel;
+
     // Start is called before the first frame update
     SVO svo;
     Dual_Contour dualContour;
@@ -24,6 +27,8 @@ public class SVOTest : MonoBehaviour
         refreshChunks = false;
 
         dualContour = new();
+        dualContour.SetBlockVoxel(blockVoxel);
+
         SVONode root = new(new Vector3Int(0, 0, 0), patchSize);
         svo = new SVO(root, dualContour);
         root.Subdivide();
@@ -37,6 +42,7 @@ public class SVOTest : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        vertexLength = svo.vertices.Count;
         svo.TraverseLeaves(node =>
         {
             float distance = (node.GetCenter() - cube.position).magnitude;
@@ -71,9 +77,6 @@ public class SVOTest : MonoBehaviour
             }
         });
 
-
-
-        //svo.GenerateVerticesForLeaves();
         elapsedTime += Time.deltaTime;
         if (elapsedTime > timeToRefresh)
         {

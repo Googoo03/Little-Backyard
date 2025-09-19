@@ -78,16 +78,9 @@ namespace DualContour
 
         int dir;
         bool block_voxel;
-
-        //VOXEL DATA
-        UInt16[] voxel_data;
-
-        private List<int> indices;
         private List<Vector3> vertices;
-        private NativeArray<int> dualGrid;
-        private NativeArray<Vector4> cellPacked;
-        private NativeArray<Vector3> cellpos;
-        private NativeArray<float> cellvalues;
+        private Dictionary<Vector3, Vector3> verticesDict;
+
 
 
         float[] vertValues = new float[8];
@@ -128,7 +121,7 @@ namespace DualContour
         private float function(Vector3 pos, float y)
         {
 
-            float frequency = .5f;
+            float frequency = .1f;
             float domainWarp = 0;
 
             Vector3 spherePos = new Vector3(pos.x, 0, pos.z);
@@ -170,8 +163,8 @@ namespace DualContour
 
             //Given a grid position, convert the point into a shell point
             //dir contains the u and v direction, which are masks for the x and z positions.
-
-            float radius = 32768;
+            dir = 65;
+            float radius = 1024;
 
             int uSign = ((dir & 0x80) != 0) ? 1 : -1;
             int vSign = ((dir & 0x08) != 0) ? 1 : -1;
@@ -226,11 +219,15 @@ namespace DualContour
 
         public void SetGlobal(Vector3 g) { global = g; }
 
+        public void SetBlockVoxel(bool b) { block_voxel = b; }
+
         public Vector3 GetStep() { return step; }
 
         public float GetSideLength() { return max.x - min.x; }
 
         public Vector3 GetOffset() { return offset; }
+
+        public void SetVertexDictionary(Dictionary<Vector3, Vector3> dict) { verticesDict = dict; }
 
         float Adapt(float x0, float x1) => (-x0) / (x1 - x0);
 
@@ -363,11 +360,8 @@ namespace DualContour
             //block_voxel = true;
             Vector3 vertex = block_voxel ? vertPos[0] : avg;
 
-            vertices.Add(vertex);
-            //This should reference a biome texture and current elevation
-            UInt16 voxelData = 0;
-
-            node.dualVertexIndex = newedge | ((vertices.Count - 1) << 6) | (voxelData << 21);
+            node.vertex = vertex;
+            node.edge = newedge;
 
 
         }
@@ -376,8 +370,11 @@ namespace DualContour
 
 
 
-        public void SVOQuad(SVONode node, List<int> indices, Dictionary<int, int> globalToLocal, List<Vector3> chunkVerts)
+        public void SVOQuad(SVONode node, List<int> indices, Dictionary<Vector3, int> globalToLocal, List<Vector3> chunkVerts)
         {
+
+
+
             SVONode zNeighbor = node.GetNeighborLOD(1);
             SVONode yNeighbor = node.GetNeighborLOD(2);
             SVONode yzNeighbor = yNeighbor?.GetNeighborLOD(1);
@@ -424,14 +421,14 @@ namespace DualContour
             },
         };
 
-            int dualGrid_index = node.dualVertexIndex;
+            int edge = node.edge;
 
             foreach (Trirule rule in rules)
             {
-                if ((dualGrid_index & rule.axis) != rule.axis) continue;
+                if ((edge & rule.axis) != rule.axis) continue;
 
                 var verts = rule;
-                if ((dualGrid_index & rule.sign) != rule.sign)
+                if ((edge & rule.sign) != rule.sign)
                 {
                     verts = new Trirule
                     {
@@ -493,22 +490,23 @@ namespace DualContour
                             {
                                 var neighbor = neighbors[verts[j * 3 + i]];
 
-                                if (neighbor?.dualVertexIndex == -1)
+                                if (neighbor?.edge == -1)
                                 {
                                     indices.Add(0);
                                     continue;
                                 }
                                 // Push indices with winding safety
                                 // Determine if you need to flip: for example, flip if diagonal is used and j==1
-                                if (!globalToLocal.TryGetValue(neighbor.dualVertexIndex >> 6 & 0x7FFF, out int localIndex))
+                                //if vertex doesn't exist in chunk yet, add it. Otherwise, change the index to find the vertex
+                                if (!chunkVerts.Contains(neighbor.vertex))
                                 {
-                                    localIndex = chunkVerts.Count;
-                                    globalToLocal[neighbor.dualVertexIndex >> 6 & 0x7FFF] = localIndex;
-                                    //Add to vertex list
-                                    chunkVerts?.Add(chunkVerts[neighbor.dualVertexIndex >> 6 & 0x7FFF]);
+                                    int localIndex = chunkVerts.Count;
+                                    globalToLocal[neighbor.vertex] = localIndex;
+                                    //Add to local vertex list
+                                    chunkVerts?.Add(neighbor.vertex);
                                 }
 
-                                int newdualgrid = globalToLocal[neighbor.dualVertexIndex >> 6 & 0x7FFF];
+                                int newdualgrid = globalToLocal[neighbor.vertex];
                                 indices.Add(newdualgrid);
 
                             }
@@ -538,22 +536,22 @@ namespace DualContour
 
                                     }
 
-                                    if (neighbor?.dualVertexIndex == -1)
+                                    if (neighbor?.edge == -1)
                                     {
                                         indices.Add(0);
                                         continue;
                                     }
 
                                     //if vertex doesn't exist in chunk yet, add it. Otherwise, change the index to find the vertex
-                                    if (!globalToLocal.TryGetValue(neighbor.dualVertexIndex >> 6 & 0x7FFF, out int localIndex))
+                                    if (!chunkVerts.Contains(neighbor.vertex))
                                     {
-                                        localIndex = chunkVerts.Count;
-                                        globalToLocal[neighbor.dualVertexIndex >> 6 & 0x7FFF] = localIndex;
+                                        int localIndex = chunkVerts.Count;
+                                        globalToLocal[neighbor.vertex] = localIndex;
                                         //Add to local vertex list
-                                        chunkVerts?.Add(vertices[neighbor.dualVertexIndex >> 6 & 0x7FFF]);
+                                        chunkVerts?.Add(neighbor.vertex);
                                     }
-
-                                    int newdualgrid = globalToLocal[neighbor.dualVertexIndex >> 6 & 0x7FFF];
+                                    if (neighbor.edge == -1) UnityEngine.Debug.Log("Infinity detected");
+                                    int newdualgrid = globalToLocal[neighbor.vertex];
                                     indices.Add(newdualgrid);
                                 }
 

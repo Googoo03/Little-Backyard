@@ -17,7 +17,12 @@ namespace SparseVoxelOctree
         public Dual_Contour meshingAlgorithm;
         public SVONode root;
         public int chunkSize = 32;
+        public List<Vector3> vertices = new();
+
+        public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
+
         public SVONode TraversePath(Vector3Int targetPos)
+
         {
             SVONode node = root;
             while (node != null && !node.isLeaf)
@@ -51,10 +56,6 @@ namespace SparseVoxelOctree
             // mark for renewal
             chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
         }
-        public List<Vector3> vertices = new();
-
-        public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
-
         public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null)
         {
             this.root = root;
@@ -134,7 +135,7 @@ namespace SparseVoxelOctree
 
                     //Gather vertex nodes for home chunk
                     Dictionary<Vector3Int, SVONode> verticesDict = new();
-                    Dictionary<int, int> globalToLocal = new();
+                    Dictionary<Vector3, int> globalToLocal = new();
                     List<Vector3> verts = new();
 
                     //should have a dictionary and a list of vertices?
@@ -147,7 +148,7 @@ namespace SparseVoxelOctree
 
                     foreach (var v in verticesDict.Values)
                     {
-                        if (v.dualVertexIndex == -1) continue;
+                        if (v.edge == -1) continue;
 
 
                         meshingAlgorithm.SVOQuad(v, indices, globalToLocal, verts);
@@ -160,8 +161,16 @@ namespace SparseVoxelOctree
                     MeshRenderer rend = chunkObject.GetComponent<MeshRenderer>();
                     if (rend == null) rend = chunkObject.AddComponent<MeshRenderer>();
 
-                    Mesh m = mf.sharedMesh = new Mesh();
 
+                    if (mf.sharedMesh == null)
+                    {
+                        mf.sharedMesh = new Mesh();
+                    }
+                    else
+                    {
+                        mf.sharedMesh.Clear();
+                    }
+                    Mesh m = mf.sharedMesh;
                     rend.material = Resources.Load("Test") as Material;
 
                     //IF WE WANT TEXTURES, WE HAVE TO CALCULATE THE UVS MANUALLY
@@ -173,6 +182,14 @@ namespace SparseVoxelOctree
 
                     m.vertices = verts.ToArray();
                     m.normals = new Vector3[verts.Count]; //placeholders
+                    Vector2[] uvs = new Vector2[verts.Count];
+
+                    for (int i = 0; i < uvs.Length; ++i)
+                    {
+                        uvs[i] = verts[i];
+                    }
+
+                    m.uv = uvs;
 
                     m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
                     m.RecalculateBounds();
@@ -191,10 +208,11 @@ namespace SparseVoxelOctree
 
             TraverseLeaves((node) =>
             {
-                if (node.dualVertexIndex == -1)
+                if (node.edge == -1)
                 {
                     //assigns index and axis information
                     //adds to vertex list
+
                     vertexFunc(node);
                 }
             });
@@ -211,7 +229,8 @@ namespace SparseVoxelOctree
         public SVONode parent; // Reference to parent node
         public SVONode[] children;  // 8 children, null if not subdivided
         public bool isLeaf;         // True if this node is a leaf
-        public int dualVertexIndex; // Index in the mesh vertex list (if leaf)
+        public Vector3 vertex; // Index in the mesh vertex list (if leaf)
+        public int edge;
 
         public bool voteToCollapse;
 
@@ -224,7 +243,8 @@ namespace SparseVoxelOctree
             size = s;
             children = null;
             isLeaf = true;
-            dualVertexIndex = -1;
+            vertex = Vector3.zero;
+            edge = -1;
             voteToCollapse = false;
             this.parent = parent;
             this.childIndex = childIndex;
@@ -249,44 +269,48 @@ namespace SparseVoxelOctree
 
             isLeaf = false;
             voteToCollapse = false;
-            dualVertexIndex = -1; // No dual vertex for non-leaf nodes
-
+            vertex = Vector3.zero; // No dual vertex for non-leaf nodes
+            edge = -1;
 
             //what happens to vertices that are no longer referenced? Do we simply keep them? Should remove?
         }
 
+
+        //THIS CAUSES OVERFLOW ISSUES BECAUSE WE NEVER REMOVE THE VERTEX FROM THE MASTER LIST
         public void Collapse()
         {
             if (isLeaf) return; // Already a leaf
 
             children = null;
             isLeaf = true;
-            dualVertexIndex = -1; // Reset dual vertex index
+            vertex = Vector3.zero; // Reset dual vertex index
+            edge = -1;
+
+            //mark for removal
         }
 
-        public bool IsEmpty() { return isLeaf && dualVertexIndex == -1; }
+        public bool IsEmpty() { return isLeaf && edge == -1; }
 
         public Vector3 GetCenter() { return position + 0.5f * size * Vector3.one; }
 
 
-        public void GatherChunkVertices(SVO svo, Dictionary<Vector3Int, SVONode> existingVertices = null, List<Vector3> vertexList = null, Dictionary<int, int> globalToLocal = null)
+        public void GatherChunkVertices(SVO svo, Dictionary<Vector3Int, SVONode> existingVertices = null, List<Vector3> vertexList = null, Dictionary<Vector3, int> globalToLocal = null)
         {
             void gatherVertex(SVONode node)
             {
-                if (node.dualVertexIndex == -1) return; // No vertex to gather
+                if (node.edge == -1) return; // No vertex to gather
                 Vector3Int key = node.position;
                 if (!existingVertices.ContainsKey(key))
                 {
                     existingVertices[key] = node;
 
                     //change dualgrid index to vertexList length
-                    int newdualgrid = node.dualVertexIndex;
 
                     // ensure local index assignment
-                    int localIndex = vertexList.Count;
-                    globalToLocal[node.dualVertexIndex >> 6 & 0x7FFF] = localIndex;
+                    int index = vertexList.Count;
+                    globalToLocal[vertex] = index;
                     //Add to vertex list
-                    vertexList?.Add(svo.vertices[node.dualVertexIndex >> 6 & 0x7FFF]);
+                    vertexList?.Add(vertex);
 
 
                 }
@@ -301,7 +325,7 @@ namespace SparseVoxelOctree
         {
             TraverseLeaves((node) =>
             {
-                if (node.dualVertexIndex == -1)
+                if (node.edge == -1)
                 {
                     //assigns index and axis information
                     //adds to vertex list
