@@ -1,8 +1,9 @@
-Shader "Hidden/Dithering_ColorBand"
+Shader "Unlit/Dithering_ColorBand"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _BlueNoise ("Blue Noise", 2D) = "white" {}
         _Bands ("Num of Bands", int) = 1
         _DitherStrength ("Dither Strength", float) = 1.0
         _AtmoColor ("Atmosphere Color", Color) = (0,0,0,0)
@@ -19,6 +20,9 @@ Shader "Hidden/Dithering_ColorBand"
         _SunColor ("Sun Color", Color) = (0,0,0,0)
         _SecondSunColor ("Second Sun Color", Color) = (0,0,0,0)
         _MoonColor("Moon Color", Color) = (0,0,0,0)
+        _Position ("Cloud Cube Position", Vector) = (0,0,0,0)
+        _Scale ("Cloud Cube Scale", Vector) = (1,1,1,0)
+        _PhaseG ("Phase G", Range(-1,1)) = 0.76
     }
     SubShader
     {
@@ -62,6 +66,7 @@ Shader "Hidden/Dithering_ColorBand"
             }
 
             sampler2D _MainTex;
+            sampler2D _BlueNoise;
             sampler3D _CloudTex;
             int _Bands;
             float _DitherStrength;
@@ -85,121 +90,171 @@ Shader "Hidden/Dithering_ColorBand"
             float3 _SunPos;
             fixed4 _SunColor;
             fixed4 _SecondSunColor;
+
+            //Cloud Parameters
+            float3 _Position;
+            float3 _Scale;
+
+            //Phase Function
+            float _PhaseG;
             
             //Moon Parameters
             fixed4 _MoonColor;
 
-            float4 __ScreenParams;
+            bool RayAABBIntersect(float3 rayOrigin, float3 rayDir, float3 boxMin, float3 boxMax,
+                                out float outTEnter, out float outTExit)
+            {
+                float tEnter = -1e20; // -infinity
+                float tExit  =  1e20; // +infinity
+
+                // For each axis
+                [unroll]
+                for (int i = 0; i < 3; ++i)
+                {
+                    float origin = rayOrigin[i];
+                    float dir    = rayDir[i];
+                    float bMin   = boxMin[i];
+                    float bMax   = boxMax[i];
+
+                    if (abs(dir) < 1e-8)
+                    {
+                        // Ray parallel: must be inside slab, otherwise no hit
+                        if (origin < bMin || origin > bMax)
+                            return false;
+                        // else: no constraint
+                    }
+                    else
+                    {
+                        float t1 = (bMin - origin) / dir;
+                        float t2 = (bMax - origin) / dir;
+                        float tMin = min(t1, t2);
+                        float tMax = max(t1, t2);
+
+                        tEnter = max(tEnter, tMin);
+                        tExit  = min(tExit,  tMax);
+
+                        if (tEnter > tExit)
+                            return false; // early out
+                    }
+                }
+
+                // If whole intersection is behind the ray
+                if (tExit < 0.0) return false;
+
+                outTEnter = max(tEnter, 0.0); // clamp if ray starts inside
+                outTExit  = tExit;
+                return true;
+            }
+
+            float PhaseHG(float cosTheta, float g)
+            {
+                float g2 = g * g;
+                return (1.0 - g2) / pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5);
+            }
+
 
             fixed4 frag (v2f i) : SV_Target
             {
-                int4x4 dither = int4x4(
-                -4, 0, -3, 1,
-                2, -2, 3, -1,
-                -3, 1, -4, 0,
-                3, -1, 2, -2
-                );
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // just invert the colors
-                
-
-                int column = ((int)(i.uv.x * __ScreenParams.x)) % 4;
-                
-                int row = (int)((i.uv.y * __ScreenParams.y)) % 4;
-                
-                float dither_val = (float)dither[column][row] / _Bands;
-
-                
-                //Calculate World Position
-                float terrainLevel = tex2D(_CameraDepthTexture,i.uv);
+                // Camera / ray setup
+                float terrainLevel = tex2D(_CameraDepthTexture, i.uv);
                 terrainLevel = LinearEyeDepth(terrainLevel);
-               
+
                 const float3 ray_direction = normalize(i.viewVector);
-
-                float3 world_ray = normalize(UnityObjectToWorldDir(i.viewVector));
-
                 float3 cam_forward_world = mul((float3x3)unity_CameraToWorld, float3(0,0,1));
                 float ray_depth_world = dot(cam_forward_world, ray_direction);
+                float3 terrainPosition = (ray_direction / ray_depth_world) * terrainLevel + _WorldSpaceCameraPos;
 
-                float3 terrainPosition = (ray_direction / ray_depth_world) * terrainLevel +  _WorldSpaceCameraPos;
-                        
-                float tCloud = 0.0;
-                float3 intersectionLine;
-                fixed4 cloudSample;
-                        
-                int iterator = 0;
-                float density = 0.0;
-                float cloud;
-                        
+                // Temp vars
+                
                 float3 start_point = _WorldSpaceCameraPos;
-                bool returnCond = false;
 
+                // Accumulators
+                float tCloud = 0.0;
+                float tCloudEnter = 0.0;
+                float tCloudExit = 0.0;
+
+                float tSunCloudEnter = 0.0;
+                float tSunCloudExit = 0.0;
                 
+                float totalDensity = 0.0;
+                float4 accumulatedColor = 0.0;
+                fixed4 col = tex2D(_MainTex, i.uv);
+                float transmittance = 1.0;
 
+                // ONE declaration for the cloud samples (no duplicates)
+                float4 cloudSample = 0;
+                float4 toSunCloudSample = 0;
 
-                for(;tCloud < 100.0; tCloud += 2){
-                    iterator ++;
-                    intersectionLine = normalize(i.viewVector)*(tCloud + dither_val) + start_point;
-                            
-                    float3 uvCoords = intersectionLine*.1;
-                    cloudSample = length(terrainPosition-_WorldSpaceCameraPos) > length(intersectionLine-_WorldSpaceCameraPos) ? tex3D(_CloudTex,(uvCoords*_CloudTex_ST) + (_WindVec.xyz*_Time)) : fixed4(0,0,0,0);
-                            
-                    cloud = (cloudSample.r*_CloudCoeff.x) + (cloudSample.g*_CloudCoeff.y) + (cloudSample.b*_CloudCoeff.z);
-                    cloud = intersectionLine.y < _SkyLine ? 0 : cloud;
+                float blueNoise = tex2D(_BlueNoise, i.uv).x * .01;
 
-                    density += ( cloud > _Threshold) ? cloud : 0;
+                // Choose a sensible scale for mapping world-space pos -> 3D texture UVW.
+                // Replace CLOUD_TEX_WORLD_SCALE with a value appropriate for your scene (e.g. 0.01).
+                const float CLOUD_TEX_WORLD_SCALE = 0.01;
+                float3 cloudTexScale = _CloudTex_ST.xyz;
+
+                // Decide sun direction once (assume _SunPos is a world position)
+                // If _SunPos is already a direction, replace with normalize(_SunPos).
+                
+                bool intersect = RayAABBIntersect(start_point, ray_direction, _Position - _Scale, _Position + _Scale, tCloudEnter, tCloudExit);
+                if(!intersect) return col;
+
+                float stepSize =(tCloudExit-tCloudEnter)*0.02;
+
+                for (tCloud = 0; tCloud < 1.0; tCloud += 0.02)
+                {
+                    float3 pos = start_point + ray_direction * (tCloudEnter + (tCloudExit-tCloudEnter)*(tCloud+blueNoise));
                     
-                }
 
-                density /= iterator;
-                density *= _CloudDensity;
+                    // Map world pos into 3D texture coordinates (UVW).
+                    float3 cloudUVW = (pos * _CloudTex_ST).xyz;
+                    float4 cloudSample = tex3D(_CloudTex, cloudUVW);
+                    float density = cloudSample.r * _CloudCoeff.x + cloudSample.g * _CloudCoeff.y + cloudSample.b * _CloudCoeff.z - _Threshold;
+                    density = max(density, 0.0);
+                    float lightTransmission = 1.0;
+
+                    float3 sunDir = normalize(_SunPos - pos);
+
+                    bool inCloud = RayAABBIntersect(pos, sunDir, _Position - _Scale, _Position + _Scale, tSunCloudEnter, tSunCloudExit);
+                    float sunStep = (tSunCloudExit-tSunCloudEnter)*0.1;
+                    
+                    [unroll(10)]
+                    for(float tSun = 0; tSun < 1.0; tSun += 0.1)
+                    {
                         
-                // Step 1: Scale to 0�(bands-1)
-                if(dither_val > 1000){
-                    col.rgb = float4(1,0,0,1);
-                    return col;
+                        
+
+                        float3 sunPos = pos + sunDir * (tSunCloudEnter + (tSunCloudExit-tSunCloudEnter)*tSun);
+                        float3 toSunUVW = (sunPos * _CloudTex_ST).xyz;
+                        float4 toSunCloudSample = tex3D(_CloudTex, toSunUVW);
+                        float toSunDensity = toSunCloudSample.r * _CloudCoeff.x + toSunCloudSample.g * _CloudCoeff.y + toSunCloudSample.b * _CloudCoeff.z - _Threshold;
+                        toSunDensity = max(toSunDensity, 0.0);
+                        lightTransmission *= exp(-toSunDensity * _ScatterCoef * _CloudDensity * sunStep);
+                    }
+
+
+                    
+
+                    // Shade & accumulate
+                    float cosTheta = dot(normalize(-ray_direction), sunDir);
+
+                    // Compute phase weight
+                    float phase = PhaseHG(cosTheta, _PhaseG);
+
+                    // Shaded sample contribution
+                    float extinction = density * _CloudDensity * stepSize;
+                    float localTrans = exp(-extinction);
+
+                    accumulatedColor += (1 - localTrans) * _CloudColor * lightTransmission * phase * transmittance;
+                    transmittance *= localTrans;
                 }
-                _AtmoColor *= 2-dot(i.viewVector, float3(0,1,0));
-                float sunDot = abs(dot(float3(1,0,0), normalize(_SunPos)));
-                fixed4 sunColor = lerp(_SunColor, _SecondSunColor, sunDot);
 
+                //totalDensity = length((start_point + ray_direction * (tCloudExit)) - (start_point + ray_direction * (tCloudEnter)));
 
-                float sunT = max(0,dot(ray_direction,normalize(_SunPos-_WorldSpaceCameraPos)));
-                _AtmoColor = lerp(_AtmoColor,sunColor,sunT*sunT*sunT);
-
+                // Blend with background
+                col.rgb = col.rgb * transmittance + accumulatedColor.rgb;
+                col.a = 1.0;
                 
 
-
-                if(sunT > 0.99 && length(terrainPosition-_WorldSpaceCameraPos) > length(_SunPos-_WorldSpaceCameraPos)){ _AtmoColor = fixed4(1,1,1,1)*10; }
-
-                sunT = min(dot(float3(0,1,0),normalize(_SunPos)) + 1,1);
-                _AtmoColor = lerp(_NightColor,_AtmoColor,sunT*sunT*sunT);
-
-                float moonT = abs(clamp(dot(ray_direction,normalize(_SunPos-_WorldSpaceCameraPos)),-1,0));
-                _AtmoColor = lerp(_AtmoColor,_MoonColor,moonT*moonT*moonT);
-
-
-                col.rgb = lerp(_AtmoColor, col.rgb,exp(-length(terrainPosition-_WorldSpaceCameraPos) * _ScatterCoef));
-                col.rgb = lerp(col.rgb, _CloudColor, density);
-                //return col;
-
-                
-                
-
-                col.rgb *= _Bands-1;
-                col.rgb += (float)dither_val * _DitherStrength;
-                col.rgb = int3(col.rgb);
-                // Step 2: Add dither *before* rounding
-                col.rgb /= (_Bands);
-                
-
-
-                // Step 3: Clamp to avoid overflow
-                
-                col.rgb = clamp(col.rgb, 0.0, _Bands - 1);
-                
-                // Step 4: Quantize and normalize
-                
                 return col;
             }
             ENDCG

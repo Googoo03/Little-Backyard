@@ -152,8 +152,6 @@ namespace SparseVoxelOctree
                     indices.Capacity = 3 * verts.Count;
 
                     //for each of the vertex nodes, generate indices
-                    Stopwatch stopwatch = new Stopwatch();
-                    stopwatch.Start();
                     for (int i = 0; i < nodes.Count; ++i)
                     {
                         if (nodes[i].edge == -1) continue;
@@ -162,8 +160,7 @@ namespace SparseVoxelOctree
                         meshingAlgorithm.SVOQuad(nodes[i], indices, globalToLocal, verts);
 
                     }
-                    stopwatch.Stop();
-                    UnityEngine.Debug.Log("Quads Took " + stopwatch.ElapsedMilliseconds + " milliseconds");
+
 
 
                     //Apply mesh data to gameObject
@@ -189,9 +186,6 @@ namespace SparseVoxelOctree
                     ////////////////////////////////////////////////////////////
                     if (indices.Count < 3) return;
 
-                    stopwatch.Restart();
-                    stopwatch.Start();
-
                     m.vertices = verts.ToArray();
                     m.normals = new Vector3[verts.Count]; //placeholders
                     Vector2[] uvs = new Vector2[verts.Count];
@@ -203,10 +197,6 @@ namespace SparseVoxelOctree
                     m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
                     m.RecalculateBounds();
                     m.RecalculateNormals();
-
-                    stopwatch.Stop();
-
-                    UnityEngine.Debug.Log("Took " + stopwatch.ElapsedMilliseconds + " milliseconds");
                 }
 
             }
