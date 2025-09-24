@@ -23,14 +23,18 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _BlueNoise:
+        m_Texture: {fileID: 2800000, guid: f149fd00606ad6c4dbd02d12a19c9ffc, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _BumpMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _CloudTex:
-        m_Texture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
-        m_Scale: {x: 0.04, y: 0.04}
-        m_Offset: {x: 0.04, y: 0.1}
+        m_Texture: {fileID: 11700000, guid: 0a1cb7d177a9d7a41832e916532d3ca5, type: 2}
+        m_Scale: {x: 0.05, y: 0.05}
+        m_Offset: {x: 0.05, y: 1}
     - _DetailAlbedoMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -63,42 +67,56 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _PerlinNoise:
+        m_Texture: {fileID: 11700000, guid: a28b7a8918ded034184d14fd7e78257a, type: 2}
+        m_Scale: {x: 0.005, y: 0.005}
+        m_Offset: {x: 0.005, y: 0}
     m_Ints: []
     m_Floats:
     - _Bands: 710
     - _BumpScale: 1
-    - _CloudDensity: 5.3
+    - _CloudCoeffA: 0
+    - _CloudCoeffB: 0.125
+    - _CloudCoeffG: 0.25
+    - _CloudCoeffR: 0.625
+    - _CloudDensity: 2.77
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
-    - _DitherStrength: 0.67
+    - _DitherStrength: 1.36
     - _DstBlend: 0
+    - _EXTINCTION_MULT: 3.7
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _LightIntensity: 1.31
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _ScatterCoef: 5.75
+    - _PhaseG: 0.66
+    - _ScatterCoef: 2.04
     - _SkyLine: 42.32
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _Threshold: 1.07
+    - _Threshold: 0.58
     - _UVSec: 0
+    - _WorleyPerlinMix: 0.57
     - _ZWrite: 1
     m_Colors:
     - _AtmoColor: {r: 0, g: 0.43151248, b: 0.7294118, a: 1}
-    - _CloudCoeff: {r: 1.27, g: 0.04, b: 0.05, a: 0}
+    - _CloudAmbient: {r: 0.11764705, g: 0.18346299, b: 0.2509804, a: 0}
+    - _CloudCoeff: {r: 0, g: 0.01, b: 1.04, a: 1.39}
     - _CloudColor: {r: 1, g: 1, b: 1, a: 0}
+    - _CloudScale: {r: 1, g: 1, b: 1, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _MoonColor: {r: 1, g: 1, b: 1, a: 0}
     - _NightColor: {r: 0.079522945, g: 0.105023235, b: 0.2, a: 0}
-    - _Position: {r: 35.00094, g: 152.7, b: 73.74533, a: 0}
-    - _Scale: {r: 65.66243, g: 18.8635, b: 103.8651, a: 0}
+    - _Position: {r: 109, g: 67, b: 73.74533, a: 0}
+    - _Scale: {r: 65.66243, g: 7.478849, b: 103.8651, a: 0}
     - _SecondSunColor: {r: 1, g: 0.77534574, b: 0.4509434, a: 0}
     - _SunColor: {r: 1, g: 1, b: 1, a: 1}
     - _SunPos: {r: 35.00094, g: 152.7, b: 73.74533, a: 0}
-    - _WindVec: {r: 0.2, g: 0, b: 0, a: 0}
+    - _WindVec: {r: 0.04, g: 0, b: 0.05, a: 0}
   m_BuildTextureStacks: []

@@ -7,7 +7,8 @@ using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 
-namespace worley_3d {
+namespace worley_3d
+{
     public class Worley3D
     {
         private Vector3 origin;
@@ -20,7 +21,8 @@ namespace worley_3d {
         private float lacunarity;
 
         //CONSTRUCTOR TO INITIALIZE VALUES
-        public Worley3D(ref List<Vector3> worleyPoints, Vector3 _origin,int resolution,float pointRes,float persist,int octave,float lacun,float amp) {
+        public Worley3D(ref List<Vector3> worleyPoints, Vector3 _origin, int resolution, float pointRes, float persist, int octave, float lacun, float amp)
+        {
             points = new List<Vector3>();
             origin = _origin;
             size = resolution;
@@ -36,9 +38,9 @@ namespace worley_3d {
             //Vector3 point = new Vector3(UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-100, 100));
             Vector3 point = origin + new Vector3(index.x / size - 0.5f, index.y / size - 0.5f, index.z / size - 0.5f);
 
-            point += (Vector3.one * (1.0f / size))+(new Vector3(UnityEngine.Random.Range(-0.5f,0.5f), UnityEngine.Random.Range(-0.5f, 0.5f), UnityEngine.Random.Range(-0.5f, 0.5f))/(size/pointResolution));
+            point += (Vector3.one * (1.0f / size)) + (new Vector3(UnityEngine.Random.Range(-0.5f, 0.5f), UnityEngine.Random.Range(-0.5f, 0.5f), UnityEngine.Random.Range(-0.5f, 0.5f)) / (size / pointResolution));
 
-            float unitSize = pointResolution/size;
+            float unitSize = pointResolution / size;
             //point += Vector3.one * 0.5f * unitSize;//new Vector3(1f / size * 0.5f, 1f / size * 0.5f, 1f / size * 0.5f);
 
             points.Add(point);
@@ -50,7 +52,7 @@ namespace worley_3d {
             float closestDistance = float.MaxValue;
             float distance;
             //Vector3 point = origin + new Vector3(index.x / size - 0.5f, index.y / size - 0.5f, index.z / size - 0.5f);
-            Vector3 point = origin + (index / size) - (Vector3.one*(0.5f));
+            Vector3 point = origin + (index / size) - (Vector3.one * (0.5f));
 
 
             float pointCoordScalar = (int)size / (int)pointResolution;
@@ -59,7 +61,8 @@ namespace worley_3d {
             //find current box
             Vector3 boxIndex = new Vector3((int)index.x / pointCoordScalar, (int)index.y / pointCoordScalar, (int)index.z / pointCoordScalar);
 
-            for (int i = -1; i < 2; ++i) {
+            for (int i = -1; i < 2; ++i)
+            {
                 for (int j = -1; j < 2; ++j)
                 {
                     for (int k = -1; k < 2; ++k)
@@ -75,7 +78,7 @@ namespace worley_3d {
                         y = (y % maxpointAlongAxis + maxpointAlongAxis) % maxpointAlongAxis;
                         z = (z % maxpointAlongAxis + maxpointAlongAxis) % maxpointAlongAxis;
 
-                        int currentIndex = (x + maxpointAlongAxis*(y+(maxpointAlongAxis*z) ));
+                        int currentIndex = (x + maxpointAlongAxis * (y + (maxpointAlongAxis * z)));
 
                         float dx = Math.Abs(points[currentIndex].x - point.x);
                         float dy = Math.Abs(points[currentIndex].y - point.y);
@@ -83,9 +86,9 @@ namespace worley_3d {
 
                         // Apply wrapping for each dimension
                         // CHANGE THE 1 TO AN APPROPRIATE DISTANCE FOR ALL OCTAVES AND FREQUENCIES
-                        dx = Math.Min(dx, 1 -  dx);
-                        dy = Math.Min(dy, 1 -  dy);
-                        dz = Math.Min(dz, 1 -  dz);
+                        dx = Math.Min(dx, 1 - dx);
+                        dy = Math.Min(dy, 1 - dy);
+                        dz = Math.Min(dz, 1 - dz);
 
                         distance = Mathf.Sqrt((dx * dx) + (dy * dy) + (dz * dz));
                         if (distance < closestDistance) closestDistance = distance;
@@ -104,7 +107,7 @@ namespace worley_3d {
 
             //worley points are in world position
             //amplitude = 0.5f;
-            
+
 
 
             // Configure the texture
@@ -118,6 +121,7 @@ namespace worley_3d {
 
             // Create a 3-dimensional array to store color data
             Color[] colors = new Color[size * size * size];
+            int R, G, B, A;
 
             for (int i = 0; i < octaves; ++i)
             {
@@ -125,10 +129,8 @@ namespace worley_3d {
                 //create array of worley points proportional to the size of the area
                 for (int z = 0; z < pointResolution; z++)
                 {
-                    int zOffset = z * (size / 8) * (size / 8);
                     for (int y = 0; y < pointResolution; y++)
                     {
-                        int yOffset = y * (size / 8);
                         for (int x = 0; x < pointResolution; x++)
                         {
                             //This matches the position of each point to the image coords. Figures out how many indices to skip
@@ -139,9 +141,10 @@ namespace worley_3d {
                     }
                 }
 
-                int R = i==0 ? 1 : 0;
-                int G = i == 1 ? 1 : 0;
-                int B = i == 2 ? 1 : 0;
+                R = i == 0 ? 1 : 0;
+                G = i == 1 ? 1 : 0;
+                B = i == 2 ? 1 : 0;
+                A = i == 3 ? 1 : 0;
                 // Populate the array so that the x, y, and z values of the texture will map to red, blue, and green colors
                 float inverseResolution = 1.0f / (size - 1.0f);
                 for (int z = 0; z < size; z++)
@@ -156,11 +159,11 @@ namespace worley_3d {
                             float scalar = FindClosestPoint(index);
                             if (i == 0) colors[x + yOffset + zOffset] = new Color(1, 1, 1, 1);
 
-                            colors[x + yOffset + zOffset] -= (new Color(R, G, B, 1) * scalar*amplitude);
+                            colors[x + yOffset + zOffset] -= new Color(R, G, B, A) * scalar * amplitude;
                         }
                     }
                 }
-                pointResolution *= lacunarity ;
+                pointResolution *= lacunarity;
                 amplitude *= persistence;
             }
 
@@ -174,6 +177,6 @@ namespace worley_3d {
             AssetDatabase.CreateAsset(texture, "Assets/Example3DWorleyTexture.asset");
         }
 
-      
+
     }
 }

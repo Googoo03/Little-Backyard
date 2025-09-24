@@ -4,17 +4,23 @@ Shader "Unlit/Dithering_ColorBand"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _BlueNoise ("Blue Noise", 2D) = "white" {}
+        _PerlinNoise ("Perlin Noise", 3D) = "white" {}
         _Bands ("Num of Bands", int) = 1
         _DitherStrength ("Dither Strength", float) = 1.0
         _AtmoColor ("Atmosphere Color", Color) = (0,0,0,0)
         _NightColor ("Night Color", Color) = (0,0,0,0)
         _CloudColor ("Cloud Color", Color) = (0,0,0,0)
+        _CloudAmbient ("Cloud Ambient Color", Color) = (0,0,0,0)
         _ScatterCoef ("Scatter Coefficient", float) = 1.0
         _WindVec ("Wind Vector", Vector) = (0,0,0,0)
         _CloudTex ("Cloud Texture", 3D) = "white" {}
         _CloudDensity ("Cloud Density", float) = 1.0
         _Threshold ("Cloud Threshold", float) = 1.0
-        _CloudCoeff ("Cloud Coefficient", Vector) = (0,0,0,0)
+        _WorleyPerlinMix ("Worley Perlin Mix", Range(0,1)) = 0.5
+        _CloudCoeffR ("Cloud Coefficient R", Range(0,1)) = 0
+        _CloudCoeffG ("Cloud Coefficient G", Range(0,1)) = 0
+        _CloudCoeffB ("Cloud Coefficient B", Range(0,1)) = 0
+        _CloudCoeffA ("Cloud Coefficient A", Range(0,1)) = 0
         _SkyLine ("Sky Level", float) = 1.0
         _SunPos ("Sun Position", Vector) = (0,0,0,0)
         _SunColor ("Sun Color", Color) = (0,0,0,0)
@@ -23,6 +29,8 @@ Shader "Unlit/Dithering_ColorBand"
         _Position ("Cloud Cube Position", Vector) = (0,0,0,0)
         _Scale ("Cloud Cube Scale", Vector) = (1,1,1,0)
         _PhaseG ("Phase G", Range(-1,1)) = 0.76
+        _LightIntensity ("Light Intensity", float) = 1.0
+        _EXTINCTION_MULT ("Extinction Multiplier", float) = 1.0
     }
     SubShader
     {
@@ -68,6 +76,7 @@ Shader "Unlit/Dithering_ColorBand"
             sampler2D _MainTex;
             sampler2D _BlueNoise;
             sampler3D _CloudTex;
+            sampler3D _PerlinNoise;
             int _Bands;
             float _DitherStrength;
             sampler2D _CameraDepthTexture;
@@ -76,13 +85,21 @@ Shader "Unlit/Dithering_ColorBand"
 
             float _ScatterCoef;
             float4 _CloudTex_ST;
+            float4 _PerlinNoise_ST;
             float _CloudDensity;
             float _CloudFalloff;
             float4 _CloudColor;
-            float4 _CloudCoeff;
+            float4 _CloudAmbient;
+            float _CloudCoeffR;
+            float _CloudCoeffG;
+            float _CloudCoeffB;
+            float _CloudCoeffA;
             float _CloudSpeed;
             float _SkyLine;
             float4 _WindVec;
+            float _WorleyPerlinMix;
+            float _LightIntensity;
+            float _EXTINCTION_MULT;
 
             float _Threshold;
 
@@ -152,6 +169,33 @@ Shader "Unlit/Dithering_ColorBand"
                 return (1.0 - g2) / pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5);
             }
 
+            float MultipleOctaveScattering(float density, float mu){
+                float attenuation = 0.2;
+                float contribution = 0.4;
+                float phaseAttenuation = 0.1;
+
+                const float scatteringOctaves = 4.0;
+
+                float a = 1.0;
+                float b = 1.0;
+                float c = 1.0;
+                float g = 0.85;
+
+                float luminance = 0.0;
+
+                for(float i = 0.0; i < scatteringOctaves; i += 1.0){
+                    float phase = PhaseHG(0.3*c, mu);
+                    float beers = exp(-density * _EXTINCTION_MULT * a);
+                    luminance += b * phase * beers;
+
+                    a *= attenuation;
+                    b *= contribution;
+                    c *= (1.0-phaseAttenuation);
+                }
+                return luminance;
+
+            }
+
 
             fixed4 frag (v2f i) : SV_Target
             {
@@ -206,11 +250,17 @@ Shader "Unlit/Dithering_ColorBand"
                     
 
                     // Map world pos into 3D texture coordinates (UVW).
-                    float3 cloudUVW = (pos * _CloudTex_ST).xyz;
+                    float3 cloudUVW = (pos * _CloudTex_ST).xyz + _WindVec.xyz * _Time.y;
+                    float3 perlinUVW = (pos * _PerlinNoise_ST).xyz + _WindVec.xyz * _Time.y;
                     float4 cloudSample = tex3D(_CloudTex, cloudUVW);
-                    float density = cloudSample.r * _CloudCoeff.x + cloudSample.g * _CloudCoeff.y + cloudSample.b * _CloudCoeff.z - _Threshold;
+                    float4 perlinSample = tex3D(_PerlinNoise, perlinUVW);
+                    
+                    float density = (cloudSample.r * _CloudCoeffR + cloudSample.g * _CloudCoeffG + cloudSample.b * _CloudCoeffB + cloudSample.a * _CloudCoeffA - _Threshold) * _WorleyPerlinMix;
+                    density += (perlinSample.r * _CloudCoeffR + perlinSample.g * _CloudCoeffG + perlinSample.b * _CloudCoeffB + perlinSample.a * _CloudCoeffA - _Threshold) * (1.0 - _WorleyPerlinMix);
+                    //if(density-stepSize < _Threshold) continue;
+                    //density = 1.0-density;
                     density = max(density, 0.0);
-                    float lightTransmission = 1.0;
+                    float lightTransmission = _LightIntensity;
 
                     float3 sunDir = normalize(_SunPos - pos);
 
@@ -224,31 +274,37 @@ Shader "Unlit/Dithering_ColorBand"
                         
 
                         float3 sunPos = pos + sunDir * (tSunCloudEnter + (tSunCloudExit-tSunCloudEnter)*tSun);
-                        float3 toSunUVW = (sunPos * _CloudTex_ST).xyz;
+                        float3 toSunUVW = (sunPos * _CloudTex_ST).xyz + _WindVec.xyz * _Time.y;
+                        float3 toSunPerlinUVW = (sunPos * _PerlinNoise_ST).xyz + _WindVec.xyz * _Time.y;
                         float4 toSunCloudSample = tex3D(_CloudTex, toSunUVW);
-                        float toSunDensity = toSunCloudSample.r * _CloudCoeff.x + toSunCloudSample.g * _CloudCoeff.y + toSunCloudSample.b * _CloudCoeff.z - _Threshold;
+                        float4 toSunPerlinSample = tex3D(_PerlinNoise, toSunPerlinUVW);
+                        
+                        float toSunDensity = (toSunCloudSample.r * _CloudCoeffR + toSunCloudSample.g * _CloudCoeffG + toSunCloudSample.b * _CloudCoeffB + toSunCloudSample.a * _CloudCoeffA - _Threshold) * _WorleyPerlinMix;
+                        toSunDensity += (toSunPerlinSample.r * _CloudCoeffR + toSunPerlinSample.g * _CloudCoeffG + toSunPerlinSample.b * _CloudCoeffB + toSunPerlinSample.a * _CloudCoeffA - _Threshold) * (1.0 - _WorleyPerlinMix);
+                        //if(toSunDensity < _Threshold) continue;
+                        
                         toSunDensity = max(toSunDensity, 0.0);
-                        lightTransmission *= exp(-toSunDensity * _ScatterCoef * _CloudDensity * sunStep);
+                        //toSunDensity = 1.0-toSunDensity;
+
+                        lightTransmission *= exp(-toSunDensity * _ScatterCoef * sunStep);
                     }
 
 
                     
 
                     // Shade & accumulate
-                    float cosTheta = dot(normalize(-ray_direction), sunDir);
+                    float cosTheta = dot(normalize(ray_direction), sunDir);
 
                     // Compute phase weight
-                    float phase = PhaseHG(cosTheta, _PhaseG);
+                    float phase = MultipleOctaveScattering(density, _PhaseG);
 
                     // Shaded sample contribution
                     float extinction = density * _CloudDensity * stepSize;
                     float localTrans = exp(-extinction);
 
-                    accumulatedColor += (1 - localTrans) * _CloudColor * lightTransmission * phase * transmittance;
+                    accumulatedColor += (1 - localTrans) * (_CloudColor * lightTransmission * phase + _CloudAmbient) * transmittance;
                     transmittance *= localTrans;
                 }
-
-                //totalDensity = length((start_point + ray_direction * (tCloudExit)) - (start_point + ray_direction * (tCloudEnter)));
 
                 // Blend with background
                 col.rgb = col.rgb * transmittance + accumulatedColor.rgb;

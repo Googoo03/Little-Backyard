@@ -46,7 +46,7 @@ public class SVOTest : MonoBehaviour
         svo.TraverseLeaves(node =>
         {
             float distance = (node.GetCenter() - cube.position).magnitude;
-            if (!freezeSubdivision && node.MayContainCrossing() && distance < node.size * 5f && node.size > nodeSizeLimit)
+            if (!freezeSubdivision && node.MayContainCrossing() && distance < node.size * 10f && node.size > nodeSizeLimit)
             {
                 node.Subdivide(); // Just a placeholder
                 node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
@@ -54,7 +54,7 @@ public class SVOTest : MonoBehaviour
                 refreshChunks = true;
                 //GENERATE VERTICES
             }
-            else if (!freezeSubdivision && distance > node.size * 10f)
+            else if (!freezeSubdivision && distance > node.size * 20f)
             {
                 node.voteToCollapse = true;
             }
@@ -91,6 +91,7 @@ public class SVOTest : MonoBehaviour
     }
     void OnDrawGizmos()
     {
+        return;
         if (svo == null) return;
 
         SVONode start = svo.root.children[0].children[3];

@@ -162,27 +162,28 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 660512646}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d3c7e695728f91b46a1185e96c45b924, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   worleyPoints: []
+  resolution: 128
   frequency:
     m_OverrideState: 0
-    m_Value: 4
+    m_Value: 8
   lacunarity:
     m_OverrideState: 0
     m_Value: 2
   persistence:
     m_OverrideState: 0
-    m_Value: 0.95
+    m_Value: 1
   octaves:
     m_OverrideState: 0
-    m_Value: 3
+    m_Value: 4
   amplitude:
     m_OverrideState: 0
-    m_Value: 2
+    m_Value: 1
 --- !u!1 &662956041
 GameObject:
   m_ObjectHideFlags: 0

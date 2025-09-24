@@ -212,7 +212,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
             fixed4 frag (v2f i) : SV_Target
             {
                 _Bubbles_ST.x += _SinTime.x/10;
-                fixed4 bubbleCol = tex2D(_Bubbles,float2(i.uv.x*64,i.uv.y));
+                fixed4 bubbleCol = tex2D(_Bubbles,float2(i.uv.x,i.uv.y));
 
                 
 
@@ -240,7 +240,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 // -------- Specularity --------
 				// Specular normal
 				float waveSpeed = 0.1;
-				float waveNormalScale = 5;
+				float waveNormalScale = 0.05;
 				float waveStrength = 0.4;
 				
 				float2 waveOffsetA = float2(_Time.x * waveSpeed, _Time.x * waveSpeed * 0.8);

@@ -158,7 +158,7 @@ MonoBehaviour:
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 0.25
+  nodeSizeLimit: 0.5
   vertexLength: 0
   blockVoxel: 0
 --- !u!4 &67079602
@@ -1134,8 +1134,8 @@ Transform:
   m_GameObject: {fileID: 1751570021}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 35.00094, y: 152.7, z: 73.74533}
-  m_LocalScale: {x: 131.32486, y: 37.727, z: 207.7302}
+  m_LocalPosition: {x: 35.00094, y: 90, z: 73.74533}
+  m_LocalScale: {x: 131.32486, y: 15, z: 207.7302}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

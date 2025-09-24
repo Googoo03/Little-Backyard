@@ -47,3 +47,27 @@ public class SVOTestEditorUI : Editor
 
     }
 }
+
+[CustomEditor(typeof(ThreeD_Texture_Manager))]
+[CanEditMultipleObjects]
+public class ThreeD_Texture_ManagerUI : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        var myScript = target as ThreeD_Texture_Manager;
+        if (GUILayout.Button("Generate 3D Worley Texture"))
+        {
+            myScript.Generate3DWorleyTexture();
+        }
+
+        if (GUILayout.Button("Generate 3D Perlin Texture"))
+        {
+            myScript.Generate3DPerlinTexture();
+        }
+
+
+
+    }
+}

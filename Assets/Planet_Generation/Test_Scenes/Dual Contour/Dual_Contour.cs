@@ -16,19 +16,6 @@ using SparseVoxelOctree;
 namespace DualContour
 {
 
-    public struct Edge
-    {
-        public bool crossed;
-        public bool sign;
-
-        public Edge(bool _crossed, bool _sign)
-        {
-            crossed = _crossed;
-            sign = _sign;
-        }
-    };
-
-
     enum BLOCKID : ushort
     {
         GRASS = 0,
@@ -492,7 +479,6 @@ namespace DualContour
                             SVONode n1 = neighbors[verts[j * 3 + 1]];
                             SVONode n2 = neighbors[verts[j * 3 + 2]];
 
-                            //if (n0 == null || n1 == null || n2 == null) continue;
                             if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
 
                             for (int i = 0; i < 3; ++i)
@@ -500,11 +486,7 @@ namespace DualContour
                                 var neighbor = neighbors[verts[j * 3 + i]];
 
 
-                                if (!neighbor.isLeaf)
-                                {
-                                    neighbor = diagonal[l];
-
-                                }
+                                if (!neighbor.isLeaf) neighbor = diagonal[l];
 
                                 //if vertex doesn't exist in chunk yet, add it. Otherwise, change the index to find the vertex
                                 if (!globalToLocal.TryGetValue(neighbor.vertex, out int localIndex))
