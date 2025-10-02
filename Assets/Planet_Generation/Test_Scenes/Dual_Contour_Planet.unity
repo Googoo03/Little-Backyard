@@ -158,7 +158,7 @@ MonoBehaviour:
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 0.5
+  nodeSizeLimit: 1
   vertexLength: 0
   blockVoxel: 0
 --- !u!4 &67079602

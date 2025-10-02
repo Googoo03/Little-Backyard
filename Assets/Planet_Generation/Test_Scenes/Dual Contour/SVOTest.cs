@@ -43,37 +43,41 @@ public class SVOTest : MonoBehaviour
     void Update()
     {
         vertexLength = svo.vertices.Count;
-        svo.TraverseLeaves(node =>
-        {
-            float distance = (node.GetCenter() - cube.position).magnitude;
-            if (!freezeSubdivision && node.MayContainCrossing() && distance < node.size * 10f && node.size > nodeSizeLimit)
-            {
-                node.Subdivide(); // Just a placeholder
-                node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
-                svo.MarkChunk(node);
-                refreshChunks = true;
-                //GENERATE VERTICES
-            }
-            else if (!freezeSubdivision && distance > node.size * 20f)
-            {
-                node.voteToCollapse = true;
-            }
-        });
-
         svo.TraverseNodes(node =>
         {
-            if (node.isLeaf) return;
-            bool collapse = true;
-
-            foreach (SVONode child in node.children)
+            if (node.isLeaf)
             {
-                collapse &= child.voteToCollapse;
+                float distance = (node.GetCenter() - cube.position).magnitude;
+                float dot = Vector3.Dot((node.GetCenter() - cube.position).normalized, cube.forward.normalized);
+                if (!freezeSubdivision && node.MayContainCrossing() && distance < node.size * 10f && node.size > nodeSizeLimit && dot > 0)
+                {
+                    node.Subdivide(); // Just a placeholder
+                    node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
+                    svo.MarkChunk(node);
+                    refreshChunks = true;
+                    //GENERATE VERTICES
+                }
+                else if (!freezeSubdivision && distance > node.size * 20f || dot < 0)
+                {
+                    node.voteToCollapse = true;
+                }
             }
-            if (collapse)
+            else
             {
-                node.Collapse();
-                node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
-                svo.MarkChunk(node);
+
+                bool collapse = true;
+
+                foreach (SVONode child in node.children)
+                {
+                    collapse &= child.voteToCollapse;
+                }
+                if (collapse)
+                {
+
+                    node.Collapse();
+                    node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
+                    svo.MarkChunk(node);
+                }
             }
         });
 

@@ -113,8 +113,8 @@ Material:
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _MoonColor: {r: 1, g: 1, b: 1, a: 0}
     - _NightColor: {r: 0.079522945, g: 0.105023235, b: 0.2, a: 0}
-    - _Position: {r: 109, g: 67, b: 73.74533, a: 0}
-    - _Scale: {r: 65.66243, g: 7.478849, b: 103.8651, a: 0}
+    - _Position: {r: 35.00094, g: 90, b: 73.74533, a: 0}
+    - _Scale: {r: 65.66243, g: 7.5, b: 103.8651, a: 0}
     - _SecondSunColor: {r: 1, g: 0.77534574, b: 0.4509434, a: 0}
     - _SunColor: {r: 1, g: 1, b: 1, a: 1}
     - _SunPos: {r: 35.00094, g: 152.7, b: 73.74533, a: 0}

@@ -473,13 +473,11 @@ namespace DualContour
 
                         for (int l = 0; l < diagonalSize; ++l)
                         {
-                            if (diagonal[l].IsEmpty()) continue;
-
                             SVONode n0 = neighbors[verts[j * 3]];
                             SVONode n1 = neighbors[verts[j * 3 + 1]];
                             SVONode n2 = neighbors[verts[j * 3 + 2]];
 
-                            if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty()) continue;
+                            if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty() || diagonal[l].IsEmpty()) continue;
 
                             for (int i = 0; i < 3; ++i)
                             {
@@ -487,16 +485,16 @@ namespace DualContour
 
 
                                 if (!neighbor.isLeaf) neighbor = diagonal[l];
-
                                 //if vertex doesn't exist in chunk yet, add it. Otherwise, change the index to find the vertex
-                                if (!globalToLocal.TryGetValue(neighbor.vertex, out int localIndex))
+                                if (neighbor.localIndex == -1)
                                 {
-                                    localIndex = chunkVerts.Count;
-                                    globalToLocal[neighbor.vertex] = localIndex;
+                                    //add to chunk verts
+                                    neighbor.localIndex = chunkVerts.Count;
                                     chunkVerts.Add(neighbor.vertex);
                                 }
 
-                                int newdualgrid = globalToLocal[neighbor.vertex];
+
+                                int newdualgrid = neighbor.localIndex;
                                 indices.Add(newdualgrid);
                             }
 

@@ -2,12 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using DualContour;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 namespace SparseVoxelOctree
 {
+
 
     public class SVO
     {
@@ -18,6 +20,8 @@ namespace SparseVoxelOctree
         public Dual_Contour meshingAlgorithm;
         public SVONode root;
         public int chunkSize = 32;
+
+        public List<FlatNode> flatList = new();
         public List<Vector3> vertices = new();
         private Material testMat = Resources.Load("Test") as Material;
 
@@ -110,11 +114,44 @@ namespace SparseVoxelOctree
             }
         }
 
+        //linearize the tree into a list for easier processing
+        int Flatten(SVONode node)
+        {
+            int currentIndex = flatList.Count;
+
+            // placeholder, may be filled later
+            flatList.Add(new FlatNode { IsLeaf = node.isLeaf, Data = 0, ChildBaseIndex = -1 });
+
+            if (!node.isLeaf && node.children != null)
+            {
+                int childBaseIndex = flatList.Count;
+                for (int i = 0; i < 8; i++)
+                    Flatten(node.children[i]);
+
+                // now patch in child base index
+                FlatNode temp = flatList[currentIndex];
+                temp.ChildBaseIndex = childBaseIndex;
+                flatList[currentIndex] = temp;
+            }
+
+            return currentIndex;
+        }
+
+        void ResetLocalIndex()
+        {
+            TraverseLeaves((node) => { node.localIndex = -1; });
+        }
+
         public void GenerateChunks()
         {
 
             List<Vector3> verts = new();
             List<int> indices = new();
+
+            //flatList.Clear();
+            //Flatten(root);
+
+
             //should have a dictionary and a list of vertices?
 
             void generateChunk(SVONode node)
@@ -141,23 +178,31 @@ namespace SparseVoxelOctree
                     // Assumed all chunks beyond this point are brand new or marked for renewal. Regenerate mesh
 
                     //Gather vertex nodes for home chunk
+
+
                     Dictionary<Vector3, SVONode> verticesDict = new();
                     List<SVONode> nodes = new();
                     Dictionary<Vector3, int> globalToLocal = new();
+
                     verts.Clear();
                     indices.Clear();
 
+                    //Reset local indices
+                    ResetLocalIndex(); //Does a DFS of entire tree
+
                     //adds to local list of vertices and dictionary of vertex nodes
-                    node.GatherChunkVertices(this, verticesDict, nodes, verts, globalToLocal);
+                    node.GatherChunkVertices(nodes, verts);
+
+
                     indices.Capacity = 3 * verts.Count;
 
+
                     //for each of the vertex nodes, generate indices
-                    for (int i = 0; i < nodes.Count; ++i)
+                    foreach (SVONode n in nodes)
                     {
-                        if (nodes[i].edge == -1) continue;
+                        if (n.edge == -1) continue;
 
-
-                        meshingAlgorithm.SVOQuad(nodes[i], indices, globalToLocal, verts);
+                        meshingAlgorithm.SVOQuad(n, indices, globalToLocal, verts);
 
                     }
 
@@ -221,6 +266,46 @@ namespace SparseVoxelOctree
             });
 
         }
+
+        //given a master octree list, traverse the leaves from the starting index
+        public void TraverseLeavesList(System.Action<SVONode, int> action, List<SVONode> masterList, int index)
+        {
+            SVONode node = masterList[index];
+            if (node.isLeaf)
+            {
+                action(node, index);
+                return;
+            }
+            if (node.children == null) return;
+            for (int i = 0; i < 8; i++)
+            {
+                int newIndex = index * 8 + (i + 1);
+                if (newIndex >= masterList.Count) continue;
+                TraverseLeavesList(action, masterList, newIndex);
+            }
+        }
+
+        public void TraverseNodesList(System.Action<SVONode, int> action, List<SVONode> masterList, int index)
+        {
+
+            SVONode node = masterList[index];
+            action(node, index);
+            if (node.children == null) return;
+            for (int i = 0; i < 8; i++)
+            {
+                int newIndex = index * 8 + (i + 1);
+                if (newIndex >= masterList.Count) continue;
+                TraverseNodesList(action, masterList, newIndex);
+            }
+        }
+    }
+
+
+    public struct FlatNode
+    {
+        public bool IsLeaf;
+        public int ChildBaseIndex; // index of first child, -1 if leaf
+        public int Data;
     }
 
     public class SVONode
@@ -233,7 +318,10 @@ namespace SparseVoxelOctree
         public SVONode[] children;  // 8 children, null if not subdivided
         public bool isLeaf;         // True if this node is a leaf
         public Vector3 vertex; // Index in the mesh vertex list (if leaf)
+        public int localIndex; // Local index in the chunk mesh (if leaf)
         public int edge;
+
+        public int startChildIndex; // when in a list, this points to its first child index
 
         public bool voteToCollapse;
 
@@ -248,6 +336,7 @@ namespace SparseVoxelOctree
             isLeaf = true;
             vertex = Vector3.zero;
             edge = -1;
+            localIndex = -1;
             voteToCollapse = false;
             this.parent = parent;
             this.childIndex = childIndex;
@@ -297,27 +386,16 @@ namespace SparseVoxelOctree
         public Vector3 GetCenter() { return position + 0.5f * size * Vector3.one; }
 
 
-        public void GatherChunkVertices(SVO svo, Dictionary<Vector3, SVONode> existingVertices = null, List<SVONode> nodes = null, List<Vector3> vertexList = null, Dictionary<Vector3, int> globalToLocal = null)
+        public void GatherChunkVertices(List<SVONode> nodes = null, List<Vector3> vertexList = null)
         {
             void gatherVertex(SVONode node)
             {
                 if (node.edge == -1) return; // No vertex to gather
-                Vector3 key = node.position;
-                if (!existingVertices.ContainsKey(key))
-                {
-                    existingVertices[key] = node;
 
-                    //change dualgrid index to vertexList length
-
-                    // ensure local index assignment
-                    int index = vertexList.Count;
-                    globalToLocal[vertex] = index;
-                    //Add to vertex list
-                    vertexList?.Add(vertex);
-                    nodes?.Add(node);
-
-
-                }
+                //Add to vertex list
+                node.localIndex = vertexList.Count;
+                vertexList?.Add(node.vertex);
+                nodes?.Add(node);
             }
             TraverseLeaves(gatherVertex);
 
@@ -351,6 +429,8 @@ namespace SparseVoxelOctree
                 children[i]?.TraverseLeaves(action);
             }
         }
+
+
         /// <summary>
         /// Finds the neighbor node in the given direction, handling differing LODs.
         /// direction: 000 2bit is x, 1bit is y, 0bit is z
