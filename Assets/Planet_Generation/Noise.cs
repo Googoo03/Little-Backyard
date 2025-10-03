@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 // Simplex Noise for C#
@@ -89,7 +90,12 @@ namespace Simplex
                 _seed = value;
             }
         }
-        public float scale = 0.05f;
+        private const float F3 = 1.0f / 3.0f;
+        private const float G3 = 1.0f / 6.0f;
+        private const float G3_2 = 2.0f * G3;
+        private const float G3_3 = 3.0f * G3;
+        private const float tFactor = 0.6f;
+        private float scale = .05f;
 
         private int _seed;
 
@@ -263,9 +269,6 @@ namespace Simplex
         public Vector3 Compute3DGradient(float x, float y, float z)
         {
 
-            const float F3 = 0.333333333f;
-            const float G3 = 0.166666667f;
-
             var s = (x + y + z) * F3; // Very nice and simple skew factor for 3D
             var xs = x + s;
             var ys = y + s;
@@ -406,12 +409,12 @@ namespace Simplex
             var x1 = x0 - i1 + G3; // Offsets for second corner in (x,y,z) coords
             var y1 = y0 - j1 + G3;
             var z1 = z0 - k1 + G3;
-            var x2 = x0 - i2 + 2.0f * G3; // Offsets for third corner in (x,y,z) coords
-            var y2 = y0 - j2 + 2.0f * G3;
-            var z2 = z0 - k2 + 2.0f * G3;
-            var x3 = x0 - 1.0f + 3.0f * G3; // Offsets for last corner in (x,y,z) coords
-            var y3 = y0 - 1.0f + 3.0f * G3;
-            var z3 = z0 - 1.0f + 3.0f * G3;
+            var x2 = x0 - i2 + G3_2; // Offsets for third corner in (x,y,z) coords
+            var y2 = y0 - j2 + G3_2;
+            var z2 = z0 - k2 + G3_2;
+            var x3 = x0 - 1.0f + G3_3; // Offsets for last corner in (x,y,z) coords
+            var y3 = y0 - 1.0f + G3_3;
+            var z3 = z0 - 1.0f + G3_3;
 
             // Wrap the integer indices at 256, to avoid indexing perm[] out of bounds
             var ii = Mod(i, 256);
@@ -419,7 +422,7 @@ namespace Simplex
             var kk = Mod(k, 256);
 
             // Calculate the contribution from the four corners
-            var t0 = 0.6f - x0 * x0 - y0 * y0 - z0 * z0;
+            var t0 = tFactor - x0 * x0 - y0 * y0 - z0 * z0;
             if (t0 < 0.0f) n0 = 0.0f;
             else
             {
@@ -427,7 +430,7 @@ namespace Simplex
                 n0 = t0 * t0 * Grad(_perm[ii + _perm[jj + _perm[kk]]], x0, y0, z0);
             }
 
-            var t1 = 0.6f - x1 * x1 - y1 * y1 - z1 * z1;
+            var t1 = tFactor - x1 * x1 - y1 * y1 - z1 * z1;
             if (t1 < 0.0f) n1 = 0.0f;
             else
             {
@@ -435,7 +438,7 @@ namespace Simplex
                 n1 = t1 * t1 * Grad(_perm[ii + i1 + _perm[jj + j1 + _perm[kk + k1]]], x1, y1, z1);
             }
 
-            var t2 = 0.6f - x2 * x2 - y2 * y2 - z2 * z2;
+            var t2 = tFactor - x2 * x2 - y2 * y2 - z2 * z2;
             if (t2 < 0.0f) n2 = 0.0f;
             else
             {
@@ -443,7 +446,7 @@ namespace Simplex
                 n2 = t2 * t2 * Grad(_perm[ii + i2 + _perm[jj + j2 + _perm[kk + k2]]], x2, y2, z2);
             }
 
-            var t3 = 0.6f - x3 * x3 - y3 * y3 - z3 * z3;
+            var t3 = tFactor - x3 * x3 - y3 * y3 - z3 * z3;
             if (t3 < 0.0f) n3 = 0.0f;
             else
             {
@@ -487,15 +490,17 @@ namespace Simplex
             138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
         };
 
-        private int FastFloor(float x)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int FastFloor(float x)
         {
-            return (x > 0) ? ((int)x) : (((int)x) - 1);
+            int xi = (int)x;
+            return (x < xi) ? xi - 1 : xi;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int Mod(int x, int m)
         {
-            var a = x % m;
-            return a < 0 ? a + m : a;
+            return x & (m - 1);
         }
 
         private float Grad(int hash, float x)
@@ -514,6 +519,7 @@ namespace Simplex
             return ((h & 1) != 0 ? -u : u) + ((h & 2) != 0 ? -2.0f * v : 2.0f * v);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private float Grad(int hash, float x, float y, float z)
         {
             var h = hash & 15;     // Convert low 4 bits of hash code into 12 simple

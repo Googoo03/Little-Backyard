@@ -92,8 +92,7 @@ namespace SparseVoxelOctree
             if (node.children == null) return;
             for (int i = 0; i < 8; i++)
             {
-                if (node.children[i] != null)
-                    TraverseLeavesRecursive(node.children[i], action);
+                TraverseLeavesRecursive(node.children[i], action);
             }
         }
 
@@ -109,8 +108,7 @@ namespace SparseVoxelOctree
             if (node.children == null) return;
             for (int i = 0; i < 8; i++)
             {
-                if (node.children[i] != null)
-                    TraverseNodesRecursive(node.children[i], action);
+                TraverseNodesRecursive(node.children[i], action);
             }
         }
 
@@ -182,29 +180,32 @@ namespace SparseVoxelOctree
 
                     Dictionary<Vector3, SVONode> verticesDict = new();
                     List<SVONode> nodes = new();
+                    List<SVONode> startNodes = new();
                     Dictionary<Vector3, int> globalToLocal = new();
 
                     verts.Clear();
                     indices.Clear();
 
                     //Reset local indices
-                    ResetLocalIndex(); //Does a DFS of entire tree
+                    //ResetLocalIndex(); //Does a DFS of entire tree
 
                     //adds to local list of vertices and dictionary of vertex nodes
                     node.GatherChunkVertices(nodes, verts);
-
+                    startNodes.AddRange(nodes);
 
                     indices.Capacity = 3 * verts.Count;
 
 
                     //for each of the vertex nodes, generate indices
-                    foreach (SVONode n in nodes)
+                    foreach (SVONode n in startNodes)
                     {
                         if (n.edge == -1) continue;
 
-                        meshingAlgorithm.SVOQuad(n, indices, globalToLocal, verts);
+                        meshingAlgorithm.SVOQuad(n, nodes, indices, globalToLocal, verts);
 
                     }
+
+                    foreach (SVONode n in nodes) { n.localIndex = -1; } //clear local indices after use
 
 
 
@@ -313,6 +314,7 @@ namespace SparseVoxelOctree
         // Start is called before the first frame update
         public Vector3 position; // Min corner of the node
         public float size;            // Length of the node's edge
+        public Vector3 center;
         public int childIndex;     // Index in parent's children array (0-7) Also corresponds to direction
         public SVONode parent; // Reference to parent node
         public SVONode[] children;  // 8 children, null if not subdivided
@@ -332,6 +334,7 @@ namespace SparseVoxelOctree
         {
             position = pos;
             size = s;
+            center = position + (0.5f * size * Vector3.one);
             children = null;
             isLeaf = true;
             vertex = Vector3.zero;
@@ -383,7 +386,7 @@ namespace SparseVoxelOctree
 
         public bool IsEmpty() { return isLeaf && edge == -1; }
 
-        public Vector3 GetCenter() { return position + 0.5f * size * Vector3.one; }
+        public Vector3 Center => center;
 
 
         public void GatherChunkVertices(List<SVONode> nodes = null, List<Vector3> vertexList = null)
@@ -426,7 +429,7 @@ namespace SparseVoxelOctree
             if (children == null) return;
             for (int i = 0; i < 8; i++)
             {
-                children[i]?.TraverseLeaves(action);
+                children[i].TraverseLeaves(action);
             }
         }
 
@@ -550,17 +553,13 @@ namespace SparseVoxelOctree
             if (node.children == null) return;
             for (int i = 0; i < 8; i++)
             {
-                if (node.children[i] != null)
-                    TraverseNodesRecursive(node.children[i], action);
+                TraverseNodesRecursive(node.children[i], action);
             }
         }
         /// <summary>
         /// Returns the child index of this node in its parent (0-7), or -1 if no parent.
         /// </summary>
-        public int GetChildIndex()
-        {
-            return childIndex;
-        }
+        public int GetChildIndex => childIndex;
 
         public bool MayContainCrossing()
         {

@@ -157,7 +157,7 @@ namespace DualContour
             float value = -radius + 20;
             float amplitude = 20;
             float domainWarp = simplexNoise.CalcPixel3D(pos.x, pos.y, pos.z) * amplitude;
-            int octaves = 15;
+            int octaves = 5;
             float lacunarity = 2;
             float persistence = 0.5f;
             float totalValue = 0;
@@ -398,7 +398,7 @@ namespace DualContour
 
 
 
-        public void SVOQuad(SVONode node, List<int> indices, Dictionary<Vector3, int> globalToLocal, List<Vector3> chunkVerts)
+        public void SVOQuad(SVONode node, List<SVONode> nodes, List<int> indices, Dictionary<Vector3, int> globalToLocal, List<Vector3> chunkVerts)
         {
 
 
@@ -490,6 +490,7 @@ namespace DualContour
                                 {
                                     //add to chunk verts
                                     neighbor.localIndex = chunkVerts.Count;
+                                    nodes.Add(neighbor);
                                     chunkVerts.Add(neighbor.vertex);
                                 }
 

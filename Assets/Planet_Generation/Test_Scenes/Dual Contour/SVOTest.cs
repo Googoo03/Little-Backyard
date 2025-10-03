@@ -19,6 +19,9 @@ public class SVOTest : MonoBehaviour
     [SerializeField] private int vertexLength;
     [SerializeField] private bool blockVoxel;
 
+    HashSet<SVONode> frontier = new HashSet<SVONode>();
+
+
     // Start is called before the first frame update
     SVO svo;
     Dual_Contour dualContour;
@@ -31,55 +34,80 @@ public class SVOTest : MonoBehaviour
 
         SVONode root = new(new Vector3Int(0, 0, 0), patchSize);
         svo = new SVO(root, dualContour);
-        root.Subdivide();
-        root.children[0].Subdivide();
-        root.children[0].children[0].Subdivide();
-        root.children[5].Subdivide();
-        root.children[5].children[0].Subdivide();
-        root.children[7].Subdivide();
+        frontier.Add(root);
     }
 
     // Update is called once per frame
     void Update()
     {
         vertexLength = svo.vertices.Count;
-        svo.TraverseNodes(node =>
+        Vector3 cubeForward = cube.forward.normalized;
+        Vector3 cubePos = cube.position;
+
+
+        List<SVONode> nodesToSubdivide = new List<SVONode>();
+        List<SVONode> nodesToCollapse = new List<SVONode>();
+
+        foreach (var node in frontier)
         {
-            if (node.isLeaf)
+            Vector3 delta = node.Center - cubePos;
+            float distSq = delta.sqrMagnitude;
+            float dot = Vector3.Dot(delta, cubeForward) / Mathf.Sqrt(distSq);
+
+            if (!freezeSubdivision && node.MayContainCrossing() &&
+                distSq < node.size * node.size * 100f &&
+                node.size > nodeSizeLimit)
             {
-                float distance = (node.GetCenter() - cube.position).magnitude;
-                float dot = Vector3.Dot((node.GetCenter() - cube.position).normalized, cube.forward.normalized);
-                if (!freezeSubdivision && node.MayContainCrossing() && distance < node.size * 10f && node.size > nodeSizeLimit && dot > 0)
+                nodesToSubdivide.Add(node);
+            }
+            else if (!freezeSubdivision &&
+                    (distSq > node.size * node.size * 400f))
+            {
+                node.voteToCollapse = true;
+                nodesToCollapse.Add(node.parent);
+            }
+        }
+
+        foreach (var node in nodesToSubdivide)
+        {
+            node.Subdivide();
+            node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
+            svo.MarkChunk(node);
+            refreshChunks = true;
+
+            foreach (var child in node.children)
+            {
+                frontier.Add(child);
+            }
+            frontier.Remove(node);
+        }
+
+        foreach (SVONode node in nodesToCollapse)
+        {
+
+            bool collapse = true;
+            if (node.children == null) continue;
+            foreach (var child in node.children)
+            {
+                if (!child.voteToCollapse)
                 {
-                    node.Subdivide(); // Just a placeholder
-                    node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
-                    svo.MarkChunk(node);
-                    refreshChunks = true;
-                    //GENERATE VERTICES
-                }
-                else if (!freezeSubdivision && distance > node.size * 20f || dot < 0)
-                {
-                    node.voteToCollapse = true;
+                    collapse = false;
+                    break;
                 }
             }
-            else
+            if (!collapse) continue;
+
+            frontier.Add(node);
+            //if (node.children == null) continue;
+            foreach (var child in node.children)
             {
-
-                bool collapse = true;
-
-                foreach (SVONode child in node.children)
-                {
-                    collapse &= child.voteToCollapse;
-                }
-                if (collapse)
-                {
-
-                    node.Collapse();
-                    node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
-                    svo.MarkChunk(node);
-                }
+                frontier.Remove(child);
             }
-        });
+            node.Collapse();
+            node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
+            svo.MarkChunk(node);
+            refreshChunks = true;
+        }
 
         elapsedTime += Time.deltaTime;
         if (elapsedTime > timeToRefresh)
@@ -93,6 +121,9 @@ public class SVOTest : MonoBehaviour
             refreshChunks = false;
         }
     }
+
+
+
     void OnDrawGizmos()
     {
         return;
