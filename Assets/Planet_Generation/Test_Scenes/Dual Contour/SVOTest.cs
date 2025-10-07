@@ -50,7 +50,7 @@ public class SVOTest : MonoBehaviour
 
         foreach (var node in frontier)
         {
-            Vector3 delta = node.Center - cubePos;
+            Vector3 delta = dualContour.CubeToSphere(node.Center, node.position.y) - cubePos;
             float distSq = delta.sqrMagnitude;
             float dot = Vector3.Dot(delta, cubeForward) / Mathf.Sqrt(distSq);
 

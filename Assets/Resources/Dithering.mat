@@ -94,18 +94,18 @@ Material:
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _PhaseG: 0.66
-    - _ScatterCoef: 2.04
+    - _ScatterCoef: 1.25
     - _SkyLine: 42.32
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _Threshold: 0.58
+    - _Threshold: 0.61
     - _UVSec: 0
-    - _WorleyPerlinMix: 0.57
+    - _WorleyPerlinMix: 0.56
     - _ZWrite: 1
     m_Colors:
     - _AtmoColor: {r: 0, g: 0.43151248, b: 0.7294118, a: 1}
-    - _CloudAmbient: {r: 0.11764705, g: 0.18346299, b: 0.2509804, a: 0}
+    - _CloudAmbient: {r: 0.3017088, g: 0.36406192, b: 0.4264151, a: 0}
     - _CloudCoeff: {r: 0, g: 0.01, b: 1.04, a: 1.39}
     - _CloudColor: {r: 1, g: 1, b: 1, a: 0}
     - _CloudScale: {r: 1, g: 1, b: 1, a: 0}

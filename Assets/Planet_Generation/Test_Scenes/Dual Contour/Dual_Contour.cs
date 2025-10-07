@@ -125,7 +125,7 @@ namespace DualContour
         private float radius;
 
         //helper variables to speed up vertex placement
-        Func<Vector3, int, Vector3> coordTransformFunction;
+        Func<Vector3, float, Vector3> coordTransformFunction;
 
 
         public Dual_Contour(Vector3 _global, Vector3Int scale, Vector3 ioffset, int ilodLevel, int length, bool mode, float iradius, int idir)
@@ -145,18 +145,18 @@ namespace DualContour
 
         }
 
-        private float function(Vector3 pos, float y)
+        private float Function(Vector3 pos, float y)
         {
 
             float frequency = .1f;
 
 
-            Vector3 spherePos = new Vector3(pos.x, 0, pos.z);
+            Vector3 spherePos = new(pos.x, pos.y, pos.z);
 
-            float radius = pos.y;
+            float radius = y;
             float value = -radius + 20;
             float amplitude = 20;
-            float domainWarp = simplexNoise.CalcPixel3D(pos.x, pos.y, pos.z) * amplitude;
+            float domainWarp = 0; //simplexNoise.CalcPixel3D(pos.x, pos.y, pos.z) * amplitude;
             int octaves = 5;
             float lacunarity = 2;
             float persistence = 0.5f;
@@ -186,7 +186,7 @@ namespace DualContour
 
         //////////////////////////////////////////////////////////////////////////////
 
-        private Vector3 CartesianToSphere(Vector3 pos, int elevation)
+        private Vector3 CartesianToSphere(Vector3 pos, float elevation)
         {
 
             //Given a grid position, convert the point into a shell point
@@ -249,11 +249,13 @@ namespace DualContour
 
         public void SetBlockVoxel(bool b) { block_voxel = b; }
 
-        public Vector3 GetStep() { return step; }
-
-        public float GetSideLength() { return max.x - min.x; }
-
-        public Vector3 GetOffset() { return offset; }
+        public Vector3 CubeToSphere(Vector3 pos, float elevation)
+        {
+            float radius = 4096;
+            pos -= new Vector3(radius, 0, radius) * 0.5f;
+            pos += new Vector3(0, radius / 2, 0);
+            return pos.normalized * (radius + elevation);
+        }
 
         public void SetVertexDictionary(Dictionary<Vector3, Vector3> dict) { verticesDict = dict; }
 
@@ -274,9 +276,10 @@ namespace DualContour
                 zPos = node.position.z + (i & 0x01) * node.size;
 
                 //evaluate the position and value of each vertex in the unit cube
-                vertPos[i] = new Vector3(xPos, yPos, zPos);
+                vertPos[i] = CubeToSphere(new Vector3(xPos, yPos, zPos), yPos);// new Vector3(xPos, yPos, zPos);
+
                 //vertValues[i] = -vertPos[i].y + 10 + Mathf.Sin(vertPos[i].x) * 2;
-                vertValues[i] = function(vertPos[i], yPos); //base SDF
+                vertValues[i] = Function(vertPos[i], yPos); //base SDF
                 max = vertValues[i] > max ? vertValues[i] : max;
                 min = vertValues[i] < min ? vertValues[i] : min;
             }

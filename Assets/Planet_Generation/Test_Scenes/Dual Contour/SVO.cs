@@ -19,7 +19,7 @@ namespace SparseVoxelOctree
         /// </summary>
         public Dual_Contour meshingAlgorithm;
         public SVONode root;
-        public int chunkSize = 32;
+        public int chunkSize = 128;
 
         public List<FlatNode> flatList = new();
         public List<Vector3> vertices = new();
@@ -388,6 +388,10 @@ namespace SparseVoxelOctree
 
         public Vector3 Center => center;
 
+        public int GetChildIndex => childIndex;
+
+        public bool MayContainCrossing() { return Mathf.Min(minSDF, maxSDF) <= size; }
+
 
         public void GatherChunkVertices(List<SVONode> nodes = null, List<Vector3> vertexList = null)
         {
@@ -556,17 +560,6 @@ namespace SparseVoxelOctree
                 TraverseNodesRecursive(node.children[i], action);
             }
         }
-        /// <summary>
-        /// Returns the child index of this node in its parent (0-7), or -1 if no parent.
-        /// </summary>
-        public int GetChildIndex => childIndex;
-
-        public bool MayContainCrossing()
-        {
-            return Mathf.Min(minSDF, maxSDF) <= size;
-        }
-
-
     }
 }
 

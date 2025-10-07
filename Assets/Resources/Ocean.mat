@@ -75,20 +75,20 @@ Material:
     m_Floats:
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _DepthCoef: 1.25
+    - _DepthCoef: 0.01
     - _DepthVal: 19.3
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 1
     - _GlossyReflections: 1
-    - _Levels: 3.56
+    - _Levels: 5.88
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _SmoothnessTextureChannel: 0
-    - _Specular: 12
+    - _Specular: 68.3
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _Threshold: 0.35
