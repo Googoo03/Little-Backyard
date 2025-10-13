@@ -359,8 +359,8 @@ namespace Simplex
         private float Generate(float x, float y, float z)
         {
             // Simple skewing factors for the 3D case
-            const float F3 = 0.333333333f;
-            const float G3 = 0.166666667f;
+            //const float F3 = 0.333333333f;
+            //const float G3 = 0.166666667f;
 
             float n0, n1, n2, n3; // Noise contributions from the four corners
 

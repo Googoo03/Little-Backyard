@@ -9,7 +9,9 @@ public class SVOTest : MonoBehaviour
     [SerializeField] private Transform cube;
     [SerializeField] private int getFaceNum;
 
-    [SerializeField] private int patchSize = 65536;
+    [SerializeField] private int dir;
+
+    [SerializeField] private int patchSize;
     [SerializeField] private bool freezeSubdivision = false;
     private bool refreshChunks;
     [SerializeField] private float timeToRefresh;
@@ -31,9 +33,13 @@ public class SVOTest : MonoBehaviour
 
         dualContour = new();
         dualContour.SetBlockVoxel(blockVoxel);
+        dualContour.SetRadius(patchSize);
+        dualContour.SetDir(dir);
+        dualContour.SetCubeAxis();
+
 
         SVONode root = new(new Vector3Int(0, 0, 0), patchSize);
-        svo = new SVO(root, dualContour);
+        svo = new SVO(root, dualContour, this.gameObject);
         frontier.Add(root);
     }
 
@@ -55,7 +61,7 @@ public class SVOTest : MonoBehaviour
             float dot = Vector3.Dot(delta, cubeForward) / Mathf.Sqrt(distSq);
 
             if (!freezeSubdivision && node.MayContainCrossing() &&
-                distSq < node.size * node.size * 100f &&
+                distSq < (node.size * node.size * 100f) &&
                 node.size > nodeSizeLimit)
             {
                 nodesToSubdivide.Add(node);

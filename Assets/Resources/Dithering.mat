@@ -79,16 +79,16 @@ Material:
     - _CloudCoeffB: 0.125
     - _CloudCoeffG: 0.25
     - _CloudCoeffR: 0.625
-    - _CloudDensity: 2.77
+    - _CloudDensity: 6.88
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DitherStrength: 1.36
     - _DstBlend: 0
-    - _EXTINCTION_MULT: 3.7
+    - _EXTINCTION_MULT: 6.47
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _LightIntensity: 1.31
+    - _LightIntensity: 1.09
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1

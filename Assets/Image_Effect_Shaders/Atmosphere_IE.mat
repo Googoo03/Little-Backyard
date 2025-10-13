@@ -70,14 +70,14 @@ Material:
     m_Ints: []
     m_Floats:
     - _AtmosphereHeight: 439
-    - _Blowout: 0.18
+    - _Blowout: 0
     - _BumpScale: 1
     - _CloudDensity: 0
     - _CloudFalloff: 4.54
     - _CloudSpeed: 0.1
     - _Color_Band: 3.04
     - _Cutoff: 0.5
-    - _Density: 6.2
+    - _Density: 0.01
     - _DetailNormalMapScale: 1
     - _DomainWarp: 0.44
     - _DstBlend: 0

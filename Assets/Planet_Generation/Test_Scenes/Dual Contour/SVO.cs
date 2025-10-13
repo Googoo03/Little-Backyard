@@ -19,13 +19,15 @@ namespace SparseVoxelOctree
         /// </summary>
         public Dual_Contour meshingAlgorithm;
         public SVONode root;
-        public int chunkSize = 128;
+        public int chunkSize = 1024;
 
         public List<FlatNode> flatList = new();
         public List<Vector3> vertices = new();
         private Material testMat = Resources.Load("Test") as Material;
 
         public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
+
+        public GameObject parentObj;
 
         public SVONode TraversePath(Vector3 targetPos)
 
@@ -62,10 +64,11 @@ namespace SparseVoxelOctree
             // mark for renewal
             chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
         }
-        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null)
+        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null, GameObject parentObj = null)
         {
             this.root = root;
             this.meshingAlgorithm = meshingAlgorithm;
+            this.parentObj = parentObj;
             meshingAlgorithm.SetVertexList(vertices);
         }
 
@@ -177,11 +180,8 @@ namespace SparseVoxelOctree
 
                     //Gather vertex nodes for home chunk
 
-
-                    Dictionary<Vector3, SVONode> verticesDict = new();
                     List<SVONode> nodes = new();
                     List<SVONode> startNodes = new();
-                    Dictionary<Vector3, int> globalToLocal = new();
 
                     verts.Clear();
                     indices.Clear();
@@ -201,7 +201,7 @@ namespace SparseVoxelOctree
                     {
                         if (n.edge == -1) continue;
 
-                        meshingAlgorithm.SVOQuad(n, nodes, indices, globalToLocal, verts);
+                        meshingAlgorithm.SVOQuad(n, nodes, indices, verts);
 
                     }
 
@@ -211,9 +211,11 @@ namespace SparseVoxelOctree
 
                     //Apply mesh data to gameObject
                     MeshFilter mf = chunkObject.GetComponent<MeshFilter>();
-                    if (mf == null) mf = chunkObject.AddComponent<MeshFilter>();
+                    mf = mf != null ? mf : chunkObject.AddComponent<MeshFilter>();
                     MeshRenderer rend = chunkObject.GetComponent<MeshRenderer>();
-                    if (rend == null) rend = chunkObject.AddComponent<MeshRenderer>();
+                    rend = rend != null ? rend : chunkObject.AddComponent<MeshRenderer>();
+
+                    chunkObject.transform.parent = parentObj.transform;
 
 
                     if (mf.sharedMesh == null)
@@ -234,11 +236,11 @@ namespace SparseVoxelOctree
 
                     m.vertices = verts.ToArray();
                     m.normals = new Vector3[verts.Count]; //placeholders
-                    Vector2[] uvs = new Vector2[verts.Count];
+                    //Vector2[] uvs = new Vector2[verts.Count];
 
-                    for (int i = 0; i < uvs.Length; ++i) { uvs[i] = verts[i]; }
+                    //for (int i = 0; i < uvs.Length; ++i) { uvs[i] = verts[i]; }
 
-                    m.uv = uvs;
+                    //m.uv = uvs;
 
                     m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
                     m.RecalculateBounds();

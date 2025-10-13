@@ -10,6 +10,7 @@ using chunk_events;
 using Unity.Jobs;
 using Unity.Burst;
 using SparseVoxelOctree;
+using System.Runtime.CompilerServices;
 
 
 
@@ -66,16 +67,19 @@ namespace DualContour
         int dir;
         bool block_voxel;
         private List<Vector3> vertices;
-        private Dictionary<Vector3, Vector3> verticesDict;
 
 
 
-        float[] vertValues = new float[8];
-        Vector3[] vertPos = new Vector3[8];
+        readonly float[] vertValues = new float[8];
+        readonly Vector3[] vertPos = new Vector3[8];
 
-        //Quad local vars
-        SVONode[] neighbors = new SVONode[8];
-        Trirule[] rules = {
+        int uSign;
+        int vSign;
+        Vector3 uaxis;
+        Vector3 vaxis;
+        Vector3 wAxis;
+
+        readonly Trirule[] rules = {
             new() { //x axis
                 axis = 0x20,
                 sign = 0x10,
@@ -114,14 +118,8 @@ namespace DualContour
         };
 
         //NOISE FUNCTIONS TEMPORARY
-        Noise simplexNoise = new Noise();
-
-        //
+        Noise simplexNoise = new();
         private Vector3 global;
-        private Vector3 min;
-        private Vector3 max;
-
-        //EDIT VARS
         private float radius;
 
         //helper variables to speed up vertex placement
@@ -135,15 +133,9 @@ namespace DualContour
             block_voxel = mode;
             radius = iradius;
             dir = idir;
-            coordTransformFunction = CartesianToSphere;
 
         }
-
-        public Dual_Contour()
-        {
-
-
-        }
+        public Dual_Contour() { }
 
         private float Function(Vector3 pos, float y)
         {
@@ -154,9 +146,9 @@ namespace DualContour
             Vector3 spherePos = new(pos.x, pos.y, pos.z);
 
             float radius = y;
-            float value = -radius + 20;
+            float value = -y + 20;
             float amplitude = 20;
-            float domainWarp = 0; //simplexNoise.CalcPixel3D(pos.x, pos.y, pos.z) * amplitude;
+            float domainWarp = simplexNoise.CalcPixel3D(pos.x, pos.y, pos.z) * amplitude;
             int octaves = 5;
             float lacunarity = 2;
             float persistence = 0.5f;
@@ -176,88 +168,54 @@ namespace DualContour
 
         public void SetVertexList(List<Vector3> v) { vertices = v; }
 
-        [BurstCompile]
-        public void InitializeGrid(bool seam, ref NativeList<Vector3> verts, ref NativeList<int> ind) { }
-        public Vector3 GetMin() { return min; }
-        public Vector3 GetMax() { return max; }
-
-        //returns the center based on base cartestian grid coordinates
-        public Vector3 GetCenter() { return (min + max) / 2; }
-
-        //////////////////////////////////////////////////////////////////////////////
-
-        private Vector3 CartesianToSphere(Vector3 pos, float elevation)
-        {
-
-            //Given a grid position, convert the point into a shell point
-            //dir contains the u and v direction, which are masks for the x and z positions.
-            dir = 65;
-            float radius = 1024;
-
-            int uSign = ((dir & 0x80) != 0) ? 1 : -1;
-            int vSign = ((dir & 0x08) != 0) ? 1 : -1;
-            Vector3 uaxis = new Vector3(((dir >> 6 & 0x7FFF) & 0x01), (dir >> 5) & 0x01, (dir >> 4) & 0x01) * (uSign);
-            Vector3 vaxis = new Vector3(((dir >> 2) & 0x01), (dir >> 1) & 0x01, (dir) & 0x01) * (vSign);
-            Vector3 wAxis = Vector3.Cross(vaxis, uaxis);
-
-
-            //no idea why the step.x / 2. Why would it need to be pushed back half a unit? BECAUSE THE QUADS ARE CENTERED BY DEFAULT
-            Vector3 newpos = uaxis * pos.x + vaxis * pos.z + wAxis * (radius - step.y / 2);
-
-            return newpos.normalized * (radius + (elevation * step.y) + offset.y);
-        }
-
-        Vector3 CubeToSphereDirection(Vector3 p)
-        {
-            float x = p.x;
-            float y = p.y;
-            float z = p.z;
-
-            float x2 = x * x;
-            float y2 = y * y;
-            float z2 = z * z;
-
-            return new Vector3(
-                x * Mathf.Sqrt(1f - (y2 / 2f) - (z2 / 2f) + (y2 * z2) / 3f),
-                y * Mathf.Sqrt(1f - (z2 / 2f) - (x2 / 2f) + (x2 * z2) / 3f),
-                z * Mathf.Sqrt(1f - (x2 / 2f) - (y2 / 2f) + (x2 * y2) / 3f)
-            );
-        }
-
-        private Vector3 GridToSphere(Vector3 pos, int elevation)
-        {
-            float r = pos.magnitude; // radial distance
-            return CubeToSphereDirection(pos.normalized) * r;
-        }
-
-        //returns in radians the polar coords of a given cartesian coordinate
-        private Vector3 CartesianToPolarCoords(Vector3 Relativecartesian)
-        {
-            float r = Relativecartesian.magnitude;
-            float theta = Mathf.Atan2(Relativecartesian.y, Relativecartesian.x);
-            float phi = Mathf.Acos(Relativecartesian.z / r);
-            return new Vector3(r, theta, phi);
-        }
-
-        private Vector3 Grid(Vector3 pos, int elevation) { return pos; }
-
+        public void SetRadius(float r) { radius = r; }
         public Vector3 FindTransformedCoord(Vector3 pos, int elevation) { return coordTransformFunction(pos, elevation); }
 
         private Vector3 ShellElevate(Vector3 pos) { return new Vector3(pos.x, pos.y + simplexNoise.CalcPixel3D((global.x + pos.x) / 2, 0, (global.z + pos.z) / 2) * 20, pos.z); }
-
         public void SetGlobal(Vector3 g) { global = g; }
-
         public void SetBlockVoxel(bool b) { block_voxel = b; }
+        public void SetDir(int d) { dir = d; }
 
+
+        //////////////////////////////////////////////////////////////////////////////
+        /* DEPRECATED
+                private Vector3 CartesianToSphere(Vector3 pos, float elevation)
+                {
+
+                    //Given a grid position, convert the point into a shell point
+                    //dir contains the u and v direction, which are masks for the x and z positions.
+                    dir = 65;
+                    float radius = 1024;
+
+                    int uSign = ((dir & 0x80) != 0) ? 1 : -1;
+                    int vSign = ((dir & 0x08) != 0) ? 1 : -1;
+                    Vector3 uaxis = new Vector3(((dir >> 6 & 0x7FFF) & 0x01), (dir >> 5) & 0x01, (dir >> 4) & 0x01) * (uSign);
+                    Vector3 vaxis = new Vector3(((dir >> 2) & 0x01), (dir >> 1) & 0x01, (dir) & 0x01) * (vSign);
+                    Vector3 wAxis = Vector3.Cross(vaxis, uaxis);
+
+
+                    //no idea why the step.x / 2. Why would it need to be pushed back half a unit? BECAUSE THE QUADS ARE CENTERED BY DEFAULT
+                    Vector3 newpos = uaxis * pos.x + vaxis * pos.z + wAxis * (radius - step.y / 2);
+
+                    return newpos.normalized * (radius + (elevation * step.y) + offset.y);
+                }*/
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3 CubeToSphere(Vector3 pos, float elevation)
         {
-            float radius = 4096;
-            pos -= new Vector3(radius, 0, radius) * 0.5f;
-            pos += new Vector3(0, radius / 2, 0);
-            return pos.normalized * (radius + elevation);
+            return ((uaxis * pos.x) + (vaxis * pos.z) + wAxis - offset).normalized * ((radius * 0.5f) + elevation);
         }
 
-        public void SetVertexDictionary(Dictionary<Vector3, Vector3> dict) { verticesDict = dict; }
+        public void SetCubeAxis()
+        {
+            uSign = ((dir & 0x80) != 0) ? 1 : -1;
+            vSign = ((dir & 0x08) != 0) ? 1 : -1;
+            uaxis = new Vector3(((dir >> 6 & 0x7FFF) & 0x01), (dir >> 5) & 0x01, (dir >> 4) & 0x01) * (uSign);
+            vaxis = new Vector3(((dir >> 2) & 0x01), (dir >> 1) & 0x01, (dir) & 0x01) * (vSign);
+            wAxis = Vector3.Cross(vaxis, uaxis) * (radius * 0.5f);
+            offset = (uaxis + vaxis) * (radius * 0.5f);
+
+        }
 
         float Adapt(float x0, float x1) => (-x0) / (x1 - x0);
 
@@ -276,10 +234,9 @@ namespace DualContour
                 zPos = node.position.z + (i & 0x01) * node.size;
 
                 //evaluate the position and value of each vertex in the unit cube
-                vertPos[i] = CubeToSphere(new Vector3(xPos, yPos, zPos), yPos);// new Vector3(xPos, yPos, zPos);
+                vertPos[i] = CubeToSphere(new Vector3(xPos, yPos, zPos), yPos);
 
-                //vertValues[i] = -vertPos[i].y + 10 + Mathf.Sin(vertPos[i].x) * 2;
-                vertValues[i] = Function(vertPos[i], yPos); //base SDF
+                vertValues[i] = Function(vertPos[i], vertPos[i].magnitude - radius); //base SDF
                 max = vertValues[i] > max ? vertValues[i] : max;
                 min = vertValues[i] < min ? vertValues[i] : min;
             }
@@ -363,6 +320,7 @@ namespace DualContour
             }
 
             avg /= count > 1 ? count : 1;
+            //convert the average position to a sphere
 
             //figure out what edge was crossed (axis)
 
@@ -388,6 +346,7 @@ namespace DualContour
                 newedge |= 1 << 1;
                 newedge |= ((vertValues[6] > 0) && !(vertValues[7] > 0)) ? 1 : 0;
             }
+
             //block_voxel = true;
             Vector3 vertex = block_voxel ? vertPos[0] : avg;
 
@@ -401,21 +360,16 @@ namespace DualContour
 
 
 
-        public void SVOQuad(SVONode node, List<SVONode> nodes, List<int> indices, Dictionary<Vector3, int> globalToLocal, List<Vector3> chunkVerts)
+        public void SVOQuad(SVONode node, List<SVONode> nodes, List<int> indices, List<Vector3> chunkVerts)
         {
-
-
-
             SVONode zNeighbor = node.GetNeighborLOD(1);
             SVONode yNeighbor = node.GetNeighborLOD(2);
             SVONode yzNeighbor = yNeighbor?.GetNeighborLOD(1);
             SVONode xNeighbor = node.GetNeighborLOD(4);
             SVONode zxNeighbor = zNeighbor?.GetNeighborLOD(4);
             SVONode xyNeighbor = xNeighbor?.GetNeighborLOD(2);
-            SVONode[] baseNeighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
-
-
-
+            SVONode xyzNeighbor = yzNeighbor?.GetNeighborLOD(4);
+            SVONode[] baseNeighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor, xyzNeighbor };
             int edge = node.edge;
 
             foreach (Trirule rule in rules)
@@ -465,7 +419,11 @@ namespace DualContour
                             ? (xNeighbor.size < yNeighbor.size ? xNeighbor.GetNeighborLOD(2) : yNeighbor.GetNeighborLOD(4))
                             : (xNeighbor ?? yNeighbor)?.GetNeighborLOD((xNeighbor != null) ? 2 : 4);
 
-                        SVONode[] neighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
+                        xyzNeighbor = (xyNeighbor != null && yzNeighbor != null)
+                            ? (xyNeighbor.size < yzNeighbor.size ? xyNeighbor.GetNeighborLOD(1) : yzNeighbor.GetNeighborLOD(4))
+                            : (xyNeighbor ?? yzNeighbor)?.GetNeighborLOD((xyNeighbor != null) ? 1 : 4);
+
+                        SVONode[] neighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor, xyzNeighbor };
 
                         int getfaceVal = verts.v2;
                         List<SVONode> diagonal = neighbors[getfaceVal]?.GetFace(getfaceVal);
@@ -480,7 +438,11 @@ namespace DualContour
                             SVONode n1 = neighbors[verts[j * 3 + 1]];
                             SVONode n2 = neighbors[verts[j * 3 + 2]];
 
-                            if (n0.IsEmpty() || n1.IsEmpty() || n2.IsEmpty() || diagonal[l].IsEmpty()) continue;
+                            //maybe skip only the 3 needed? There's an extra that may not be needed
+                            //if a node == v2, then dont count it
+
+                            if (n1.IsEmpty() || diagonal[l].IsEmpty()) continue;
+                            if (n0 == n2) UnityEngine.Debug.Log("Degenerate located: " + n1.vertex + " and " + n2.vertex);
 
                             for (int i = 0; i < 3; ++i)
                             {
