@@ -244,6 +244,7 @@ Shader "Unlit/Dithering_ColorBand"
 
                 float stepSize =(tCloudExit-tCloudEnter)*0.02;
 
+                [unroll(50)]
                 for (tCloud = 0; tCloud < 1.0; tCloud += 0.02)
                 {
                     float3 pos = start_point + ray_direction * (tCloudEnter + (tCloudExit-tCloudEnter)*(tCloud+blueNoise));
@@ -257,8 +258,7 @@ Shader "Unlit/Dithering_ColorBand"
                     
                     float density = (cloudSample.r * _CloudCoeffR + cloudSample.g * _CloudCoeffG + cloudSample.b * _CloudCoeffB + cloudSample.a * _CloudCoeffA - _Threshold) * _WorleyPerlinMix;
                     density += (perlinSample.r * _CloudCoeffR + perlinSample.g * _CloudCoeffG + perlinSample.b * _CloudCoeffB + perlinSample.a * _CloudCoeffA - _Threshold) * (1.0 - _WorleyPerlinMix);
-                    //if(density-stepSize < _Threshold) continue;
-                    //density = 1.0-density;
+
                     density = max(density, 0.0);
                     float lightTransmission = _LightIntensity;
 
@@ -267,8 +267,8 @@ Shader "Unlit/Dithering_ColorBand"
                     bool inCloud = RayAABBIntersect(pos, sunDir, _Position - _Scale, _Position + _Scale, tSunCloudEnter, tSunCloudExit);
                     float sunStep = (tSunCloudExit-tSunCloudEnter)*0.1;
                     
-                    [unroll(10)]
-                    for(float tSun = 0; tSun < 1.0; tSun += 0.1)
+                    [unroll(5)]
+                    for(float tSun = 0; tSun < 1.0; tSun += 0.2)
                     {
                         
                         
@@ -281,10 +281,8 @@ Shader "Unlit/Dithering_ColorBand"
                         
                         float toSunDensity = (toSunCloudSample.r * _CloudCoeffR + toSunCloudSample.g * _CloudCoeffG + toSunCloudSample.b * _CloudCoeffB + toSunCloudSample.a * _CloudCoeffA - _Threshold) * _WorleyPerlinMix;
                         toSunDensity += (toSunPerlinSample.r * _CloudCoeffR + toSunPerlinSample.g * _CloudCoeffG + toSunPerlinSample.b * _CloudCoeffB + toSunPerlinSample.a * _CloudCoeffA - _Threshold) * (1.0 - _WorleyPerlinMix);
-                        //if(toSunDensity < _Threshold) continue;
                         
                         toSunDensity = max(toSunDensity, 0.0);
-                        //toSunDensity = 1.0-toSunDensity;
 
                         lightTransmission *= exp(-toSunDensity * _ScatterCoef * sunStep);
                     }

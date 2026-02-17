@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using worley_3d;
 using Simplex;
+using UnityEngine.UI;
 
 public class ThreeD_Texture_Manager : MonoBehaviour
 {
@@ -17,6 +18,8 @@ public class ThreeD_Texture_Manager : MonoBehaviour
     public FloatParameter persistence;
     public IntParameter octaves;
     public FloatParameter amplitude;
+
+    [SerializeField] public string textureName;
     // Start is called before the first frame update
     void Start()
     {
@@ -31,7 +34,7 @@ public class ThreeD_Texture_Manager : MonoBehaviour
     public void Generate3DPerlinTexture()
     {
         if (simplex3D == null) return;
-        simplex3D.CreateTexture3D((int)resolution, (int)4, (float)frequency, (float)lacunarity, (float)0.5f, (float)1);
+        simplex3D.CreateTexture3D((int)resolution, (int)4, (float)frequency, (float)lacunarity, (float)0.5f, (float)1, textureName);
     }
 
     public void Generate3DWorleyTexture()

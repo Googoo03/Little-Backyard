@@ -37,6 +37,10 @@ Material:
         m_Texture: {fileID: 2800000, guid: 90b228892b0878242b939db292a3ca90, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _NormalMapTop:
+        m_Texture: {fileID: 2800000, guid: 52fa51f9f5303204980c7f021e2ab1c9, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _ParallaxMap:
         m_Texture: {fileID: 2800000, guid: 415b614ff28f3a343961b956341629e6, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -47,6 +51,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _TexArray:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TopTex:
+        m_Texture: {fileID: 2800000, guid: 90b228892b0878242b939db292a3ca90, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -61,5 +69,6 @@ Material:
     - _PlanetType: 2
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _PlanetPos: {r: 0, g: 0, b: 0, a: 0}
     - _SunPos: {r: 5, g: 300, b: 5, a: 1}
   m_BuildTextureStacks: []
