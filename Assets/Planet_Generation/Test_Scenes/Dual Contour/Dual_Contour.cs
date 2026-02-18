@@ -187,6 +187,7 @@ namespace DualContour
 
             for (int i = 0; i < 8; ++i)
             {
+                //eulerian coordinate grid at resolution node.size
                 xPos = node.position.x + ((i >> 2) & 0x01) * node.size;
                 yPos = node.position.y + ((i >> 1) & 0x01) * node.size;
                 zPos = node.position.z + (i & 0x01) * node.size;

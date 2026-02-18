@@ -22,11 +22,11 @@ public class SVOTest : MonoBehaviour
     [SerializeField] private bool blockVoxel;
 
     HashSet<SVONode> frontier = new HashSet<SVONode>();
+    SVO svo;
+    Dual_Contour dualContour;
 
 
     // Start is called before the first frame update
-    SVO svo;
-    Dual_Contour dualContour;
     void Start()
     {
         refreshChunks = false;

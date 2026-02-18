@@ -6,6 +6,7 @@ using System.Linq;
 using DualContour;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using faces;
 
 namespace SparseVoxelOctree
 {
@@ -19,6 +20,7 @@ namespace SparseVoxelOctree
         /// </summary>
         public Dual_Contour meshingAlgorithm;
         public SVONode root;
+        public Face[] faceNeighbors;
         public int chunkSize = 1024;
 
         public List<FlatNode> flatList = new();
@@ -64,11 +66,12 @@ namespace SparseVoxelOctree
             // mark for renewal
             chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
         }
-        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null, GameObject parentObj = null)
+        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null, GameObject parentObj = null, Face[] faceNeighbors = null)
         {
             this.root = root;
             this.meshingAlgorithm = meshingAlgorithm;
             this.parentObj = parentObj;
+            this.faceNeighbors = faceNeighbors;
             meshingAlgorithm.SetVertexList(vertices);
         }
 
@@ -149,10 +152,6 @@ namespace SparseVoxelOctree
             List<Vector3> verts = new();
             List<int> indices = new();
 
-            //flatList.Clear();
-            //Flatten(root);
-
-
             //should have a dictionary and a list of vertices?
 
             void generateChunk(SVONode node)
@@ -164,15 +163,10 @@ namespace SparseVoxelOctree
                 GameObject chunkObject = !chunks.ContainsKey(node.position) ? new("Chunk_" + node.position.ToString())
                     : chunks[node.position].Item2;
 
-
-
                 //if not marked for renewal, dont regenerate
 
                 if (!chunks.ContainsKey(node.position) || chunks[node.position].Item1 == true)
                 {
-
-
-
                     //add if not present already, renew
                     chunks[node.position] = new Tuple<bool, GameObject>(false, chunkObject);
 
@@ -229,18 +223,10 @@ namespace SparseVoxelOctree
                     Mesh m = mf.sharedMesh;
                     rend.material = testMat;
 
-                    //IF WE WANT TEXTURES, WE HAVE TO CALCULATE THE UVS MANUALLY
-                    //m.uv = uvs;
-                    ////////////////////////////////////////////////////////////
                     if (indices.Count < 3) return;
 
                     m.vertices = verts.ToArray();
                     m.normals = new Vector3[verts.Count]; //placeholders
-                    //Vector2[] uvs = new Vector2[verts.Count];
-
-                    //for (int i = 0; i < uvs.Length; ++i) { uvs[i] = verts[i]; }
-
-                    //m.uv = uvs;
 
                     m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
                     m.RecalculateBounds();
@@ -304,6 +290,16 @@ namespace SparseVoxelOctree
     }
 
 
+
+
+
+
+
+
+
+
+
+
     public struct FlatNode
     {
         public bool IsLeaf;
@@ -311,9 +307,19 @@ namespace SparseVoxelOctree
         public int Data;
     }
 
+
+
+
+
+
+
+
+
     public class SVONode
     {
         // Start is called before the first frame update
+
+        public SVO parentOBJ;
 
         public Vector3 position; // Min corner of the node
 
@@ -335,7 +341,7 @@ namespace SparseVoxelOctree
 
         public float minSDF, maxSDF;
 
-        public SVONode(Vector3 pos, float s, SVONode parent = null, int childIndex = -1, System.Func<Vector3, Vector3> transformFunc = null)
+        public SVONode(Vector3 pos, float s, SVONode parent = null, int childIndex = -1, System.Func<Vector3, Vector3> transformFunc = null, SVO parentOBJ = null)
         {
             position = pos;
             transformedPosition = transformFunc != null ? transformFunc(pos) : pos;
@@ -347,6 +353,7 @@ namespace SparseVoxelOctree
             edge = -1;
             localIndex = -1;
             voteToCollapse = false;
+            this.parentOBJ = parentOBJ;
             this.parent = parent;
             this.childIndex = childIndex;
         }
@@ -444,11 +451,9 @@ namespace SparseVoxelOctree
         }
 
 
-        /// <summary>
-        /// Finds the neighbor node in the given direction, handling differing LODs.
-        /// direction: 000 2bit is x, 1bit is y, 0bit is z
-        /// Returns the deepest adjacent node (may be larger or smaller than this node).
-        /// </summary>
+        // Finds the neighbor node in the given direction, handling differing LODs.
+        // direction: 000 2bit is x, 1bit is y, 0bit is z
+        // Returns the deepest adjacent node (may be larger or smaller than this node).
         public static SVONode GetNeighborLOD(SVONode node, int direction)
         {
             SVONode current = node;
@@ -490,7 +495,27 @@ namespace SparseVoxelOctree
                 current = current.parent;
             }
 
-            return null; // No neighbor in that direction
+            //can add the 6 face adjacency here
+            //guaranteed that no suboctree neighbor is found
+            SVO faceNeighbor = node.parentOBJ.faceNeighbors[node.parent.childIndex].U; //get face neighbor from wrapper class
+            SVONode faceNeighborRootNode = faceNeighbor.root;
+            if (faceNeighborRootNode == null)
+                return null;
+
+            // Descend down, flipping axes as needed
+            for (int i = path.Count - 1; i >= 0; i--)
+            {
+                if (faceNeighborRootNode.isLeaf || faceNeighborRootNode.children == null) break;
+
+                int descendIndex = path[i];
+                descendIndex ^= direction;
+
+                faceNeighborRootNode = faceNeighborRootNode.children[descendIndex];
+            }
+
+            return faceNeighborRootNode; // Found orthogonal or diagonal neighbor
+
+            //return null; // No neighbor in that direction
         }
 
         public static List<SVONode> GetFace(SVONode current, int dir)
