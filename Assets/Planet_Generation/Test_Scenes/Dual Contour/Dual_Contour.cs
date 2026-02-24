@@ -11,7 +11,7 @@ using Unity.Jobs;
 using Unity.Burst;
 using SparseVoxelOctree;
 using System.Runtime.CompilerServices;
-
+using faces;
 
 
 namespace DualContour
@@ -137,10 +137,10 @@ namespace DualContour
 
             float radius = y;
             float frequency = .1f;
-            float amplitude = 20.01f;
+            float amplitude = 50.0f;
 
             spherePos /= noiseTexture.width; //even dimensions
-            float value = 1f - Mathf.Abs(noiseTexture.GetPixelBilinear(spherePos.x * frequency, spherePos.y * frequency, spherePos.z * frequency).r * amplitude) - radius;
+            float value = 1f - Mathf.Abs(noiseTexture.GetPixelBilinear(spherePos.x * frequency, spherePos.y * frequency, spherePos.z * frequency).r * amplitude) + radius;
 
             return value;
         }
@@ -157,22 +157,23 @@ namespace DualContour
         public void SetBlockVoxel(bool b) { block_voxel = b; }
         public void SetDir(int d) { dir = d; }
 
+        public Vector3 GetWAxis() { return wAxis; }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3 CubeToSphere(Vector3 pos)
         {
             float elevation = pos.y;
-            return ((uaxis * pos.x) + (vaxis * pos.z) + wAxis - offset).normalized * ((radius * 0.5f) + elevation);
+            return ((uaxis * pos.x) + (vaxis * pos.z) + (wAxis - offset) * (radius * 0.5f)).normalized * ((radius * 0.5f) + elevation);
         }
 
-        public void SetCubeAxis()
-        {
-            uSign = ((dir & 0x80) != 0) ? 1 : -1;
-            vSign = ((dir & 0x08) != 0) ? 1 : -1;
-            uaxis = new Vector3(((dir >> 6 & 0x7FFF) & 0x01), (dir >> 5) & 0x01, (dir >> 4) & 0x01) * (uSign);
-            vaxis = new Vector3(((dir >> 2) & 0x01), (dir >> 1) & 0x01, (dir) & 0x01) * (vSign);
-            wAxis = Vector3.Cross(vaxis, uaxis) * (radius * 0.5f);
-            offset = (uaxis + vaxis) * (radius * 0.5f);
 
+
+        public void SetCubeAxis(int faceNum)
+        {
+            uaxis = Face.Faces[faceNum].uaxis;
+            vaxis = Face.Faces[faceNum].vaxis;
+            wAxis = Face.Faces[faceNum].normal;
+            offset = (uaxis + vaxis);
         }
 
         float Adapt(float x0, float x1) => (-x0) / (x1 - x0);
@@ -315,15 +316,22 @@ namespace DualContour
 
         }
 
+        // axis bit constants used throughout the method
+        private const int X_AXIS = 4;
+        private const int Y_AXIS = 2;
+        private const int Z_AXIS = 1;
+
         public void SVOQuad(SVONode node, List<SVONode> nodes, List<int> indices, List<Vector3> chunkVerts)
         {
-            SVONode zNeighbor = SVONode.GetNeighborLOD(node, 1);
-            SVONode yNeighbor = SVONode.GetNeighborLOD(node, 2);
-            SVONode yzNeighbor = yNeighbor != null ? SVONode.GetNeighborLOD(yNeighbor, 1) : null;
-            SVONode xNeighbor = SVONode.GetNeighborLOD(node, 4);
-            SVONode zxNeighbor = zNeighbor != null ? SVONode.GetNeighborLOD(zNeighbor, 4) : null;
-            SVONode xyNeighbor = xNeighbor != null ? SVONode.GetNeighborLOD(xNeighbor, 2) : null;
-            //SVONode xyzNeighbor = yzNeighbor != null ? SVONode.GetNeighborLOD(yzNeighbor, 4) : null;
+            // start with the six immediate neighbours; diagonal neighbours are
+            // simply the neighbour in the bitwise-OR direction, which already
+            // handles face crossings and mismatched LOD.
+            SVONode zNeighbor = SVONode.GetNeighborLOD(node, Z_AXIS);
+            SVONode yNeighbor = SVONode.GetNeighborLOD(node, Y_AXIS);
+            SVONode yzNeighbor = SVONode.GetNeighborLOD(node, Y_AXIS | Z_AXIS);
+            SVONode xNeighbor = SVONode.GetNeighborLOD(node, X_AXIS);
+            SVONode zxNeighbor = SVONode.GetNeighborLOD(node, Z_AXIS | X_AXIS);
+            SVONode xyNeighbor = SVONode.GetNeighborLOD(node, X_AXIS | Y_AXIS);
             SVONode[] baseNeighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
             int edge = node.edge;
 
@@ -350,32 +358,36 @@ namespace DualContour
                 //two triangles to make a quad
                 for (int j = 0; j < 2; ++j)
                 {
-                    int directionAxis = j == 0 ? verts.v1 : verts.v4;
+                    int directionAxis = j == 0 ? verts.v1 : verts.v4; //middle vertex index of triangle depending on quad.
 
                     List<SVONode> face = SVONode.GetFace(baseNeighbors[directionAxis], directionAxis);
 
                     for (int k = 0; k < face?.Count; ++k)
                     {
-                        zNeighbor = directionAxis == 1 ? face[k] : SVONode.GetNeighborLOD(node, 1);
-                        yNeighbor = directionAxis == 2 ? face[k] : SVONode.GetNeighborLOD(node, 2);
-                        xNeighbor = directionAxis == 4 ? face[k] : SVONode.GetNeighborLOD(node, 4);
+                        zNeighbor = directionAxis == Z_AXIS ? face[k] : SVONode.GetNeighborLOD(node, Z_AXIS);
+                        yNeighbor = directionAxis == Y_AXIS ? face[k] : SVONode.GetNeighborLOD(node, Y_AXIS);
+                        xNeighbor = directionAxis == X_AXIS ? face[k] : SVONode.GetNeighborLOD(node, X_AXIS);
 
-                        // choose diagonal neighbors: drive by the *finer* neighbor consistently
-                        yzNeighbor = (yNeighbor != null && zNeighbor != null)
-                            ? (yNeighbor.size < zNeighbor.size ? SVONode.GetNeighborLOD(yNeighbor, 1) : SVONode.GetNeighborLOD(zNeighbor, 2))
-                            : (yNeighbor ?? zNeighbor) != null ? SVONode.GetNeighborLOD((yNeighbor ?? zNeighbor), (yNeighbor != null) ? 1 : 2) : null;
+                        // diagonal neighbors are always obtained by asking the tree for
+                        // the neighbour in the combined direction; this internally
+                        // follows faces and resolves proper LOD for us.
+                        //yzNeighbor = directionAxis == Y_AXIS ? SVONode.GetNeighborLOD(yNeighbor, Z_AXIS, node) : SVONode.GetNeighborLOD(zNeighbor, Y_AXIS, node);
 
-                        zxNeighbor = (zNeighbor != null && xNeighbor != null)
-                            ? (zNeighbor.size < xNeighbor.size ? SVONode.GetNeighborLOD(zNeighbor, 4) : SVONode.GetNeighborLOD(xNeighbor, 1))
-                            : SVONode.GetNeighborLOD((zNeighbor ?? xNeighbor), (zNeighbor != null) ? 4 : 1);
 
-                        xyNeighbor = (xNeighbor != null && yNeighbor != null)
-                            ? (xNeighbor.size < yNeighbor.size ? SVONode.GetNeighborLOD(xNeighbor, 2) : SVONode.GetNeighborLOD(yNeighbor, 4))
-                            : (xNeighbor ?? yNeighbor) != null ? SVONode.GetNeighborLOD((xNeighbor ?? yNeighbor), (xNeighbor != null) ? 2 : 4) : null;
+                        //zxNeighbor = directionAxis == Z_AXIS ? SVONode.GetNeighborLOD(zNeighbor, X_AXIS, node) : SVONode.GetNeighborLOD(xNeighbor, Z_AXIS, node);
+                        zxNeighbor = (node.parentOBJ.faceNum & 1) == 1 ? SVONode.GetNeighborLOD(zNeighbor, X_AXIS, node) : SVONode.GetNeighborLOD(xNeighbor, Z_AXIS, node);
+                        yzNeighbor = SVONode.GetNeighborLOD(zNeighbor, Y_AXIS, node);
+                        xyNeighbor = SVONode.GetNeighborLOD(yNeighbor, X_AXIS, node);
+                        //xyNeighbor = directionAxis == X_AXIS ? SVONode.GetNeighborLOD(xNeighbor, Y_AXIS, node) : SVONode.GetNeighborLOD(yNeighbor, X_AXIS, node);
 
                         SVONode[] neighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
 
                         int getfaceVal = verts.v2;
+
+                        SVONode n0 = neighbors[verts[j * 3]];
+                        SVONode n1 = neighbors[verts[j * 3 + 1]];
+                        SVONode n2 = neighbors[verts[j * 3 + 2]];
+
                         List<SVONode> diagonal = SVONode.GetFace(neighbors[getfaceVal], getfaceVal);
 
                         //if the first neighbor we're working with has disparate sizes with the second neighbor, do diagonal. Else, diagonal should be 1
@@ -384,12 +396,7 @@ namespace DualContour
 
                         for (int l = 0; l < diagonalSize; ++l)
                         {
-                            SVONode n0 = neighbors[verts[j * 3]];
-                            SVONode n1 = neighbors[verts[j * 3 + 1]];
-                            SVONode n2 = neighbors[verts[j * 3 + 2]];
-
-
-                            if (n1.IsEmpty() || diagonal[l].IsEmpty())
+                            if (n1.IsEmpty() || n2.IsEmpty() || n0.IsEmpty() || diagonal[l].IsEmpty())
                             {
                                 continue;
                             }
@@ -398,8 +405,7 @@ namespace DualContour
                             {
                                 var neighbor = neighbors[verts[j * 3 + i]];
 
-
-                                if (!neighbor.isLeaf) { neighbor = diagonal[l]; }
+                                if (!neighbor.isLeaf) neighbor = diagonal[l];
 
                                 //if vertex doesn't exist in chunk yet, add it. Otherwise, change the index to find the vertex
                                 if (neighbor.localIndex == -1)
@@ -409,19 +415,15 @@ namespace DualContour
                                     nodes.Add(neighbor);
                                     chunkVerts.Add(neighbor.vertex);
                                 }
-
-
                                 int newdualgrid = neighbor.localIndex;
                                 indices.Add(newdualgrid);
                             }
 
 
                         }
-
                     }
 
                 }
-
             }
         }
 

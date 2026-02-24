@@ -6,11 +6,13 @@ Shader "Custom/Triplanar"
         _Color ("Color", Color) = (1,1,1,1)
         _TopTex ("Albedo (RGB)", 2D) = "white" {}
         _NormalMapTop ("Normal Top", 2D) = "bump" {}
-        _SideText ("Side Texture", 2D) = "white" {}
+        _SideTex ("Side Texture", 2D) = "white" {}
         _Glossiness ("Smoothness", Range(0,1)) = 0.5
         _Metallic ("Metallic", Range(0,1)) = 0.0
         _BlendOffset ("Blend Offset", Range(0,0.5)) = 0.0
         _BlendExponent ("Blend Exponent", Range(1,4)) = 1.0
+        _SlopeThreshold ("Slope Threshold", Range(0,1)) = 0.5
+        _SlopeExponent ("Blend Exponent", Range(1,20)) = 1.0
     }
     SubShader
     {
@@ -24,7 +26,7 @@ Shader "Custom/Triplanar"
         #pragma target 3.0
 
         sampler2D _TopTex;
-        sampler2D _SideText;
+        sampler2D _SideTex;
         sampler2D _NormalMapTop;
 
         struct Input
@@ -39,14 +41,25 @@ Shader "Custom/Triplanar"
         float3 _PlanetPos;
         float _BlendOffset;
         float _BlendExponent;
+        float _SlopeThreshold;
+        float _SlopeExponent;
         
-        /*
-        void vert (inout appdata_full v, out Input o) {
-            
-            UNITY_INITIALIZE_OUTPUT(Input, o);
-            o.vertPos = v.vertex.xyz;
-            o.normal = v.normal;
-        }*/
+        float3 BlendWeights(float3 normal)
+        {
+            float3 b = abs(normal);
+            b = saturate(b - _BlendOffset);
+            b = pow(b, _BlendExponent);
+            return b / (b.x + b.y + b.z + 1e-5);
+        }
+
+        float3 SampleTriplanar(sampler2D tex, sampler2D sidetex, float3 worldPos, float3 weights)
+        {
+            float3 x = tex2D(sidetex, worldPos.yz).rgb;
+            float3 y = tex2D(sidetex, worldPos.xz).rgb;
+            float3 z = tex2D(tex, worldPos.xy).rgb;
+
+            return x * weights.x + y * weights.y + z * weights.z;
+        }
 
         float3 BlendTriplanarNormal (float3 mappedNormal, float3 surfaceNormal) {
             float3 n;
@@ -57,56 +70,21 @@ Shader "Custom/Triplanar"
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
-            IN.worldNormal = WorldNormalVector(IN, float3(0,0,1));
-            // Albedo comes from a texture tinted by color
-            float3 xAxis = tex2D (_SideText, IN.worldPos.yz).rgb;
-            float3 yAxis = tex2D (_TopTex, IN.worldPos.xz).rgb;
-            float3 zAxis = tex2D (_SideText, IN.worldPos.xy).rgb;
-
-            //Triplanar the normal maps too. In Tangent Space
-            float3 xAxisNormal = UnpackNormal(tex2D (_NormalMapTop, IN.worldPos.yz));
-            float3 yAxisNormal = UnpackNormal(tex2D (_NormalMapTop, IN.worldPos.xz));
-            float3 zAxisNormal = UnpackNormal(tex2D (_NormalMapTop, IN.worldPos.xy));
+            float3 normalWS = normalize(IN.worldNormal);
+            float3 localPos = IN.worldPos - _PlanetPos;
+            float3 radialDir = normalize(IN.worldPos - _PlanetPos);
 
             
-            if (IN.worldNormal.x < 0) {
-		        xAxisNormal.x = -xAxisNormal.x;
-            }
-            if (IN.worldNormal.y < 0) {
-                yAxisNormal.x = -yAxisNormal.x;
-            }
-            if (IN.worldNormal.z >= 0) {
-                zAxisNormal.x = -zAxisNormal.x;
-            }
+            float slope = dot(normalWS, radialDir);
+            slope = saturate(slope - _SlopeThreshold);
+            slope = pow(slope, _SlopeExponent);
 
-            float3 worldNormalX =
-                BlendTriplanarNormal(xAxisNormal, IN.worldNormal.zyx).zyx;
-            float3 worldNormalY =
-                BlendTriplanarNormal(yAxisNormal, IN.worldNormal.xzy).xzy;
-            float3 worldNormalZ =
-                BlendTriplanarNormal(zAxisNormal, IN.worldNormal).xyz;
+            float3 top = tex2D(_TopTex, localPos.xz).rgb;
+            float3 side = SampleTriplanar(_SideTex, _SideTex, localPos, BlendWeights(normalWS));
 
-            float3 blending = abs(IN.worldNormal);
-            blending = saturate(blending-_BlendOffset);
-            blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1
-            blending = pow(blending, _BlendExponent); // Exponentiate the weights
-            blending /= (blending.x + blending.y + blending.z);
+            float3 albedo = lerp(side, top, slope);
 
-            float3 c = (xAxis*blending.x) + (yAxis*blending.y) + (zAxis*blending.z) * _Color.rgb;
-
-            //=======================
-
-
-
-            float3 n = (xAxisNormal*blending.x) + (yAxisNormal*blending.y) + (zAxisNormal*blending.z);
-
-            //=======================
-
-            
-            o.Normal = n;
-            o.Albedo = c.rgb;
-            
-            // Metallic and smoothness come from slider variables
+            o.Albedo = albedo;
         }
         ENDCG
     }

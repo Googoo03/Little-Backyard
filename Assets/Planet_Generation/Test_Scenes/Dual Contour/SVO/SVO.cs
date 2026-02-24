@@ -7,11 +7,12 @@ using DualContour;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using faces;
+using UnityEngine.SocialPlatforms;
 
 namespace SparseVoxelOctree
 {
 
-
+    [System.Serializable]
     public class SVO
     {
         /// <summary>
@@ -22,6 +23,7 @@ namespace SparseVoxelOctree
         public SVONode root;
         public Face[] faceNeighbors;
         public int chunkSize = 1024;
+        public int faceNum;
 
         public List<FlatNode> flatList = new();
         public List<Vector3> vertices = new();
@@ -66,12 +68,13 @@ namespace SparseVoxelOctree
             // mark for renewal
             chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
         }
-        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null, GameObject parentObj = null, Face[] faceNeighbors = null)
+        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null, GameObject parentObj = null, Face[] faceNeighbors = null, int faceNum = 0)
         {
             this.root = root;
             this.meshingAlgorithm = meshingAlgorithm;
             this.parentObj = parentObj;
             this.faceNeighbors = faceNeighbors;
+            this.faceNum = faceNum;
             meshingAlgorithm.SetVertexList(vertices);
         }
 
@@ -210,6 +213,7 @@ namespace SparseVoxelOctree
                     rend = rend != null ? rend : chunkObject.AddComponent<MeshRenderer>();
 
                     chunkObject.transform.parent = parentObj.transform;
+                    chunkObject.transform.localPosition = Vector3.zero;
 
 
                     if (mf.sharedMesh == null)
@@ -372,7 +376,8 @@ namespace SparseVoxelOctree
                     ((i >> 1) & 1) * halfSize,
                     ((i) & 1) * halfSize
                 );
-                children[i] = new SVONode(childPos, halfSize, this, i, transformFunc);
+                //UnityEngine.Debug.Log("parentOBJ in subdivide: " + (parentOBJ == null ? "null" : parentOBJ));
+                children[i] = new SVONode(childPos, halfSize, this, i, transformFunc, parentOBJ);
             }
 
             isLeaf = false;
@@ -398,6 +403,8 @@ namespace SparseVoxelOctree
         }
 
         public bool IsEmpty() { return isLeaf && edge == -1; }
+
+        public void SetSVO(SVO svo) { parentOBJ = svo; }
 
         public Vector3 Center => center;
 
@@ -454,8 +461,37 @@ namespace SparseVoxelOctree
         // Finds the neighbor node in the given direction, handling differing LODs.
         // direction: 000 2bit is x, 1bit is y, 0bit is z
         // Returns the deepest adjacent node (may be larger or smaller than this node).
-        public static SVONode GetNeighborLOD(SVONode node, int direction)
+        public static SVONode GetNeighborLOD(SVONode node, int direction, SVONode pivot = null)
         {
+            if (node == null) return null;
+
+            //must get waxis for normal. Use that to determine the face number
+            int faceNum = node.parentOBJ.faceNum;
+
+            //whether we are traveling on the u or v axis
+            int localAxis = direction & 1;
+
+            SVOTest faceNeighbor = node.parentOBJ.faceNeighbors[faceNum].neighbors[localAxis]; //get face neighbor from wrapper class
+            SVONode faceNeighborRootNode = faceNeighbor.GetSVO().root;
+
+            int neighborfaceNum = faceNeighbor.GetSVO().faceNum;
+            int pivotfaceNum = pivot?.parentOBJ.faceNum ?? -1;
+            bool sameCornerGroup = (faceNum & 1) == (neighborfaceNum & 1);
+            bool pivotSameCornerGroup = pivotfaceNum != -1 && ((faceNum & 1) == (pivotfaceNum & 1));
+            bool negativeGroup = (faceNum & 1) == 1;
+
+            int baseDirection = direction;
+
+            if (pivotSameCornerGroup && faceNum != pivotfaceNum)
+            {
+                int zbit = (baseDirection & 1) != 0 ? 1 : 0;
+                int ybit = (baseDirection & 2) != 0 ? 1 : 0;
+                int xbit = (baseDirection & 4) != 0 ? 1 : 0;
+
+                baseDirection = ((zbit) << 2) | (ybit << 1) | (xbit);
+            }
+
+
             SVONode current = node;
             List<int> path = new();
 
@@ -465,12 +501,12 @@ namespace SparseVoxelOctree
                 int parentChildIndex = current.childIndex;
 
                 // Condition: for every axis we want to move in, we must NOT already be on the far side
-                bool canMove = (parentChildIndex & direction) == 0;
+                bool canMove = (parentChildIndex & baseDirection) == 0;
 
                 if (canMove)
                 {
                     // XOR full direction at once (can include multiple axes)
-                    int neighborIndex = parentChildIndex ^ direction;
+                    int neighborIndex = parentChildIndex ^ baseDirection;
                     SVONode neighbor = current.parent.children[neighborIndex];
 
                     if (neighbor == null)
@@ -482,7 +518,7 @@ namespace SparseVoxelOctree
                         if (neighbor.isLeaf || neighbor.children == null) break;
 
                         int descendIndex = path[i];
-                        descendIndex ^= direction;
+                        descendIndex ^= baseDirection;
 
                         neighbor = neighbor.children[descendIndex];
                     }
@@ -494,29 +530,68 @@ namespace SparseVoxelOctree
                 path.Add(parentChildIndex);
                 current = current.parent;
             }
-
             //can add the 6 face adjacency here
             //guaranteed that no suboctree neighbor is found
-            SVO faceNeighbor = node.parentOBJ.faceNeighbors[node.parent.childIndex].U; //get face neighbor from wrapper class
-            SVONode faceNeighborRootNode = faceNeighbor.root;
+
+            //Must transform direction if uv coordinates are different. We already know the neighbor
+
+            //
+
             if (faceNeighborRootNode == null)
+            {
+                UnityEngine.Debug.Log("returned null root!");
                 return null;
+            }
+
+            //if in the same corner group, rotate
+            int neighborDirection = direction; //start with original direction
+            if (sameCornerGroup)
+            {
+                int zbit = (neighborDirection & 1) != 0 ? 1 : 0;
+                int ybit = (neighborDirection & 2) != 0 ? 1 : 0;
+                int xbit = (neighborDirection & 4) != 0 ? 1 : 0;
+
+                neighborDirection = ((zbit) << 2) | (ybit << 1) | (xbit);
+            }
+
+            //IF THE NEIGHBOR IS IN THE SAME CORNER GROUP, THEN ROTATE EITHER +90 OR -90
+            //IF THE NEIGHBOR IS IN DIFFERENT CORNER GROUP, KEEP ORIENTATION, NO CHANGE
+
+            //CORNER GROUPS ARE 0,2,4 AND 1,3,5. WE CAN USE BIT MANIP
 
             // Descend down, flipping axes as needed
+            //need to flip path[i] as well
             for (int i = path.Count - 1; i >= 0; i--)
             {
-                if (faceNeighborRootNode.isLeaf || faceNeighborRootNode.children == null) break;
+                if (faceNeighborRootNode.isLeaf || faceNeighborRootNode.children == null)
+                    break;
 
-                int descendIndex = path[i];
-                descendIndex ^= direction;
+                int childIndex = path[i];
+                if (sameCornerGroup)
+                {
+                    int zbit = (childIndex & 1);
+                    int ybit = (childIndex & 2) >> 1;
+                    int xbit = (childIndex & 4) >> 2;
 
-                faceNeighborRootNode = faceNeighborRootNode.children[descendIndex];
+                    if (!negativeGroup)
+                    {
+                        childIndex = (zbit << 2) | (ybit << 1) | (xbit ^ 1);
+                    }
+                    else
+                    {
+                        childIndex = ((zbit ^ 1) << 2) | (ybit << 1) | xbit;
+                    }
+                }
+                childIndex ^= neighborDirection;
+
+
+
+                faceNeighborRootNode = faceNeighborRootNode.children[childIndex];
             }
 
             return faceNeighborRootNode; // Found orthogonal or diagonal neighbor
-
-            //return null; // No neighbor in that direction
         }
+
 
         public static List<SVONode> GetFace(SVONode current, int dir)
         {

@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using SparseVoxelOctree;
 using DualContour;
+using faces;
 
 public class SVOTest : MonoBehaviour
 {
     [SerializeField] private Transform cube;
+    [SerializeField] private CubeSphereSVOWrapper planetFaceWrapper;
     [SerializeField] private int getFaceNum;
 
     [SerializeField] private int dir;
@@ -20,11 +22,11 @@ public class SVOTest : MonoBehaviour
 
     [SerializeField] private int vertexLength;
     [SerializeField] private bool blockVoxel;
+    [SerializeField] private int faceNum;
 
     HashSet<SVONode> frontier = new HashSet<SVONode>();
     SVO svo;
     Dual_Contour dualContour;
-
 
     // Start is called before the first frame update
     void Start()
@@ -35,11 +37,12 @@ public class SVOTest : MonoBehaviour
         dualContour.SetBlockVoxel(blockVoxel);
         dualContour.SetRadius(patchSize);
         dualContour.SetDir(dir);
-        dualContour.SetCubeAxis();
+        dualContour.SetCubeAxis(faceNum);
 
 
-        SVONode root = new(new Vector3Int(0, 0, 0), patchSize);
-        svo = new SVO(root, dualContour, this.gameObject);
+        SVONode root = new(new Vector3Int(0, 0, 0), patchSize, null, -1, null);
+        svo = new SVO(root, dualContour, this.gameObject, planetFaceWrapper.neighbors, faceNum);
+        root.SetSVO(svo);
         frontier.Add(root);
     }
 
@@ -128,7 +131,27 @@ public class SVOTest : MonoBehaviour
         }
     }
 
+    public void OnDrawGizmos()
+    {
 
+        Vector3 start = transform.position + Face.Faces[faceNum].normal * patchSize;
+        float scale = 0.5f;
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].normal * patchSize * scale));
+
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].uaxis * patchSize * scale));
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].vaxis * patchSize * scale));
+
+        Gizmos.DrawRay(
+            transform.position + Face.Faces[faceNum].normal * patchSize,
+            Face.Faces[faceNum].normal
+        );
+
+    }
 
 
 

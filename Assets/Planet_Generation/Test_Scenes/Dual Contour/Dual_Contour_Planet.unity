@@ -153,15 +153,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cube: {fileID: 1557406413}
+  planetFaceWrapper: {fileID: 290052057}
   getFaceNum: 0
   dir: 65
   patchSize: 4096
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 4
+  nodeSizeLimit: 2
   vertexLength: 0
   blockVoxel: 0
+  faceNum: 2
 --- !u!4 &67079602
 Transform:
   m_ObjectHideFlags: 0
@@ -206,6 +208,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e1ff67b78bc2304c957c24d10de67fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  XFaceSVOTest: {fileID: 884599749}
+  NXFaceSVOTest: {fileID: 1081349963}
+  YFaceSVOTest: {fileID: 67079601}
+  NYFaceSVOTest: {fileID: 1387890807}
+  ZFaceSVOTest: {fileID: 581497608}
+  NZFaceSVOTest: {fileID: 1118362730}
+  neighbors: []
 --- !u!4 &290052058
 Transform:
   m_ObjectHideFlags: 0
@@ -215,7 +224,7 @@ Transform:
   m_GameObject: {fileID: 290052056}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -119.73618, y: 28457.254, z: 2077.6238}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -433,15 +442,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cube: {fileID: 1557406413}
+  planetFaceWrapper: {fileID: 290052057}
   getFaceNum: 0
   dir: 66
   patchSize: 4096
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 4
+  nodeSizeLimit: 2
   vertexLength: 0
   blockVoxel: 0
+  faceNum: 0
 --- !u!4 &581497609
 Transform:
   m_ObjectHideFlags: 0
@@ -558,15 +569,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cube: {fileID: 1557406413}
+  planetFaceWrapper: {fileID: 290052057}
   getFaceNum: 0
   dir: 33
   patchSize: 4096
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 4
+  nodeSizeLimit: 2
   vertexLength: 0
   blockVoxel: 0
+  faceNum: 4
 --- !u!4 &884599750
 Transform:
   m_ObjectHideFlags: 0
@@ -778,15 +791,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cube: {fileID: 1557406413}
+  planetFaceWrapper: {fileID: 290052057}
   getFaceNum: 0
-  dir: 161
+  dir: 41
   patchSize: 4096
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 4
+  nodeSizeLimit: 2
   vertexLength: 0
   blockVoxel: 0
+  faceNum: 5
 --- !u!4 &1081349964
 Transform:
   m_ObjectHideFlags: 0
@@ -832,15 +847,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cube: {fileID: 1557406413}
+  planetFaceWrapper: {fileID: 290052057}
   getFaceNum: 0
-  dir: 74
+  dir: 194
   patchSize: 4096
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 4
+  nodeSizeLimit: 2
   vertexLength: 0
   blockVoxel: 0
+  faceNum: 1
 --- !u!4 &1118362731
 Transform:
   m_ObjectHideFlags: 0
@@ -1085,15 +1102,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cube: {fileID: 1557406413}
+  planetFaceWrapper: {fileID: 290052057}
   getFaceNum: 0
   dir: 193
   patchSize: 4096
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
-  nodeSizeLimit: 4
+  nodeSizeLimit: 2
   vertexLength: 0
   blockVoxel: 0
+  faceNum: 3
 --- !u!4 &1387890808
 Transform:
   m_ObjectHideFlags: 0

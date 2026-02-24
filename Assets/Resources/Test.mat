@@ -45,6 +45,10 @@ Material:
         m_Texture: {fileID: 2800000, guid: 415b614ff28f3a343961b956341629e6, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _SideTex:
+        m_Texture: {fileID: 2800000, guid: 25e077384c4aec84781e89e13e84e1d9, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _SideText:
         m_Texture: {fileID: 2800000, guid: 25e077384c4aec84781e89e13e84e1d9, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -59,14 +63,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BlendExponent: 2.51
-    - _BlendOffset: 0.29
+    - _BlendExponent: 2.01
+    - _BlendOffset: 0.055
     - _CliffThreshold: 0.1
     - _Glossiness: 0
     - _L2: 0.5
     - _Levels: 2
     - _Metallic: 0
     - _PlanetType: 2
+    - _SlopeExponent: 20
+    - _SlopeThreshold: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _PlanetPos: {r: 0, g: 0, b: 0, a: 0}
