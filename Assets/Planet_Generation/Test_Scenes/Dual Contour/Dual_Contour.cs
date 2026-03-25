@@ -58,13 +58,8 @@ namespace DualContour
         bool block_voxel;
         private List<Vector3> vertices;
 
-
-
         readonly float[] vertValues = new float[8];
         readonly Vector3[] vertPos = new Vector3[8];
-
-        int uSign;
-        int vSign;
         Vector3 uaxis;
         Vector3 vaxis;
         Vector3 wAxis;
@@ -130,14 +125,12 @@ namespace DualContour
 
         private float Function(Vector3 pos, float y)
         {
-
-
-
             Vector3 spherePos = new(pos.x, pos.y, pos.z);
 
             float radius = y;
-            float frequency = .1f;
+            float frequency = .05f;
             float amplitude = 50.0f;
+            int octaves = 4;
 
             spherePos /= noiseTexture.width; //even dimensions
             float value = 1f - Mathf.Abs(noiseTexture.GetPixelBilinear(spherePos.x * frequency, spherePos.y * frequency, spherePos.z * frequency).r * amplitude) + radius;
@@ -371,14 +364,9 @@ namespace DualContour
                         // diagonal neighbors are always obtained by asking the tree for
                         // the neighbour in the combined direction; this internally
                         // follows faces and resolves proper LOD for us.
-                        //yzNeighbor = directionAxis == Y_AXIS ? SVONode.GetNeighborLOD(yNeighbor, Z_AXIS, node) : SVONode.GetNeighborLOD(zNeighbor, Y_AXIS, node);
-
-
-                        //zxNeighbor = directionAxis == Z_AXIS ? SVONode.GetNeighborLOD(zNeighbor, X_AXIS, node) : SVONode.GetNeighborLOD(xNeighbor, Z_AXIS, node);
                         zxNeighbor = (node.parentOBJ.faceNum & 1) == 1 ? SVONode.GetNeighborLOD(zNeighbor, X_AXIS, node) : SVONode.GetNeighborLOD(xNeighbor, Z_AXIS, node);
                         yzNeighbor = SVONode.GetNeighborLOD(zNeighbor, Y_AXIS, node);
                         xyNeighbor = SVONode.GetNeighborLOD(yNeighbor, X_AXIS, node);
-                        //xyNeighbor = directionAxis == X_AXIS ? SVONode.GetNeighborLOD(xNeighbor, Y_AXIS, node) : SVONode.GetNeighborLOD(yNeighbor, X_AXIS, node);
 
                         SVONode[] neighbors = { node, zNeighbor, yNeighbor, yzNeighbor, xNeighbor, zxNeighbor, xyNeighbor };
 
@@ -396,11 +384,7 @@ namespace DualContour
 
                         for (int l = 0; l < diagonalSize; ++l)
                         {
-                            if (n1.IsEmpty() || n2.IsEmpty() || n0.IsEmpty() || diagonal[l].IsEmpty())
-                            {
-                                continue;
-                            }
-
+                            if (n1.IsEmpty() || diagonal[l].IsEmpty()) continue;
                             for (int i = 0; i < 3; ++i)
                             {
                                 var neighbor = neighbors[verts[j * 3 + i]];

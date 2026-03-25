@@ -18,7 +18,8 @@ public class SVOTest : MonoBehaviour
     private bool refreshChunks;
     [SerializeField] private float timeToRefresh;
     [SerializeField] private float elapsedTime;
-    [SerializeField] private float nodeSizeLimit;
+    [SerializeField] private float nodeSizeMin;
+    [SerializeField] private float nodeSizeMax;
 
     [SerializeField] private int vertexLength;
     [SerializeField] private bool blockVoxel;
@@ -27,6 +28,9 @@ public class SVOTest : MonoBehaviour
     HashSet<SVONode> frontier = new HashSet<SVONode>();
     SVO svo;
     Dual_Contour dualContour;
+
+    private List<SVONode> nodesToSubdivide = new();
+    private List<SVONode> nodesToCollapse = new();
 
     // Start is called before the first frame update
     void Start()
@@ -54,23 +58,24 @@ public class SVOTest : MonoBehaviour
         Vector3 cubePos = cube.position;
 
 
-        List<SVONode> nodesToSubdivide = new();
-        List<SVONode> nodesToCollapse = new();
+        nodesToSubdivide.Clear();
+        nodesToCollapse.Clear();
+
+        if (freezeSubdivision) return;
 
         foreach (var node in frontier)
         {
             Vector3 delta = node.transformedPosition - cubePos;
             float distSq = delta.sqrMagnitude;
-            float dot = Vector3.Dot(delta, cubeForward) / Mathf.Sqrt(distSq);
 
-            if (!freezeSubdivision && node.MayContainCrossing() &&
-                (distSq < (node.size * node.size * 100f) + 10000) &&
-                node.size > nodeSizeLimit)
+
+            if (node.MayContainCrossing() &&
+                (distSq < (node.size * node.size * 100f)) && node.size > nodeSizeMin
+                )
             {
                 nodesToSubdivide.Add(node);
             }
-            else if (!freezeSubdivision &&
-                    (distSq > node.size * node.size * 400f + 10000))
+            else if ((distSq > node.size * node.size * 400f) && node.size < nodeSizeMax)
             {
                 node.voteToCollapse = true;
                 nodesToCollapse.Add(node.parent);
@@ -82,6 +87,9 @@ public class SVOTest : MonoBehaviour
             node.Subdivide(dualContour.CubeToSphere);
             node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
             svo.MarkChunk(node);
+
+            //get neighbors to mark chunks as well.
+
             refreshChunks = true;
 
             foreach (var child in node.children)
@@ -107,7 +115,6 @@ public class SVOTest : MonoBehaviour
             if (!collapse) continue;
 
             frontier.Add(node);
-            //if (node.children == null) continue;
             foreach (var child in node.children)
             {
                 frontier.Remove(child);
@@ -118,17 +125,18 @@ public class SVOTest : MonoBehaviour
             refreshChunks = true;
         }
 
+        //Add time delta for update
         elapsedTime += Time.deltaTime;
-        if (elapsedTime > timeToRefresh)
-        {
+        if (elapsedTime < timeToRefresh) return;
 
-            if (refreshChunks)
-            {
-                svo.GenerateChunks();
-            }
-            elapsedTime = 0;
-            refreshChunks = false;
+
+        if (refreshChunks)
+        {
+            svo.GenerateChunks();
         }
+        elapsedTime = 0;
+        refreshChunks = false;
+
     }
 
     public void OnDrawGizmos()

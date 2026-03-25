@@ -5,7 +5,7 @@ using System.Collections;
 public class GravityBody : MonoBehaviour
 {
 
-    GravityAttractor planet;
+    [SerializeField] GravityAttractor planet;
 
     void Awake()
     {

@@ -8,6 +8,8 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using faces;
 using UnityEngine.SocialPlatforms;
+using Unity.Collections;
+using Unity.Mathematics;
 
 namespace SparseVoxelOctree
 {
@@ -27,7 +29,7 @@ namespace SparseVoxelOctree
 
         public List<FlatNode> flatList = new();
         public List<Vector3> vertices = new();
-        private Material testMat = Resources.Load("Test") as Material;
+        private Material testMat = Resources.Load("TriplanarPlanetTest") as Material;
 
         public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
 
@@ -233,8 +235,17 @@ namespace SparseVoxelOctree
                     m.normals = new Vector3[verts.Count]; //placeholders
 
                     m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
-                    m.RecalculateBounds();
                     m.RecalculateNormals();
+
+                    MeshCollider col = chunkObject.GetComponent<MeshCollider>();
+                    if (col == null)
+                    {
+                        chunkObject.AddComponent<MeshCollider>().sharedMesh = m;
+                    }
+                    else
+                    {
+                        col.sharedMesh = m;
+                    }
                 }
 
             }
@@ -242,6 +253,8 @@ namespace SparseVoxelOctree
             TraverseNodes(generateChunk);
 
         }
+
+
 
         public void GenerateVerticesForLeaves(System.Action<SVONode> vertexFunc = null)
         {
@@ -312,13 +325,6 @@ namespace SparseVoxelOctree
     }
 
 
-
-
-
-
-
-
-
     public class SVONode
     {
         // Start is called before the first frame update
@@ -337,6 +343,7 @@ namespace SparseVoxelOctree
         public bool isLeaf;         // True if this node is a leaf
         public Vector3 vertex; // Index in the mesh vertex list (if leaf)
         public int localIndex; // Local index in the chunk mesh (if leaf)
+
         public int edge;
 
         public int startChildIndex; // when in a list, this points to its first child index
@@ -434,12 +441,12 @@ namespace SparseVoxelOctree
         {
             TraverseLeaves((node) =>
             {
-                if (node.edge == -1)
-                {
-                    //assigns index and axis information
-                    //adds to vertex list
-                    vertexFunc(node);
-                }
+                if (node.edge != -1) return;
+
+                //assigns index and axis information
+                //adds to vertex list
+                vertexFunc(node);
+
             });
 
         }
@@ -472,9 +479,11 @@ namespace SparseVoxelOctree
             int localAxis = direction & 1;
 
             SVOTest faceNeighbor = node.parentOBJ.faceNeighbors[faceNum].neighbors[localAxis]; //get face neighbor from wrapper class
-            SVONode faceNeighborRootNode = faceNeighbor.GetSVO().root;
+            SVO faceNeighborSVO = faceNeighbor.GetSVO();
+            SVONode faceNeighborRootNode = faceNeighborSVO.root;
 
-            int neighborfaceNum = faceNeighbor.GetSVO().faceNum;
+
+            int neighborfaceNum = faceNeighborSVO.faceNum;
             int pivotfaceNum = pivot?.parentOBJ.faceNum ?? -1;
             bool sameCornerGroup = (faceNum & 1) == (neighborfaceNum & 1);
             bool pivotSameCornerGroup = pivotfaceNum != -1 && ((faceNum & 1) == (pivotfaceNum & 1));
@@ -493,7 +502,8 @@ namespace SparseVoxelOctree
 
 
             SVONode current = node;
-            List<int> path = new();
+            int[] path = new int[32]; // max depth of 16
+            int pathLength = 1;
 
             // Go upward until all requested directions can flip
             while (current?.parent != null)
@@ -513,7 +523,7 @@ namespace SparseVoxelOctree
                         return null;
 
                     // Descend down, flipping axes as needed
-                    for (int i = path.Count - 1; i >= 0; i--)
+                    for (int i = pathLength - 1; i > 0; i--)
                     {
                         if (neighbor.isLeaf || neighbor.children == null) break;
 
@@ -527,20 +537,8 @@ namespace SparseVoxelOctree
                 }
 
                 // Otherwise, keep going up
-                path.Add(parentChildIndex);
+                path[pathLength++] = parentChildIndex;
                 current = current.parent;
-            }
-            //can add the 6 face adjacency here
-            //guaranteed that no suboctree neighbor is found
-
-            //Must transform direction if uv coordinates are different. We already know the neighbor
-
-            //
-
-            if (faceNeighborRootNode == null)
-            {
-                UnityEngine.Debug.Log("returned null root!");
-                return null;
             }
 
             //if in the same corner group, rotate
@@ -551,17 +549,11 @@ namespace SparseVoxelOctree
                 int ybit = (neighborDirection & 2) != 0 ? 1 : 0;
                 int xbit = (neighborDirection & 4) != 0 ? 1 : 0;
 
-                neighborDirection = ((zbit) << 2) | (ybit << 1) | (xbit);
+                neighborDirection = (zbit << 2) | (ybit << 1) | xbit;
             }
 
-            //IF THE NEIGHBOR IS IN THE SAME CORNER GROUP, THEN ROTATE EITHER +90 OR -90
-            //IF THE NEIGHBOR IS IN DIFFERENT CORNER GROUP, KEEP ORIENTATION, NO CHANGE
-
-            //CORNER GROUPS ARE 0,2,4 AND 1,3,5. WE CAN USE BIT MANIP
-
-            // Descend down, flipping axes as needed
-            //need to flip path[i] as well
-            for (int i = path.Count - 1; i >= 0; i--)
+            //descend down face neighbor
+            for (int i = pathLength - 1; i > 0; i--)
             {
                 if (faceNeighborRootNode.isLeaf || faceNeighborRootNode.children == null)
                     break;
@@ -573,19 +565,11 @@ namespace SparseVoxelOctree
                     int ybit = (childIndex & 2) >> 1;
                     int xbit = (childIndex & 4) >> 2;
 
-                    if (!negativeGroup)
-                    {
-                        childIndex = (zbit << 2) | (ybit << 1) | (xbit ^ 1);
-                    }
-                    else
-                    {
-                        childIndex = ((zbit ^ 1) << 2) | (ybit << 1) | xbit;
-                    }
+                    childIndex = !negativeGroup ? (zbit << 2) | (ybit << 1) | (xbit ^ 1) :
+                                                    ((zbit ^ 1) << 2) | (ybit << 1) | xbit;
+
                 }
                 childIndex ^= neighborDirection;
-
-
-
                 faceNeighborRootNode = faceNeighborRootNode.children[childIndex];
             }
 
@@ -595,7 +579,7 @@ namespace SparseVoxelOctree
 
         public static List<SVONode> GetFace(SVONode current, int dir)
         {
-            List<SVONode> neighborFace = new();
+            List<SVONode> neighborFace = new(8);
             void action(SVONode node)
             {
 
