@@ -7,7 +7,7 @@ using faces;
 
 public class SVOTest : MonoBehaviour
 {
-    [SerializeField] private Transform cube;
+    [SerializeField] private Transform player;
     [SerializeField] private CubeSphereSVOWrapper planetFaceWrapper;
     [SerializeField] private int getFaceNum;
 
@@ -35,6 +35,8 @@ public class SVOTest : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        player = Camera.main.transform;
+
         refreshChunks = false;
 
         dualContour = new();
@@ -54,8 +56,8 @@ public class SVOTest : MonoBehaviour
     void Update()
     {
         vertexLength = svo.vertices.Count;
-        Vector3 cubeForward = cube.forward.normalized;
-        Vector3 cubePos = cube.position;
+        Vector3 playerForward = player.forward.normalized;
+        Vector3 playerPos = player.position;
 
 
         nodesToSubdivide.Clear();
@@ -65,7 +67,7 @@ public class SVOTest : MonoBehaviour
 
         foreach (var node in frontier)
         {
-            Vector3 delta = node.transformedPosition - cubePos;
+            Vector3 delta = node.transformedPosition - playerPos;
             float distSq = delta.sqrMagnitude;
 
 
