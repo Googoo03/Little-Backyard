@@ -184,6 +184,7 @@ MonoBehaviour:
   amplitude:
     m_OverrideState: 0
     m_Value: 1
+  textureName: PlanetTexture
 --- !u!1 &662956041
 GameObject:
   m_ObjectHideFlags: 0

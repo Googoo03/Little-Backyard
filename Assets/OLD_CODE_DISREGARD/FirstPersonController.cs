@@ -40,7 +40,7 @@ public class FirstPersonController : MonoBehaviour
     {
         can_move = true;
         Cursor.lockState = CursorLockMode.Locked;
-        
+
         cameraTransform = Camera.main.transform;
 
         inven = new Inventory();
@@ -48,16 +48,21 @@ public class FirstPersonController : MonoBehaviour
         GameObject hotbar = GameObject.FindGameObjectWithTag("Hotbar");
         GameObject inventory = GameObject.FindGameObjectWithTag("Inventory");
 
-        inventory_animator = inventory.GetComponent<Animator>();
+        inventory_animator = inventory?.GetComponent<Animator>();
         int hotbar_slots = inven.getHotbarNum_Slots();
         int inven_slots = inven.getInvenNum_Slots();
         int i = 0;
 
-        for (; i < hotbar_slots; ++i) { //the 
+        if (inventory == null) return;
+
+        //It is assumed that the inventory is not null beyond this point
+        for (; i < hotbar_slots; ++i)
+        {
             inven.setInventory_Slot(hotbar.transform.GetChild(i).GetChild(0).GetComponent<Inventory_Slot>(), i); //this is on awake so this should be fine
         }
-        for (int j = 0; j < inven_slots; ++j) {
-            inven.setInventory_Slot(inventory.transform.GetChild(j).GetChild(0).GetComponent<Inventory_Slot>(), i+j);
+        for (int j = 0; j < inven_slots; ++j)
+        {
+            inven.setInventory_Slot(inventory.transform.GetChild(j).GetChild(0).GetComponent<Inventory_Slot>(), i + j);
         }
     }
 
@@ -108,37 +113,44 @@ public class FirstPersonController : MonoBehaviour
         //Check shoot button.
         ShootCheck();
 
-        
+
 
     }
 
 
     //Should be in the parent class
-    private void InventoryOpenCheck() {
-        if (Input.GetKeyDown(KeyCode.Tab)) {
-            if (inventory_animator.GetCurrentAnimatorStateInfo(0).IsName("Inventory_Idle")) {
-                inventory_animator.SetTrigger("Hide");
+    private void InventoryOpenCheck()
+    {
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            if (inventory_animator != null && inventory_animator.GetCurrentAnimatorStateInfo(0).IsName("Inventory_Idle"))
+            {
+                inventory_animator?.SetTrigger("Hide");
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
                 can_move = true;
-            } else if (inventory_animator.GetCurrentAnimatorStateInfo(0).IsName("Inventory_Idle_HIde")) {
-                inventory_animator.SetTrigger("Show");
+            }
+            else if (inventory_animator != null && inventory_animator.GetCurrentAnimatorStateInfo(0).IsName("Inventory_Idle_HIde"))
+            {
+                inventory_animator?.SetTrigger("Show");
                 moveAmount = Vector3.zero;
-                Cursor.lockState= CursorLockMode.None;
+                Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 can_move = false;
             }
         }
     }
 
-    private void ShootCheck() {
+    private void ShootCheck()
+    {
         bool lmbDown = Input.GetMouseButton(0);
-        laser.gameObject.SetActive(lmbDown);
+        laser?.gameObject.SetActive(lmbDown);
         if (lmbDown)
         {
             LaserProtocol();
         }
-        else {
+        else
+        {
             var sparks_main = sparks.transform.GetChild(0).GetComponent<ParticleSystem>().main;
             sparks_main.loop = false;
 
@@ -164,12 +176,12 @@ public class FirstPersonController : MonoBehaviour
         //If object is hit
         if (Physics.Raycast(cameraTransform.transform.position, cameraTransform.transform.forward, out hit, reach, 1))
         {
-            
+
             //Turn on respective particle systems-----------------------------------------------
             var sparks_main = sparks.transform.GetChild(0).GetComponent<ParticleSystem>().main;
             sparks_main.loop = true;
             ParticleSystem spark = sparks.transform.GetChild(0).GetComponent<ParticleSystem>();
-            if(!spark.isPlaying) spark.Play();
+            if (!spark.isPlaying) spark.Play();
 
             var dust_main = sparks.transform.GetChild(1).GetComponent<ParticleSystem>().main;
             dust_main.loop = true;
@@ -181,7 +193,7 @@ public class FirstPersonController : MonoBehaviour
             sparks.transform.position = hit.point;
             sparks.transform.rotation = Quaternion.LookRotation(cameraTransform.position - hit.point);
 
-            
+
             //Set Laser end to where it hits
             endPoint = hit.point;
 
@@ -189,7 +201,8 @@ public class FirstPersonController : MonoBehaviour
             Resource_Class resource = hit.transform.tag == "Resource" ? hit.transform.GetComponent<Resource_Class>() : null;
             if (resource != null) { resource.dealDamage(5 * Time.deltaTime); }
         }
-        else {
+        else
+        {
 
             endPoint = cameraTransform.position + (cameraTransform.forward * reach);
 
@@ -201,9 +214,9 @@ public class FirstPersonController : MonoBehaviour
 
         }
 
-        t += t > 1 ? 0 : 3f*Time.deltaTime;
+        t += t > 1 ? 0 : 3f * Time.deltaTime;
         positions[1] = endPoint;//(endPoint - positions[0])*t + positions[0];
-        laser.SetPositions(positions);
+        laser?.SetPositions(positions);
     }
 
     public Inventory getInventory() { return inven; }

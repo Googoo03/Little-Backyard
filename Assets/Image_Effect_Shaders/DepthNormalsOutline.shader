@@ -59,7 +59,6 @@ Shader "Hidden/DepthNormalsOutline"
             float _DepthMult;
 
             float _Strength;
-            //sampler2D _LastCameraDepthNormalsTexture;
 
             void Compare(inout float depthOutline, inout float normalOutline, float baseDepth,float3 baseNormal, float2 _uv, float2 offset){
                 
@@ -69,13 +68,9 @@ Shader "Hidden/DepthNormalsOutline"
                 DecodeDepthNormal(neighborSample, neighborDepth, neighborNormal);
                 neighborDepth = neighborDepth * _ProjectionParams.z;
 
-                //neighborDepth = tex2D(_CameraDepthTexture,_uv + _CameraDepthTexture_TexelSize.xy * offset);
-                //neighborDepth = LinearEyeDepth(neighborDepth);
-
                 depthOutline += abs(baseDepth-neighborDepth);
                 
-                float normalDifference = 1-dot(baseNormal,neighborNormal);//baseNormal - neighborNormal;
-                //normalDifference = normalDifference.r + normalDifference.g + normalDifference.b;
+                float normalDifference = 1-dot(baseNormal,neighborNormal);
                 normalOutline = normalOutline + normalDifference;
             }
 
@@ -88,20 +83,14 @@ Shader "Hidden/DepthNormalsOutline"
                 DecodeDepthNormal(depthnormalsSample, depth, normal);
                 depth = depth* _ProjectionParams.z;
 
-                //float _regdepth = tex2D(_CameraDepthTexture,i.uv);
-                //_regdepth = LinearEyeDepth(_regdepth);
-
                 float depthDifference = 0.0;
                 float normalDifference = 0.0;
-
-                //if(depth > 1000) return col;
 
                 Compare(depthDifference,normalDifference,depth,normal, i.uv, float2(1, 0));
                 Compare(depthDifference,normalDifference,depth,normal, i.uv, float2(0, 1));
                 Compare(depthDifference,normalDifference,depth,normal, i.uv, float2(0, -1));
                 Compare(depthDifference,normalDifference,depth,normal, i.uv, float2(-1, 0));
 
-                
                 depthDifference = depthDifference * _DepthMult;
                 depthDifference = saturate(depthDifference);
                 depthDifference = pow(depthDifference, _DepthBias);
@@ -110,8 +99,6 @@ Shader "Hidden/DepthNormalsOutline"
                 normalDifference = saturate(normalDifference);
                 normalDifference = pow(normalDifference, _NormalBias);
 
-                //return col + depthDifference + normalDifference;
-                //if(_regdepth - depth > 0.1) return col;
                 return lerp(col,fixed4(0,0,0,0),(depthDifference+normalDifference)*min(1,exp(-depth*(1/_Strength)) ));
             }
             ENDCG
