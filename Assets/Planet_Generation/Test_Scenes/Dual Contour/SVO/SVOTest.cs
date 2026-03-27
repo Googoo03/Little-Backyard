@@ -70,14 +70,12 @@ public class SVOTest : MonoBehaviour
             Vector3 delta = node.transformedPosition - playerPos;
             float distSq = delta.sqrMagnitude;
 
-
             if (node.MayContainCrossing() &&
-                (distSq < (node.size * node.size * 100f)) && node.size > nodeSizeMin
-                )
+                (((distSq < (node.size * node.size * 100f)) && node.size > nodeSizeMin) || node.size > nodeSizeMax))
             {
                 nodesToSubdivide.Add(node);
             }
-            else if ((distSq > node.size * node.size * 400f) && node.size < nodeSizeMax)
+            else if (((distSq > node.size * node.size * 400f) && node.size < nodeSizeMax))
             {
                 node.voteToCollapse = true;
                 nodesToCollapse.Add(node.parent);

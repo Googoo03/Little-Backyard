@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TriplanarPlanetTest
-  m_Shader: {fileID: 4800000, guid: 909eba1076be49b4c963fd7ad4ff551f, type: 3}
+  m_Shader: {fileID: 4800000, guid: 5532529d3708efa47bdc0cb50575e764, type: 3}
   m_Parent: {fileID: 2100000, guid: fd833b8aa01539d44b51114498175f23, type: 2}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -69,11 +69,13 @@ Material:
     - _Glossiness: 0
     - _L2: 0.5
     - _Levels: 2
+    - _LightWrap: 0.46
     - _Metallic: 0
     - _PlanetType: 2
     - _SlopeExponent: 1
     - _SlopeThreshold: 0
     m_Colors:
+    - _AmbientColor: {r: 0, g: 0, b: 0, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _PlanetPos: {r: 0, g: 0, b: 0, a: 0}
     - _SunPos: {r: 5, g: 300, b: 5, a: 1}

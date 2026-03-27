@@ -8,6 +8,8 @@ Shader "Custom/ScreenSpaceDerivative_WorldSpace"
         _SlopeThreshold ("Slope Threshold", Range(-1,2)) = 0.5
         _Bands ("Bands",int) = 5
         _LightWrap ("Light Wrap", Range(0,1)) = 0.5
+        _DirToSun ("Direction To Sun", Vector) = (0,1,0)
+        _LightColor ("Light Color", Color) = (1,1,1,1)
     }
 
     SubShader
@@ -55,7 +57,9 @@ Shader "Custom/ScreenSpaceDerivative_WorldSpace"
             float _Bands;
             float4 _AmbientColor;
             float _LightWrap;
+            float3 _LightColor;
             float _SlopeThreshold;
+            float3 _DirToSun;
 
             fixed4 frag(v2f i) : SV_Target
             {
@@ -67,9 +71,9 @@ Shader "Custom/ScreenSpaceDerivative_WorldSpace"
                 float3 worldN = normalize(cross(dpdx, dpdy));
 
                 // Get main directional light direction (world space)
-                float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
+                
 
-                float NdotL = dot(worldN, lightDir);
+                float NdotL = dot(worldN, -_DirToSun);
                 NdotL = saturate(NdotL * (1.0 - _LightWrap) + _LightWrap);
                 NdotL = floor(NdotL * (_Bands-1)) / _Bands;
                 NdotL += _AmbientColor.r;
@@ -80,8 +84,6 @@ Shader "Custom/ScreenSpaceDerivative_WorldSpace"
                 float slope = dot(-worldN, radialDir);
                 slope = saturate(slope - _SlopeThreshold);
                 slope = pow(slope, 10);
-                if(slope - 0.5 < 0.2) slope = 0;
-                slope = slope > 0.5 ? 1 : 0;
 
 
                 float3 albedo = tex2D(_MainTex, i.uv).rgb;
@@ -89,10 +91,9 @@ Shader "Custom/ScreenSpaceDerivative_WorldSpace"
 
                 albedo = lerp(side,albedo,slope);
 
-                float3 diffuse = albedo * _LightColor0.rgb * NdotL;
-                float3 color = albedo * NdotL * _LightColor0.rgb;
-
-                //return float4(slope,slope,slope, 1);
+                float3 diffuse = albedo * _LightColor.rgb * NdotL;
+                float3 color = albedo * _LightColor.rgb * NdotL;
+                
                 return float4(color, 1);
             }
             ENDCG

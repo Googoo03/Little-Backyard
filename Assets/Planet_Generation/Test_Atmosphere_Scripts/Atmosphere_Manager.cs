@@ -9,6 +9,7 @@ public class Atmosphere_Manager : MonoBehaviour
     [SerializeField] RenderTexture targetTexture;
 
     [SerializeField] Material atmosphereMat;
+    [SerializeField] Material planetMat;
     int targetTextureResolution = 256;
     public Vector3 wavelengths = new Vector3(700, 530, 460);
 
@@ -66,5 +67,8 @@ public class Atmosphere_Manager : MonoBehaviour
         transmittanceLUT.Dispatch(kernel, groupX, groupY, 1);
 
         atmosphereMat.SetTexture("_BakedOpticalDepth", targetTexture);
+
+        //Set planet sun direction for lighting
+        planetMat.SetVector("_DirToSun", sun.transform.position.normalized);
     }
 }

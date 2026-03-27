@@ -117,6 +117,6 @@ Material:
     - _Scale: {r: 65.66243, g: 7.5, b: 103.86508, a: 0}
     - _SecondSunColor: {r: 1, g: 0.77534574, b: 0.4509434, a: 0}
     - _SunColor: {r: 1, g: 1, b: 1, a: 1}
-    - _SunPos: {r: 35.00094, g: 152.7, b: 73.74533, a: 0}
+    - _SunPos: {r: 0, g: 8284, b: 17619, a: 0}
     - _WindVec: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
