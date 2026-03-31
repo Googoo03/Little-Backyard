@@ -69,7 +69,7 @@ Material:
     - _Glossiness: 0
     - _L2: 0.5
     - _Levels: 2
-    - _LightWrap: 0.46
+    - _LightWrap: 0
     - _Metallic: 0
     - _PlanetType: 2
     - _SlopeExponent: 1

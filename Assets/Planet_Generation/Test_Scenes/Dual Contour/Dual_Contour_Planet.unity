@@ -298,6 +298,7 @@ MonoBehaviour:
   transmittanceLUT: {fileID: 7200000, guid: bf3854f2efa2bb240a814e8f27b793ed, type: 3}
   targetTexture: {fileID: 0}
   atmosphereMat: {fileID: 2100000, guid: 6fea5fb9a3a75d9408f567a098e6ad57, type: 2}
+  cloudMat: {fileID: 2100000, guid: 6f991c02b62c9ec43a710e5ff267ee3e, type: 2}
   planetMat: {fileID: 2100000, guid: fd833b8aa01539d44b51114498175f23, type: 2}
   wavelengths: {x: 700, y: 530, z: 460}
   testParams: {x: 7, y: 1.26, z: 0.1, w: 3}
@@ -488,7 +489,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &801113653
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -528,9 +529,9 @@ MonoBehaviour:
   transparentCamera: {fileID: 1624216327}
   oceanDepthShader: {fileID: 4800000, guid: f5c7aa42cf6366e4db8715b4f00bf220, type: 3}
   materials:
-  - {fileID: 2100000, guid: 6fea5fb9a3a75d9408f567a098e6ad57, type: 2}
+  - {fileID: 2100000, guid: 6f991c02b62c9ec43a710e5ff267ee3e, type: 2}
   - {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
-  - {fileID: 2100000, guid: 41babc476702fba489478fc54b39959d, type: 2}
+  - {fileID: 2100000, guid: 6fea5fb9a3a75d9408f567a098e6ad57, type: 2}
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
 --- !u!81 &801113655
@@ -679,7 +680,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1095750715978840, guid: b088d8908c784da4bacac4e703be4d78, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4064010438313054, guid: b088d8908c784da4bacac4e703be4d78, type: 3}
       propertyPath: m_LocalScale.x
@@ -1385,7 +1386,8 @@ MonoBehaviour:
   oceanDepthShader: {fileID: 4800000, guid: f5c7aa42cf6366e4db8715b4f00bf220, type: 3}
   materials:
   - {fileID: 2100000, guid: 6fea5fb9a3a75d9408f567a098e6ad57, type: 2}
-  - {fileID: 2100000, guid: 41babc476702fba489478fc54b39959d, type: 2}
+  - {fileID: 2100000, guid: 6f991c02b62c9ec43a710e5ff267ee3e, type: 2}
+  - {fileID: 2100000, guid: 185b1b01dbaaccd4eb2d28ba2529a8c1, type: 2}
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
 --- !u!81 &1557406412

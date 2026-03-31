@@ -31,6 +31,7 @@ Shader "Custom/Cloud_Circular"
         _PhaseG ("Phase G", Range(-1,1)) = 0.76
         _LightIntensity ("Light Intensity", float) = 1.0
         _EXTINCTION_MULT ("Extinction Multiplier", float) = 1.0
+        _AtmosphereRadius ("Atmosphere Radius", float) = 1.0
     }
     SubShader
     {
@@ -121,7 +122,9 @@ Shader "Custom/Cloud_Circular"
 
             //Planet Parameters
             float3 planetCentre;
-            float atmosphereRadius;
+            float _AtmosphereRadius;
+            float cloudRadius;
+            float numCloudPoints;
 
             bool RayAABBIntersect(float3 rayOrigin, float3 rayDir, float3 boxMin, float3 boxMax,
                                 out float outTEnter, out float outTExit)
@@ -204,26 +207,22 @@ Shader "Custom/Cloud_Circular"
 
             fixed4 frag (v2f i) : SV_Target
             {
+
+
                 // Camera / ray setup
                 float terrainLevel = tex2D(_CameraDepthTexture, i.uv);
                 terrainLevel = LinearEyeDepth(terrainLevel);
 
+                
+
                 const float3 ray_direction = normalize(i.viewVector);
                 float3 cam_forward_world = mul((float3x3)unity_CameraToWorld, float3(0,0,1));
                 float ray_depth_world = dot(cam_forward_world, ray_direction);
-                float3 terrainPosition = (ray_direction / ray_depth_world) * terrainLevel + _WorldSpaceCameraPos;
+                float3 terrainDist = (ray_direction / ray_depth_world) * terrainLevel;
 
                 // Temp vars
                 
                 float3 start_point = _WorldSpaceCameraPos;
-
-                // Accumulators
-                float tCloud = 0.0;
-                float tCloudEnter = 0.0;
-                float tCloudExit = 0.0;
-
-                float tSunCloudEnter = 0.0;
-                float tSunCloudExit = 0.0;
                 
                 float totalDensity = 0.0;
                 float4 accumulatedColor = 0.0;
@@ -243,23 +242,22 @@ Shader "Custom/Cloud_Circular"
 
                 // Decide sun direction once (assume _SunPos is a world position)
                 // If _SunPos is already a direction, replace with normalize(_SunPos).
+
+                float2 shellInfo = raySphereShell(planetCentre, _AtmosphereRadius, cloudRadius / _AtmosphereRadius, start_point, ray_direction);
                 
-                bool intersect = RayAABBIntersect(start_point, ray_direction, _Position - _Scale, _Position + _Scale, tCloudEnter, tCloudExit);
-                float2 hitInfo = raySphere(planetCentre, atmosphereRadius, start_point, ray_direction);
+                float distToShell = shellInfo.x;
+                float distThroughShell = min(shellInfo.y, max(length(terrainDist) - distToShell, 0.0));
 
-                float dstToAtmosphere = hitInfo.x;
-				float dstThroughAtmosphere = min(hitInfo.y, dstToSurface - dstToAtmosphere);
-
-                if(!intersect) return col;
-
-                float stepSize =(tCloudExit-tCloudEnter)*0.02;
-
+                if(distThroughShell <= 0) return col;
+                
+                
+                float stepSize = distThroughShell / (numCloudPoints - 1);
+                
+                float3 pos = start_point + (ray_direction * distToShell);
+                
                 [unroll(50)]
-                for (tCloud = 0; tCloud < 1.0; tCloud += 0.02)
-                {
-                    float3 pos = start_point + ray_direction * (tCloudEnter + (tCloudExit-tCloudEnter)*(tCloud+blueNoise));
+                for(int i = 0; i < numCloudPoints; ++i){
                     
-
                     // Map world pos into 3D texture coordinates (UVW).
                     float3 cloudUVW = (pos * _CloudTex_ST).xyz + _WindVec.xyz * _Time.y;
                     float3 perlinUVW = (pos * _PerlinNoise_ST).xyz + _WindVec.xyz * _Time.y;
@@ -270,20 +268,19 @@ Shader "Custom/Cloud_Circular"
                     density += (perlinSample.r * _CloudCoeffR + perlinSample.g * _CloudCoeffG + perlinSample.b * _CloudCoeffB + perlinSample.a * _CloudCoeffA - _Threshold) * (1.0 - _WorleyPerlinMix);
 
                     density = max(density, 0.0);
-                    float lightTransmission = _LightIntensity;
+                    
 
                     float3 sunDir = normalize(_SunPos - pos);
-
-                    bool inCloud = RayAABBIntersect(pos, sunDir, _Position - _Scale, _Position + _Scale, tSunCloudEnter, tSunCloudExit);
-                    float sunStep = (tSunCloudExit-tSunCloudEnter)*0.1;
+                    float lightTransmission = _LightIntensity * max(0,dot(normalize(pos- planetCentre), sunDir));
                     
-                    [unroll(5)]
-                    for(float tSun = 0; tSun < 1.0; tSun += 0.2)
-                    {
-                        
-                        
+                    float2 sun_shellInfo = raySphereShell(planetCentre, _AtmosphereRadius, cloudRadius / _AtmosphereRadius, pos, sunDir);
+                    float sun_distToShell = sun_shellInfo.x;
+                    float sun_distThroughShell = sun_shellInfo.y;
+                    float sunStep = sun_distThroughShell / 5;
+                    float3 sunPos = pos + (sunDir * sun_distToShell);
 
-                        float3 sunPos = pos + sunDir * (tSunCloudEnter + (tSunCloudExit-tSunCloudEnter)*tSun);
+                    [unroll(5)]
+                    for(int j = 0; j < 5; ++j){
                         float3 toSunUVW = (sunPos * _CloudTex_ST).xyz + _WindVec.xyz * _Time.y;
                         float3 toSunPerlinUVW = (sunPos * _PerlinNoise_ST).xyz + _WindVec.xyz * _Time.y;
                         float4 toSunCloudSample = tex3D(_CloudTex, toSunUVW);
@@ -295,11 +292,9 @@ Shader "Custom/Cloud_Circular"
                         toSunDensity = max(toSunDensity, 0.0);
 
                         lightTransmission *= exp(-toSunDensity * _ScatterCoef * sunStep);
+
+                        sunPos += sunDir * sunStep;
                     }
-
-
-                    
-
                     // Shade & accumulate
                     float cosTheta = dot(normalize(ray_direction), sunDir);
 
@@ -312,6 +307,8 @@ Shader "Custom/Cloud_Circular"
 
                     accumulatedColor += (1 - localTrans) * (_CloudColor * lightTransmission * phase + _CloudAmbient) * transmittance;
                     transmittance *= localTrans;
+                    
+                    pos += ray_direction * stepSize;
                 }
 
                 // Blend with background
