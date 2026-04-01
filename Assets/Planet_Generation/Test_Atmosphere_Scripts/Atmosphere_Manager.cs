@@ -9,6 +9,7 @@ public class Atmosphere_Manager : MonoBehaviour
     [SerializeField] RenderTexture targetTexture;
 
     [SerializeField] Material atmosphereMat;
+    [SerializeField] Material cloudMat;
     [SerializeField] Material planetMat;
     int targetTextureResolution = 256;
     public Vector3 wavelengths = new Vector3(700, 530, 460);
@@ -16,7 +17,7 @@ public class Atmosphere_Manager : MonoBehaviour
     public Vector4 testParams = new Vector4(7, 1.26f, 0.1f, 3);
     public float scatteringStrength = 20;
 
-    [Range(1, 10)]
+    [Range(0, 10)]
     public float intensity = 1;
 
     public float ditherStrength = 1f;
@@ -70,5 +71,12 @@ public class Atmosphere_Manager : MonoBehaviour
 
         //Set planet sun direction for lighting
         planetMat.SetVector("_DirToSun", sun.transform.position.normalized);
+
+        //Set cloud params
+        cloudMat.SetVector("planetCentre", Vector3.zero);
+        cloudMat.SetFloat("_AtmosphereRadius", 4296);
+        cloudMat.SetFloat("cloudRadius", 4196);
+        cloudMat.SetFloat("numCloudPoints", 50);
+        cloudMat.SetVector("_SunPos", sun.transform.position);
     }
 }
