@@ -35,10 +35,10 @@ public class SVOTest : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        //Set main camera at start
         player = Camera.main.transform;
 
-        refreshChunks = false;
-
+        //I dont like this, should be refactored somehow
         dualContour = new();
         dualContour.SetBlockVoxel(blockVoxel);
         dualContour.SetRadius(patchSize);
@@ -46,6 +46,9 @@ public class SVOTest : MonoBehaviour
         dualContour.SetCubeAxis(faceNum);
 
 
+        refreshChunks = false;
+
+        //Define root node of SVO
         SVONode root = new(new Vector3Int(0, 0, 0), patchSize, null, -1, null);
         svo = new SVO(root, dualContour, this.gameObject, planetFaceWrapper.neighbors, faceNum);
         root.SetSVO(svo);
@@ -55,27 +58,37 @@ public class SVOTest : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        UpdateSVONodes();
+
+    }
+
+    void UpdateSVONodes()
+    {
+
         vertexLength = svo.vertices.Count;
         Vector3 playerForward = player.forward.normalized;
         Vector3 playerPos = player.position;
-
 
         nodesToSubdivide.Clear();
         nodesToCollapse.Clear();
 
         if (freezeSubdivision) return;
 
+        float minDist, maxDist;
+
         foreach (var node in frontier)
         {
             Vector3 delta = node.transformedPosition - playerPos;
             float distSq = delta.sqrMagnitude;
+            minDist = node.size * node.size * 100f;
+            maxDist = node.size * node.size * 400f;
 
             if (node.MayContainCrossing() &&
-                (((distSq < (node.size * node.size * 100f)) && node.size > nodeSizeMin) || node.size > nodeSizeMax))
+                (((distSq < minDist) && node.size > nodeSizeMin) || node.size > nodeSizeMax))
             {
                 nodesToSubdivide.Add(node);
             }
-            else if (((distSq > node.size * node.size * 400f) && node.size < nodeSizeMax))
+            else if (((distSq > maxDist) && node.size < nodeSizeMax))
             {
                 node.voteToCollapse = true;
                 nodesToCollapse.Add(node.parent);
@@ -136,7 +149,6 @@ public class SVOTest : MonoBehaviour
         }
         elapsedTime = 0;
         refreshChunks = false;
-
     }
 
     public void OnDrawGizmos()

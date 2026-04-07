@@ -34,7 +34,7 @@ public class LifePlanetNoise : GeneratePlane
     {
         //set up noise parameters. surely theres a better way to do this
         //perhaps load from a JSON file?
-        
+
 
 
 
@@ -56,36 +56,41 @@ public class LifePlanetNoise : GeneratePlane
         rock_nummax = 6;
     }
 
-    
 
-    private float EaseInCirc(float x) {
+
+    private float EaseInCirc(float x)
+    {
         return 1 - Mathf.Sqrt(1 - Mathf.Pow(x, 2));
     }
 
 
-    ~LifePlanetNoise() {
+    ~LifePlanetNoise()
+    {
 
         //this is where we should release all object pool items that were allocated
-        
+
     }
     //protected override void createPatchTexture(ref Material mat, int x, int y, float currentHeight) { }
 
 
-    protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin) {
+    protected override void GenerateFoliage(ref Vector3[] vertices, Vector3 origin)
+    {
 
         return;
 
     }
 
-    protected override void DispatchFoliage() {
+    protected override void DispatchFoliage()
+    {
         //sends over to the gpu
         if (!foliageGenerationReturned) return;
 
         //Graphics.DrawMeshInstanced(grass_mesh, 0, grass_mat, grass_m);
     }
 
-    protected override void DispatchNoise( ref Vector3[] vertices, Vector3 origin) {
-        
+    protected override void DispatchNoise(ref Vector3[] vertices, Vector3 origin)
+    {
+
         simplex = (ComputeShader)(Resources.Load("Simplex Noise"));
         Vector3[] verticesWorldSpace = new Vector3[vertices.Length];
 
@@ -98,7 +103,7 @@ public class LifePlanetNoise : GeneratePlane
             float yy = ((pos.y - yVertCount) / scale);
             float zz = ((pos.z - xVertCount) / scale);
 
-            verticesWorldSpace[i] = new Vector3(xx,yy,zz);
+            verticesWorldSpace[i] = new Vector3(xx, yy, zz);
         }
         /////////////////////////////////////////////////////////////////
 
@@ -112,13 +117,13 @@ public class LifePlanetNoise : GeneratePlane
         simplex.SetBool("absValue", true);
 
         simplex.Dispatch(shaderHandle, xVertCount, yVertCount, 1);
-        
+
 
         //simplex.SetInt("seed", seed);
         simplex.SetFloat("mountainStrength", 1f);
         simplex.SetFloat("persistance", 0.95f);
         simplex.SetFloat("lacunarity", 0.25f);
-        
+
         simplex.SetFloat("domainWarp", .0f);
         simplex.SetInt("octaves", 3);
         //simplex.SetInt("mOctaves", 1);

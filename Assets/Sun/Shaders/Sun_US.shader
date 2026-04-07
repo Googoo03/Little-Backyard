@@ -2,8 +2,6 @@ Shader "Custom/Sun_US"
 {
     Properties
     {
-        _NoiseTex ("Texture", 3D) = "white" {}
-        
         _ColorA ("Color_A", Color) = (1,1,1,1)
         _Color ("Color_B", Color) = (1,1,1,1)
         _Blowout ("Sun Blowout", float) = 1
@@ -12,7 +10,7 @@ Shader "Custom/Sun_US"
     }
     SubShader
     {
-        Tags { "RenderType"="Transparent" }
+        Tags { "RenderType"="Opaque" }
         LOD 100
 
         Pass
@@ -22,13 +20,17 @@ Shader "Custom/Sun_US"
             #pragma fragment frag
             // make fog work
             #pragma multi_compile_fog
+            #pragma multi_compile_instancing
 
             #include "UnityCG.cginc"
+            #include "UnityInstancing.cginc"
 
             struct appdata
             {
                 float4 vertex : POSITION;
+                float3 normal : NORMAL;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct v2f
@@ -39,32 +41,37 @@ Shader "Custom/Sun_US"
                 float3 worldPos : TEXCOORD3;
                 float3 worldNormal : TEXCOORD4;
                 float4 vertex : SV_POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             float4 _ColorA;
             float4 _Color;
-            sampler3D _NoiseTex;
-            float4 _NoiseTex_ST;
             float _Threshold;
             float _Displacement;
             float _Blowout;
 
-            v2f vert (appdata_base v)
-            {
-                v2f o;
+            UNITY_INSTANCING_BUFFER_START(Props)
+                // per-instance properties go here (optional)
+            UNITY_INSTANCING_BUFFER_END(Props)
 
-                float3 worldNormal = normalize(mul(unity_ObjectToWorld, float4(v.normal, 0)).xyz);
-                float3 worldPos = mul (unity_ObjectToWorld, v.vertex).xyz;
+            v2f vert (appdata v)
+            {
+                UNITY_SETUP_INSTANCE_ID(v);
+
+                v2f o;
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
+                UNITY_INITIALIZE_OUTPUT(v2f, o);
+
+                float3 worldNormal = UnityObjectToWorldNormal(v.normal);
+                float3 worldPos = mul(UNITY_MATRIX_M, v.vertex).xyz;
 
                 o.worldNormal = worldNormal;
                 o.worldPos = worldPos;
 
-                _NoiseTex_ST.xy += float2(_Time.x,_Time.x);
-                //v.vertex *= 1-(tex3Dlod(_NoiseTex,float4(worldNormal,0)+_NoiseTex_ST).r * _Displacement);
-                o.vertex = UnityObjectToClipPos(v.vertex);/* * tex3D(_NoiseTex,worldNormal).r;*/
+                o.vertex = UnityObjectToClipPos(v.vertex);
                 
                 o.screenPos = ComputeScreenPos(o.vertex);
-                o.uv = v.texcoord.xy;
+                o.uv = v.uv;
 
                 float3 viewVector = mul(unity_CameraInvProjection, float4((o.screenPos.xy/o.screenPos.w) * 2 - 1, 0, -1));
                 o.viewVector = mul(unity_CameraToWorld, float4(viewVector,0));
@@ -75,17 +82,15 @@ Shader "Custom/Sun_US"
             fixed4 frag (v2f i) : SV_Target
             {
                 
+                UNITY_SETUP_INSTANCE_ID(i);
                 // sample the texture
-                _NoiseTex_ST.z += unity_DeltaTime;
-                float2 texture_offset = float2(_Time.xx);
-                int noiseValue = tex3D(_NoiseTex,i.worldNormal).b;
-                //float noiseV = .1 * noiseValue;
+                
 
                 float fresnel = dot(i.worldNormal,normalize(_WorldSpaceCameraPos-i.worldPos));
+                fresnel = max(fresnel, 0.01);
 
                 fixed4 col = _Color*.05;
                 col /= pow(1-fresnel,_Blowout);
-                //col.xyz *= unity_DeltaTime.z*100;
 
                 return col;
             }

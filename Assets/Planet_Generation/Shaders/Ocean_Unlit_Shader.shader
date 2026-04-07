@@ -14,56 +14,13 @@ Shader "Unlit/Ocean_Unlit_Shader"
        _SunPos("Sun Position", Vector) = (1,1,1,1)
        _Threshold("Threshold",float)  =1
        _Specular("Specular",float)  =1
+       _LightWrap("Light Wrap", Range(0,1)) = 0.5
 
        _WaveA ("WaveA", 2D) = "white"{}
        _WaveB ("WaveB", 2D) = "white"{}
     }
     SubShader
     {
-
-        /*Pass{
-            Tags {"LightMode"="ShadowCaster"}
-            ZWrite On
-            ZTest LEqual
-		    Blend SrcAlpha OneMinusSrcAlpha
-
-            LOD 100
-
-            CGPROGRAM
-
-            #pragma vertex vert
-            #pragma fragment frag
-            #pragma multi_compile_shadowcaster
-            // make fog work
-            
-
-            #include "UnityCG.cginc"
-
-            
-
-            struct v2f
-            {
-
-                V2F_SHADOW_CASTER;
-            };
-
-            v2f vert (appdata_base v)
-            {
-                v2f o;
-
-                TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
-                return o;
-            }
-
-            
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                return fixed4(0,0,0,0);
-
-            }
-            ENDCG
-        }*/
 
         Pass
         {
@@ -114,6 +71,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
             int _Levels;
 
             float _Specular;
+            float _LightWrap;
 
             v2f vert (appdata_base v)
             {
@@ -131,18 +89,16 @@ Shader "Unlit/Ocean_Unlit_Shader"
 				float vertexAnimWeight = length(worldPos - _WorldSpaceCameraPos);
 				vertexAnimWeight = 1;//saturate(pow(vertexAnimWeight / 30, 3));
 
-				float waveAnimDetail = 100;
-				float maxWaveAmplitude = 0.001* vertexAnimWeight; // 0.001
+				float waveAnimDetail = 1;
+				float maxWaveAmplitude = 0.0001;
 				float waveAnimSpeed = 1;
 
-				//float3 worldNormal = normalize(mul(unity_ObjectToWorld, float4(v.normal, 0)).xyz);
 				float theta = acos(worldNormal.z);
-				float phi = sin(v.vertex.y);//atan2(v.vertex.y, v.vertex.x);
+				float phi = sin(v.vertex.y);
 				float waveA = sin(_Time.x * 3.5*waveAnimSpeed + theta * waveAnimDetail);
 				float waveB = sin(_Time.y * waveAnimSpeed + phi * waveAnimDetail);
 				float waveVertexAmplitude = (waveA + waveB) * maxWaveAmplitude;
 				v.vertex += float4(v.normal, 0) * waveVertexAmplitude;
-                //o.worldPos += float4(v.normal, 0) * waveVertexAmplitude;
                 //*-----------------------------------------------------------
                 o.worldNormal = worldNormal;
                 o.worldPos = worldPos;
@@ -214,8 +170,6 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 _Bubbles_ST.x += _SinTime.x/10;
                 fixed4 bubbleCol = tex2D(_Bubbles,float2(i.uv.x,i.uv.y));
 
-                
-
 
                 float3 viewDirection = normalize(i.viewVector);
                 float3 toSunVector = normalize(_SunPos-i.worldPos);
@@ -239,7 +193,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 ////////////////REMOVE LATER
                 // -------- Specularity --------
 				// Specular normal
-				float waveSpeed = 0.1;
+				float waveSpeed = 1;
 				float waveNormalScale = 0.05;
 				float waveStrength = 0.4;
 				
@@ -248,7 +202,7 @@ Shader "Unlit/Ocean_Unlit_Shader"
 				float3 waveNormal1 = triplanarNormal(i.worldPos, i.worldNormal, waveNormalScale, waveOffsetA, _WaveA);
 				float3 waveNormal2 = triplanarNormal(i.worldPos, i.worldNormal, waveNormalScale, waveOffsetB, _WaveB);
 				float3 waveNormal = triplanarNormal(i.worldPos, waveNormal1, waveNormalScale, waveOffsetB, _WaveB);
-				float3 specWaveNormal = normalize(lerp(i.worldNormal, waveNormal, waveStrength));
+				float3 specWaveNormal = normalize(lerp(i.worldNormal, waveNormal1 + waveNormal2, waveStrength));
                 ////////////////
 
                 //PHONG SPECULAR HIGHLIGHTS
@@ -260,10 +214,6 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 float reflection_value = dot(ray_direction,-ref) < 0 ? 0 : dot(ray_direction,-ref);
                 reflection_value = pow(reflection_value, _Specular); //is specular_power the same as a?
 
-                float step = 1.0 / _Levels;
-                int level = (reflection_value) / (step);
-                reflection_value = (float)level / _Levels;
-
                 specular *= reflection_value;
                 ////
 
@@ -273,22 +223,20 @@ Shader "Unlit/Ocean_Unlit_Shader"
                 float3 waterLevel = i.worldPos;
                 float waterDepth = length(terrainPosition - waterLevel);
 
-                float crestDepth = (0.5-(_SinTime.w/2));
-                crestDepth = waterDepth < (0.005) ? 0 : crestDepth; //that 0.005 shouldn't really be a constant. Should be a dynamic value instead
-
                 float3 waterColor = lerp(_Deep,_Shallow,exp(-waterDepth*_DepthCoef));
-
-                float depth_marker = .005;
-                if(abs((crestDepth*.05)-waterDepth) < depth_marker) waterColor = lerp(fixed4(1,1,1,1),waterColor,crestDepth);
-                //waterColor = (bubbleCol.b > _Threshold && waterDepth < depth_marker) ? lerp(fixed4(1,1,1,1),waterColor,waterDepth) : waterColor;
+                if(waterDepth < _Threshold){
+                    waterColor = float3(1,1,1)*1.5;
+                }
 
                 float alpha = 1;max(1-dot(-viewDirection, i.worldNormal),0.5);
 
                
                 
                 //darkness is equal to the current value
+                float NdotL = dot(i.worldNormal, toSunVector);
+                NdotL = saturate(NdotL * (1.0 - _LightWrap) + _LightWrap);
 
-                waterColor *= dot(i.worldNormal,toSunVector);//(float)level / _Levels;
+                waterColor *= NdotL;//(float)level / _Levels;
                 waterColor += specular;
 
                 //SHADOW_CASTER_FRAGMENT(i)

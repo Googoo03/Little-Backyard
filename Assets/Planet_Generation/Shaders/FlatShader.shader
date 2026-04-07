@@ -1,4 +1,4 @@
-Shader "Custom/ScreenSpaceDerivative_WorldSpace"
+Shader "Custom/FlatSurfaceShader"
 {
     Properties
     {

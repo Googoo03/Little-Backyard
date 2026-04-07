@@ -94,6 +94,7 @@ Material:
     - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _LightIntensity: 3.23
+    - _LightWrap: 0.5
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
@@ -110,7 +111,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _AtmoColor: {r: 0.216981, g: 0.521945, b: 1, a: 0}
-    - _CloudAmbient: {r: 0.01132071, g: 0.01132071, b: 0.01132071, a: 0}
+    - _CloudAmbient: {r: 0.2830189, g: 0.2830189, b: 0.2830189, a: 0}
     - _CloudColor: {r: 1, g: 1, b: 1, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}

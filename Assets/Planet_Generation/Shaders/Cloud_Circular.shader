@@ -32,6 +32,7 @@ Shader "Custom/Cloud_Circular"
         _LightIntensity ("Light Intensity", float) = 1.0
         _EXTINCTION_MULT ("Extinction Multiplier", float) = 1.0
         _AtmosphereRadius ("Atmosphere Radius", float) = 1.0
+        _LightWrap ("Light Wrap", Range(0,1)) = 0.5
     }
     SubShader
     {
@@ -271,7 +272,8 @@ Shader "Custom/Cloud_Circular"
                     
 
                     float3 sunDir = normalize(_SunPos - pos);
-                    float lightTransmission = _LightIntensity * max(0,dot(normalize(pos- planetCentre), sunDir));
+                    float SunDotSurface = max(0,dot(normalize(pos- planetCentre), sunDir));
+                    float lightTransmission = _LightIntensity * SunDotSurface;
                     
                     float2 sun_shellInfo = raySphereShell(planetCentre, _AtmosphereRadius, cloudRadius / _AtmosphereRadius, pos, sunDir);
                     float sun_distToShell = sun_shellInfo.x;
@@ -305,7 +307,7 @@ Shader "Custom/Cloud_Circular"
                     float extinction = density * _CloudDensity * stepSize;
                     float localTrans = exp(-extinction);
 
-                    accumulatedColor += (1 - localTrans) * (_CloudColor * lightTransmission * phase + _CloudAmbient) * transmittance;
+                    accumulatedColor += (1 - localTrans) * (_CloudColor * lightTransmission * phase + (_CloudAmbient * SunDotSurface)) * transmittance;
                     transmittance *= localTrans;
                     
                     pos += ray_direction * stepSize;

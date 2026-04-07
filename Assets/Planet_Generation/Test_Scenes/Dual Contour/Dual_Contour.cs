@@ -132,8 +132,10 @@ namespace DualContour
             float amplitude = 50.0f;
             int octaves = 4;
 
+            float contVal = (1f - Mathf.Abs(simplexNoise.CalcPixel3D(spherePos.x * .01f, spherePos.y * .01f, spherePos.z * .01f))) * 100;
+
             spherePos /= noiseTexture.width; //even dimensions
-            float value = 1f - Mathf.Abs(noiseTexture.GetPixelBilinear(spherePos.x * frequency, spherePos.y * frequency, spherePos.z * frequency).r * amplitude) + radius;
+            float value = (1f - Mathf.Abs(noiseTexture.GetPixelBilinear(spherePos.x * frequency, spherePos.y * frequency, spherePos.z * frequency).r * amplitude)) + radius - contVal;
 
             return value;
         }
