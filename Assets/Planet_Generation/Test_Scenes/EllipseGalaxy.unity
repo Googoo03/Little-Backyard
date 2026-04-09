@@ -338,7 +338,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a75eebd2ce40583489dfe66d84d0a23f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  starLimit: 10000
+  floating_origin_transform:
+    TRS:
+      e00: 0
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 0
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 0
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 0
+  localScale: {x: 1, y: 1, z: 1}
+  stellarBodyComputeShader: {fileID: 7200000, guid: 759642783c35e824baec1958c785d80a,
+    type: 3}
+  starLimit: 5000
   nebulaLimit: 2500
   numOrbits: 20
   starObj: {fileID: 11400000, guid: a1f72b817c9f2754291bdaa46df6ae39, type: 2}
@@ -346,10 +367,9 @@ MonoBehaviour:
   processionTheta: 0.29
   majorAxes: {x: 2.75, y: 2}
   galaxySize: 100
-  galaxyCenter: {x: 0, y: 0, z: 0}
   noiseTexture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
   frequency: 50
-  amplitude: 100
+  amplitude: 166.1
   t: 0
   starProcessionSpeed: 0.25
   starSize: 0.5

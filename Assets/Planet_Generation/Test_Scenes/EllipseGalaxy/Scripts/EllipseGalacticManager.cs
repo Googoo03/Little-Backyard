@@ -2,10 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using FloatingOrigin;
 
 public class EllipseGalacticManager : MonoBehaviour
 {
-    // Start is called before the first frame update
+
+    [SerializeField] Floating_Origin_Transform floating_origin_transform;
+    [SerializeField] Vector3 localScale;
+    [SerializeField] ComputeShader stellarBodyComputeShader;
 
     //Star limit
     [SerializeField] private int starLimit;
@@ -20,7 +24,6 @@ public class EllipseGalacticManager : MonoBehaviour
     [SerializeField] private float processionTheta;
     [SerializeField] private Vector2 majorAxes;
     [SerializeField] private float galaxySize;
-    [SerializeField] private Vector3 galaxyCenter;
 
     //Noise Texture (will add to Noise Pipeline later)
     [SerializeField] private Texture3D noiseTexture;
@@ -31,73 +34,99 @@ public class EllipseGalacticManager : MonoBehaviour
     [SerializeField] private float starSize;
 
     private Matrix4x4[] starMatrices;
+    private ComputeBuffer starMatrixBuffer;
     private Matrix4x4[] nebulaMatrices;
+    private ComputeBuffer nebulaMatrixBuffer;
 
     //GPU instance stars and modify positions via compute shader
     void Start()
     {
+
         starMatrices = new Matrix4x4[starLimit];
+        starMatrixBuffer = new ComputeBuffer(starLimit, sizeof(float) * 16);
+
         nebulaMatrices = new Matrix4x4[nebulaLimit];
+        nebulaMatrixBuffer = new ComputeBuffer(nebulaLimit, sizeof(float) * 16);
+
+        LoadComputeShaderData();
     }
+
+
 
     // Update is called once per frame
     void Update()
     {
-        t += Time.deltaTime * starProcessionSpeed;
-        GenerateStellarBody(starObj, starLimit, ref starMatrices);
-        GenerateStellarBody(nebulaObj, nebulaLimit, ref nebulaMatrices);
-        starObj.instanceData.mat.enableInstancing = true;
+        if (starProcessionSpeed > 0)
+        {
+            t += Time.deltaTime * starProcessionSpeed;
+            stellarBodyComputeShader.SetFloat("t", t);
+
+            LoadStarData();
+            int kernel = stellarBodyComputeShader.FindKernel("CSMain");
+            int groupX = Mathf.CeilToInt(starLimit / 64.0f);
+            stellarBodyComputeShader.Dispatch(kernel, groupX, 1, 1);
+
+            starMatrixBuffer.GetData(starMatrices);
+
+            LoadNebulaData();
+            kernel = stellarBodyComputeShader.FindKernel("CSMain");
+            groupX = Mathf.CeilToInt(nebulaLimit / 64.0f);
+            stellarBodyComputeShader.Dispatch(kernel, groupX, 1, 1);
+
+            nebulaMatrixBuffer.GetData(nebulaMatrices);
+
+            stellarBodyComputeShader.SetMatrix("floating_origin_transform", floating_origin_transform.TRS);
+        }
+
+        floating_origin_transform = new Floating_Origin_Transform(Vector3.zero, Quaternion.identity, localScale);
+
         Graphics.RenderMeshInstanced(new RenderParams(starObj.instanceData.mat), starObj.instanceData.mesh, 0, starMatrices);
         Graphics.RenderMeshInstanced(new RenderParams(nebulaObj.instanceData.mat), nebulaObj.instanceData.mesh, 0, nebulaMatrices);
     }
 
-    private void GenerateStellarBody(StarScriptableObj starObj, int starLimit, ref Matrix4x4[] matrices)
+    private void LoadStarData()
     {
-        int starsPerOrbit = starLimit / numOrbits;
-        float sizePerOrbit = galaxySize / numOrbits;
-        float procession = processionTheta;
-        float size = sizePerOrbit;
+        int kernel = stellarBodyComputeShader.FindKernel("CSMain");
+        Quaternion starObjForward = Quaternion.Euler(starObj.instanceData.forward);
 
-        Vector3 starPos;
+        stellarBodyComputeShader.SetBuffer(kernel, "matrices", starMatrixBuffer);
 
-        //need elliptical model
-        for (int j = 0; j < numOrbits; ++j)
-        {
-            for (int i = 0; i < starsPerOrbit; ++i)
-            {
-                float angle = 2 * 3.14f * ((float)i / (float)starsPerOrbit);
-                Vector3 originalPos = CalculateStarPosition(galaxyCenter, procession, angle, majorAxes.x * size, majorAxes.y * size);
-                starPos = CalculateStarPosition(galaxyCenter, procession, angle - t, majorAxes.x * size, majorAxes.y * size) + GetNoiseModifier(originalPos);
-
-                matrices[j * (starsPerOrbit) + i] = Matrix4x4.TRS(starPos, Quaternion.Euler(starObj.instanceData.forward), Vector3.one * starObj.instanceData.size);
-
-            }
-            size += sizePerOrbit;
-            procession += processionTheta;
-        }
-
+        //Star Body Data
+        stellarBodyComputeShader.SetInt("starLimit", starLimit);
+        stellarBodyComputeShader.SetVector("starObjForward", new Vector4(starObjForward.x, starObjForward.y, starObjForward.z, starObjForward.w));
+        stellarBodyComputeShader.SetFloat("starObjSize", starObj.instanceData.size);
     }
 
-    private Vector3 GetNoiseModifier(Vector3 position)
+    private void LoadNebulaData()
     {
-        position /= noiseTexture.width; //normalize to texture
-        Color val = (noiseTexture.GetPixelBilinear(position.x * frequency, position.y * frequency, position.z * frequency) - (Color.white / 2f)) * amplitude;
-        Vector3 displacementVector = new Vector3(val.r, val.g, val.b);
-        displacementVector -= (Vector3.one / 2f) * amplitude;
-        return displacementVector;
+        int kernel = stellarBodyComputeShader.FindKernel("CSMain");
+        Quaternion nebulaObjForward = Quaternion.Euler(nebulaObj.instanceData.forward);
+
+        stellarBodyComputeShader.SetBuffer(kernel, "matrices", nebulaMatrixBuffer);
+
+        //Nebula Body Data
+        stellarBodyComputeShader.SetInt("starLimit", nebulaLimit);
+        stellarBodyComputeShader.SetVector("starObjForward", new Vector4(nebulaObjForward.x, nebulaObjForward.y, nebulaObjForward.z, nebulaObjForward.w));
+        stellarBodyComputeShader.SetFloat("starObjSize", nebulaObj.instanceData.size);
     }
 
-    private Vector3 CalculateStarPosition(Vector3 position, float theta, float t, float a, float b)
+    private void LoadComputeShaderData()
     {
-        //Theta is procession value
+        int kernel = stellarBodyComputeShader.FindKernel("CSMain");
 
-        //t is radians
+        stellarBodyComputeShader.SetMatrix("floating_origin_transform", floating_origin_transform.TRS);
 
-        float sint = Mathf.Sin(t);
-        float cost = Mathf.Cos(t);
-        float sintheta = Mathf.Sin(theta);
-        float costheta = Mathf.Cos(theta);
+        stellarBodyComputeShader.SetTexture(kernel, "NoiseTexture", noiseTexture);
 
-        return new Vector3((a * cost * costheta) - (b * sintheta * sint), 0, (a * sintheta * cost) + (b * costheta * sint));
+        //Galaxy Data
+        stellarBodyComputeShader.SetInt("numOrbits", numOrbits);
+        stellarBodyComputeShader.SetFloat("processionTheta", processionTheta);
+        stellarBodyComputeShader.SetFloat("galaxySize", galaxySize);
+        stellarBodyComputeShader.SetVector("majorAxes", majorAxes);
+
+        //Noise Modifiers
+        stellarBodyComputeShader.SetFloat("frequency", frequency);
+        stellarBodyComputeShader.SetFloat("amplitude", amplitude);
+
     }
 }

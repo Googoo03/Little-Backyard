@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using FloatingOrigin;
 
 public class Floating_Origin_Manager : MonoBehaviour
 {
@@ -12,11 +13,13 @@ public class Floating_Origin_Manager : MonoBehaviour
 
     //We dont care about a "lack of precision", we care about a lack of precision near the camera. That which is visible. 
 
-
+    [SerializeField] private Transform camera;
+    [SerializeField] private Floating_Origin_Transform relativeTransformToCamera;
 
     // Start is called before the first frame update
     void Start()
     {
+        camera = Camera.main.transform;
 
     }
 

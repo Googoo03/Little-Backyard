@@ -78,5 +78,22 @@ float2 raySphereShell(float3 sphereCentre, float sphereRadius, float shellThickn
     return float2(distToShell, distToShellEnd - distToShell);
 }
 
+float sinCustom(float x){
+	//return the taylor expansion to second degree
+	float a = x+PI/2.0, b = TAU;
+    x = ((a>0)?a-b*((int)(a/b)):(-a+b*(((int)(a/b)))))-PI/2.0;
+    if (x > PI/2.0)
+        x = PI - x;
+	//cut down x to range [0,2pi]
+
+	float x3 = x*x*x;
+	float x5 = x3*x*x;
+	return x - x3/6 + x5/120;
+}
+
+float cosCustom(float x){
+	return sinCustom(x + PI/2);
+}
+
 
 #endif

@@ -1,0 +1,123 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#include "Assets/Shaders/Includes/Math.cginc"
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+
+//Noise Texture
+Texture3D<float4> NoiseTexture;
+SamplerState samplerNoiseTexture;
+
+//TRS matrices
+RWStructuredBuffer<float4x4> matrices;
+
+float4x4 floating_origin_transform;
+
+//Stellar Body Data
+int starLimit;
+float4 starObjForward;
+float starObjSize;
+
+//Galaxy Data
+float processionTheta;
+int numOrbits;
+float2 majorAxes;
+float galaxySize;
+
+//Noise Modifiers
+float frequency;
+float amplitude;
+
+//Time modifier
+float t;
+
+float4x4 buildTRSMatrix(float3 position, float4 rotation, float3 scale){
+    float x = rotation.x;
+    float y = rotation.y;
+    float z = rotation.z;
+    float w = rotation.w;
+
+    float3x3 TRS = float3x3(
+        1 - 2*y*y - 2*z*z,  2*x*y - 2*z*w,      2*x*z + 2*y*w,
+        2*x*y + 2*z*w,      1 - 2*x*x - 2*z*z,  2*y*z - 2*x*w,
+        2*x*z - 2*y*w,      2*y*z + 2*x*w,      1 - 2*x*x - 2*y*y
+    );
+
+    TRS[0] *= scale.x;
+    TRS[1] *= scale.y;
+    TRS[2] *= scale.z;
+
+    return float4x4(
+        float4(TRS[0], position.x),
+        float4(TRS[1], position.y),
+        float4(TRS[2], position.z),
+        float4(0,0,0, 1)
+    );
+}
+
+
+float3 CalculateStarPosition(float theta, float t, float a, float b)
+{
+    //Theta is procession value
+
+    //t is radians
+
+    float sint = sinCustom(t);
+    float cost = cosCustom(t);
+    float sintheta = sinCustom(theta);
+    float costheta = cosCustom(theta);
+
+    return float3((a * cost * costheta) - (b * sintheta * sint), 0, (a * sintheta * cost) + (b * costheta * sint));
+}
+
+float3 GetNoiseModifier(float3 position)
+{
+    float width;
+    NoiseTexture.GetDimensions(width, width, width);
+    position /= width; //normalize to texture
+
+    float4 val = (NoiseTexture.SampleLevel(samplerNoiseTexture, position * frequency, 0) - (float4(0.5, 0.5, 0.5, 0.5))) * amplitude;
+    float3 displacementVector = float3(val.r, val.g, val.b);
+    displacementVector -= (float3(1,1,1) * 0.5) * amplitude;
+    return displacementVector;
+}
+
+void GenerateStellarBody(int id)
+{
+    uint starsPerOrbit = starLimit / numOrbits;
+    float sizePerOrbit = galaxySize / numOrbits;
+    float procession = processionTheta;
+    float size = sizePerOrbit;
+
+    float3 starPos;
+
+    uint starsOver64 = starLimit / 64;
+    uint starsPerThread = starsOver64 * id;
+    uint startIndex = id * (starsOver64);
+    uint endIndex = startIndex + (starsOver64);
+    //start at correct position starlimit / 64 * id
+    for(uint k = startIndex; k < endIndex; ++k){
+        uint orbit =  ((k) / starsPerOrbit);
+        uint i = orbit + ((k) % starsPerOrbit);
+        float angle = 6.28 * ((float)i / (float)starsPerOrbit);
+
+        size = sizePerOrbit * orbit;
+        procession = processionTheta * orbit;
+
+        float3 originalPos = CalculateStarPosition(procession, angle, majorAxes.x * size, majorAxes.y * size);
+        starPos = CalculateStarPosition(procession, angle - (t), majorAxes.x * size, majorAxes.y * size) + GetNoiseModifier(originalPos);
+        matrices[k] = mul(floating_origin_transform, buildTRSMatrix(starPos, starObjForward, float3(starObjSize,starObjSize,starObjSize)));
+
+    }
+
+}
+
+[numthreads(64,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+    GenerateStellarBody(id.x);
+    
+}

@@ -15,5 +15,5 @@ MonoBehaviour:
   instanceData:
     mesh: {fileID: -789479026012231341, guid: 59db8b092da367244b08934c835f6ade, type: 3}
     mat: {fileID: 2100000, guid: e2148183cb53c8743b1e10beff102ed8, type: 2}
-    size: 0.5
+    size: 0.1
     forward: {x: 0, y: 0, z: 0}
