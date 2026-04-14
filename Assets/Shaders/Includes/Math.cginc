@@ -96,4 +96,45 @@ float cosCustom(float x){
 }
 
 
+float4 QuaternionFromMatrix(float3x3 R)
+{
+    float4 q;
+    float trace = R[0][0] + R[1][1] + R[2][2];
+
+    if (trace > 0)
+    {
+        float s = sqrt(trace + 1.0) * 2;
+        q.w = 0.25 * s;
+        q.x = (R[1][2] - R[2][1]) / s;
+        q.y = (R[2][0] - R[0][2]) / s;
+        q.z = (R[0][1] - R[1][0]) / s;
+    }
+    else if (R[0][0] > R[1][1] && R[0][0] > R[2][2])
+    {
+        float s = sqrt(1.0 + R[0][0] - R[1][1] - R[2][2]) * 2;
+        q.w = (R[1][2] - R[2][1]) / s;
+        q.x = 0.25 * s;
+        q.y = (R[1][2] + R[0][1]) / s;
+        q.z = (R[2][0] + R[0][2]) / s;
+    }
+    else if (R[1][1] > R[2][2])
+    {
+        float s = sqrt(1.0 + R[1][1] - R[0][0] - R[2][2]) * 2;
+        q.w = (R[2][0] - R[0][2]) / s;
+        q.x = (R[1][0] + R[0][1]) / s;
+        q.y = 0.25 * s;
+        q.z = (R[2][1] + R[1][2]) / s;
+    }
+    else
+    {
+        float s = sqrt(1.0 + R[2][2] - R[0][0] - R[1][1]) * 2;
+        q.w = (R[0][1] - R[1][0]) / s;
+        q.x = (R[2][0] + R[0][2]) / s;
+        q.y = (R[2][1] + R[1][2]) / s;
+        q.z = 0.25 * s;
+    }
+
+    return normalize(q);
+}
+
 #endif

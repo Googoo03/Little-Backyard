@@ -1,0 +1,31 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#include "Assets/Shaders/Includes/Math.cginc"
+
+
+//TRS matrices
+StructuredBuffer<float4x4> matrices;
+RWStructuredBuffer<float4x4> FO_matrices;
+
+uint floatingOriginLimit;
+
+float4x4 floating_origin_transform;
+
+void FloatingOrigin(int id){
+    uint FO_Over64 = floatingOriginLimit / 64;
+    uint FO_PerThread = FO_Over64 * id;
+    uint startIndex = id * (FO_Over64);
+    uint endIndex = startIndex + (FO_Over64);
+
+    for(uint k = startIndex; k < endIndex; ++k){
+
+        FO_matrices[k] = mul(floating_origin_transform, matrices[k]);
+    }
+}
+
+[numthreads(64,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+    FloatingOrigin(id.x);
+}

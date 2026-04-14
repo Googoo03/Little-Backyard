@@ -168,7 +168,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   worleyPoints: []
-  resolution: 128
+  resolution: 32
   frequency:
     m_OverrideState: 0
     m_Value: 8

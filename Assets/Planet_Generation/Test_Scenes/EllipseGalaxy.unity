@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -139,7 +139,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!108 &290888566
 Light:
   m_ObjectHideFlags: 0
@@ -217,6 +217,74 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &696919826
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 696919827}
+  - component: {fileID: 696919828}
+  m_Layer: 0
+  m_Name: Floating_Origin_Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &696919827
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 696919826}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -30.490282, y: -13.450226, z: 0.88041687}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &696919828
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 696919826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0fdf3113a46e1a41ae7d7bbbe7d6269, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  floating_origin_transform:
+    TRS:
+      e00: 0
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 0
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 0
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 0
+  CameraPosition: {x: 437438.8, y: 119431.3, z: -473358.3}
+  floatingOriginShader: {fileID: 7200000, guid: 26192c2b2061c354f838e66885320140,
+    type: 3}
+  managersToUpdate:
+  - {fileID: 2044936437}
+  update: 0
 --- !u!1 &1958864577
 GameObject:
   m_ObjectHideFlags: 0
@@ -228,6 +296,7 @@ GameObject:
   - component: {fileID: 1958864580}
   - component: {fileID: 1958864579}
   - component: {fileID: 1958864578}
+  - component: {fileID: 1958864581}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -275,7 +344,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 100000
+  far clip plane: 10000000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -303,12 +372,35 @@ Transform:
   m_GameObject: {fileID: 1958864577}
   serializedVersion: 2
   m_LocalRotation: {x: 0.31719923, y: -0, z: -0, w: 0.94835895}
-  m_LocalPosition: {x: -50, y: 262, z: -361}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 36.987, y: 0, z: 0}
+--- !u!114 &1958864581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1958864577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2427024b9e8379c449f23a6937601b0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentSpeed: 0
+  baseSpeed: 0
+  targetRotation: {x: 0, y: 0, z: 0, w: 0}
+  lastOrientation: {x: 0, y: 0, z: 0, w: 0}
+  mouseSensitivityX: 10
+  mouseSensitivityY: 10
+  rollSensitivity: 2
+  rollInput: 0
+  pitchInput: 0
+  yawInput: 0
+  pitchChange: 0
 --- !u!1 &2044936436
 GameObject:
   m_ObjectHideFlags: 0
@@ -356,23 +448,22 @@ MonoBehaviour:
       e31: 0
       e32: 0
       e33: 0
-  localScale: {x: 1, y: 1, z: 1}
   stellarBodyComputeShader: {fileID: 7200000, guid: 759642783c35e824baec1958c785d80a,
     type: 3}
-  starLimit: 5000
-  nebulaLimit: 2500
-  numOrbits: 20
+  starLimit: 50000
+  nebulaLimit: 10000
   starObj: {fileID: 11400000, guid: a1f72b817c9f2754291bdaa46df6ae39, type: 2}
   nebulaObj: {fileID: 11400000, guid: c49d56d036259e84188c32728e86a90c, type: 2}
   processionTheta: 0.29
+  numOrbits: 20
   majorAxes: {x: 2.75, y: 2}
-  galaxySize: 100
-  noiseTexture: {fileID: 11700000, guid: b2e5892475de60c4591e0267cbbcfe1a, type: 2}
+  galaxySize: 1000000
+  noiseTexture: {fileID: 11700000, guid: b55a7fc95cc672f47a7b67e8955878a1, type: 2}
   frequency: 50
-  amplitude: 166.1
-  t: 0
-  starProcessionSpeed: 0.25
-  starSize: 0.5
+  amplitude: 50
+  starProcessionSpeed: 0
+  hashGridSize: 30000
+  neighborIndex: {x: 430000, y: 110000, z: -480000}
 --- !u!4 &2044936438
 Transform:
   m_ObjectHideFlags: 0
@@ -395,3 +486,4 @@ SceneRoots:
   - {fileID: 1958864580}
   - {fileID: 290888567}
   - {fileID: 2044936438}
+  - {fileID: 696919827}

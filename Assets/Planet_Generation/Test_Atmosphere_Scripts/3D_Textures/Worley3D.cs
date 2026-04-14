@@ -111,7 +111,7 @@ namespace worley_3d
 
 
             // Configure the texture
-            //int size = 32;
+            int size = 32;
             TextureFormat format = TextureFormat.RGBAFloat;
             TextureWrapMode wrapMode = TextureWrapMode.Repeat;
 
@@ -160,6 +160,7 @@ namespace worley_3d
                             if (i == 0) colors[x + yOffset + zOffset] = new Color(1, 1, 1, 1);
 
                             colors[x + yOffset + zOffset] -= new Color(R, G, B, A) * scalar * amplitude;
+                            colors[x + yOffset + zOffset] = new Color(Mathf.Clamp(colors[x + yOffset + zOffset].r, 0, 1), Mathf.Clamp(colors[x + yOffset + zOffset].g, 0, 1), Mathf.Clamp(colors[x + yOffset + zOffset].b, 0, 1), Mathf.Clamp(colors[x + yOffset + zOffset].a, 0, 1));
                         }
                     }
                 }

@@ -110,7 +110,7 @@ public class BaseFreeCam : MonoBehaviour
         {
 
             axis += axisChange * Time.deltaTime; //smooth rolling
-            axis = Mathf.Clamp(axis, -1f, 1f); //prevents infinite speed increase
+            axis = Mathf.Clamp(axis, -sensitivity, sensitivity); //prevents infinite speed increase
         }
     }
 

@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using FloatingOrigin;
+using System;
 
-public class Floating_Origin_Manager : MonoBehaviour
+public class Floating_Origin_Manager : Manager
 {
     //This class should take in a list of Managers that take care of object transforms
 
@@ -13,19 +14,60 @@ public class Floating_Origin_Manager : MonoBehaviour
 
     //We dont care about a "lack of precision", we care about a lack of precision near the camera. That which is visible. 
 
-    [SerializeField] private Transform camera;
-    [SerializeField] private Floating_Origin_Transform relativeTransformToCamera;
+    [SerializeField] private Vector3 CameraPosition;
+    [SerializeField] private ComputeShader floatingOriginShader;
+
+    [SerializeField] private List<Manager> managersToUpdate;
+    public bool update;
+
+    public static Floating_Origin_Manager Instance { get; private set; }
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
-        camera = Camera.main.transform;
+        Instance = this;
+        foreach (Manager m in managersToUpdate)
+        {
+            m.floating_origin_transform = new Floating_Origin_Transform(Vector3.zero, Quaternion.identity, Vector3.one);
 
+        }
     }
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
+    {
+        if (update) update = false;
+        UpdateTRS();
+    }
+
+    public void DispatchFloatingOriginShader(ComputeBuffer buffer, ComputeBuffer FO_buffer, Matrix4x4[] arr, Manager m)
+    {
+        int kernel = floatingOriginShader.FindKernel("CSMain");
+        int limit;
+        limit = arr.Length;
+        int groupX = Mathf.CeilToInt(limit / 64.0f);
+
+        //Set buffer date for shader
+        floatingOriginShader.SetBuffer(kernel, "matrices", buffer);
+        floatingOriginShader.SetBuffer(kernel, "FO_matrices", FO_buffer);
+        floatingOriginShader.SetMatrix("floating_origin_transform", m.floating_origin_transform.TRS);
+        floatingOriginShader.SetInt("floatingOriginLimit", limit);
+
+        floatingOriginShader.Dispatch(kernel, groupX, 1, 1);
+
+        FO_buffer.GetData(arr);
+
+
+    }
+
+    private void UpdateTRS()
     {
 
+        foreach (Manager m in managersToUpdate)
+        {
+            Matrix4x4 oldTRS = m.floating_origin_transform.TRS;
+            Vector4 newPos = new(-CameraPosition.x, -CameraPosition.y, -CameraPosition.z, 1);
+            m.floating_origin_transform.TRS.SetColumn(3, newPos);
+        }
     }
 }
