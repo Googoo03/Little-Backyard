@@ -279,7 +279,7 @@ MonoBehaviour:
       e31: 0
       e32: 0
       e33: 0
-  CameraPosition: {x: 437438.8, y: 119431.3, z: -473358.3}
+  CameraPosition: {x: 15000, y: 100000, z: 15000}
   floatingOriginShader: {fileID: 7200000, guid: 26192c2b2061c354f838e66885320140,
     type: 3}
   managersToUpdate:
@@ -463,7 +463,6 @@ MonoBehaviour:
   amplitude: 50
   starProcessionSpeed: 0
   hashGridSize: 30000
-  neighborIndex: {x: 430000, y: 110000, z: -480000}
 --- !u!4 &2044936438
 Transform:
   m_ObjectHideFlags: 0

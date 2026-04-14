@@ -22,7 +22,7 @@ public struct PatchConfig
     public float distanceThreshold;
 
     public float radius;
-    public PatchConfig(string aName, Vector3 aUAxis, Vector3 aVAxis, int level,Vector2 LODoffset, Vector2Int xyVert, GameObject planet, float distanceT, float _radius, Vector2 texOffset)
+    public PatchConfig(string aName, Vector3 aUAxis, Vector3 aVAxis, int level, Vector2 LODoffset, Vector2Int xyVert, GameObject planet, float distanceT, float _radius, Vector2 texOffset)
     {
         //seed, persistance, lacunarity, octaves, ref heightCurve, planetType, ref regions, ref heights
         name = aName;
@@ -41,14 +41,14 @@ public struct PatchConfig
         distanceThreshold = distanceT;
         maxLOD = 4;
         radius = _radius;
-        
+
     }
 }
 
 public class Sphere : MonoBehaviour
 {
     //Assign each cube-sphere face
-    
+
     //////////////////////////////////////
 
     public int xVertCount;
@@ -69,7 +69,7 @@ public class Sphere : MonoBehaviour
     [Header("Shader Params")]
     [SerializeField] private Material ringShader;
     [SerializeField] private Vector3 ringNormal;
-    [SerializeField] private Color ringColor = new Color(0,0,0);
+    [SerializeField] private Color ringColor = new Color(0, 0, 0);
     [SerializeField] private float ringRadius;
     [SerializeField] private float ringWidth;
     [SerializeField] private Vector3 sunPos;
@@ -89,11 +89,11 @@ public class Sphere : MonoBehaviour
     [SerializeField] private int planetType; // 0 = Hot, 1 = Ice, 2 = Life, 5 = Gas, 4 = Desert, 3 = Barren
     public float pscale;
 
-    
-    private PatchConfig[] patches;
-    [SerializeField]private List<PatchLOD> LOD;
 
-    [SerializeField]private List<Vector3> worleyPoints = new List<Vector3>();
+    private PatchConfig[] patches;
+    [SerializeField] private List<PatchLOD> LOD;
+
+    [SerializeField] private List<Vector3> worleyPoints = new List<Vector3>();
 
     public bool nextLOD;
     public bool prevLOD;
@@ -104,7 +104,7 @@ public class Sphere : MonoBehaviour
         //////////THIS AND THE UPDATE FUNCTION ARE ONLY FOR TESTING PURPOSES, MEANT TO BE REMOVED LATER
         ///
         if (Input.GetKeyDown(KeyCode.DownArrow)) prevLOD = true;
-        if (Input.GetKeyDown(KeyCode.UpArrow)) nextLOD= true;
+        if (Input.GetKeyDown(KeyCode.UpArrow)) nextLOD = true;
 
         if (nextLOD)
         {
@@ -120,7 +120,7 @@ public class Sphere : MonoBehaviour
         ////////////////////////////////////////////////////
     }
 
-    
+
 
     void Start()
     {
@@ -134,13 +134,14 @@ public class Sphere : MonoBehaviour
         hash.Append(transform.position.y);
         hash.Append(transform.position.z);
 
-        if(seed == 0) seed = (UInt64)hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
+        if (seed == 0) seed = (UInt64)hash.GetHashCode(); //this may cause issues because it is so large, but this is just for testing purposes
         ////////////////////////////////////
 
         //Planet Type override
-        planetType = planetType != -1 ? planetType : Mathf.Abs((int)seed)%6;
+        planetType = planetType != -1 ? planetType : Mathf.Abs((int)seed) % 6;
         string name = String.Empty;
-        switch (planetType) {
+        switch (planetType)
+        {
             case 0:
                 name = "Hot";
                 break;
@@ -192,14 +193,15 @@ public class Sphere : MonoBehaviour
         //Spawn Ring with correct orientation. Store orientation?
         if (hasRings) GenerateRings();
         SetOceanProperties();
-        
+
         ////////////////////////////
 
         //generate the patches when finished configuring
         GeneratePatches();
     }
 
-    private void SetOceanProperties() {
+    private void SetOceanProperties()
+    {
         GameObject ocean = transform.GetChild(0).gameObject;
         Material oceanMat = ocean.GetComponent<Renderer>().material;
         ocean.SetActive(true);
@@ -207,18 +209,20 @@ public class Sphere : MonoBehaviour
         if (hasOcean)
         {
             ocean.transform.localScale = Vector3.one * (radius + oceanFloor);
-            
+
             Color oceanCol = planetType == 2 ? Color.blue : Color.red;
             oceanMat.SetVector("_SunPos", sunPos);
             oceanMat.SetColor("_Deep", oceanCol);
-            oceanMat.SetColor("_Shallow", (Color.yellow-oceanCol) * 0.7f + oceanCol);
+            oceanMat.SetColor("_Shallow", (Color.yellow - oceanCol) * 0.7f + oceanCol);
         }
-        else {
+        else
+        {
             ocean.transform.localScale = Vector3.zero;
         }
     }
 
-    private void generateWorleyPoints(int num) {
+    private void generateWorleyPoints(int num)
+    {
         for (int i = 0; i < num; ++i)
         {
             Vector3 point = new Vector3(UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-100, 100), UnityEngine.Random.Range(-100, 100));
@@ -226,21 +230,22 @@ public class Sphere : MonoBehaviour
             point *= radius;
             //this should be multiplied by the radius in the future
             //point += transform.position;
-            
+
             worleyPoints.Add(point);
         }
     }
 
-    private void GenerateRings() {
+    private void GenerateRings()
+    {
         ringNormal = new Vector3((seed >> 4) % 360, (seed >> 8) % 360, (seed >> 12) % 360).normalized;
-        ringColor = new Color((seed >> 3) % 256, (seed >> 6) % 256,(seed >> 9) % 256, (seed >> 12) % 256);
+        ringColor = new Color((seed >> 3) % 256, (seed >> 6) % 256, (seed >> 9) % 256, (seed >> 12) % 256);
         ringColor /= 256.0f;
-        ringRadius = (radius+1) + (1 * (seed % 10));
-        ringWidth = (ringRadius+1) + (1 * (seed % 4));
+        ringRadius = (radius + 1) + (1 * (seed % 10));
+        ringWidth = (ringRadius + 1) + (1 * (seed % 4));
         GameObject rings = transform.GetChild(1).gameObject;
         rings.SetActive(true);
         rings.transform.up = ringNormal;
-        rings.transform.localScale = Vector3.one*ringWidth;
+        rings.transform.localScale = Vector3.one * ringWidth;
 
         //NEEDS TO BE CHANGED WITH SOMETHING MORE ELEGANT LATER
         rings.transform.GetChild(0).GetComponent<Renderer>().material.color = ringColor;
@@ -251,27 +256,31 @@ public class Sphere : MonoBehaviour
 
     private void GenerateAtmoColor()
     {
-        atmoColor = new Color((seed>>2)%256,(seed >> 5)%256,(seed >> 8)%256,256);
+        atmoColor = new Color((seed >> 2) % 256, (seed >> 5) % 256, (seed >> 8) % 256, 256);
         atmoColor /= 256.0f;
 
         Color baseColor = Color.black;
 
-        switch(planetType){
+        switch (planetType)
+        {
             case 0:
-                baseColor = new Color(0.2f,0.2f,0.2f,1);
+                baseColor = new Color(0.2f, 0.2f, 0.2f, 1);
                 break;
             case 1:
-                break;
+
                 baseColor = new Color(0.7f, 0.2f, 0.2f, 1);
-            case 2:
                 break;
+            case 2:
+
                 baseColor = new Color(1f, 0.9f, 0.1f, 1);
+                break;
             case 3:
                 break;
-                
+
             case 4:
-                break;
+
                 baseColor = new Color(1f, 0.7f, 0.1f, 1);
+                break;
             case 5:
                 break;
             default:
@@ -283,7 +292,8 @@ public class Sphere : MonoBehaviour
 
     }
 
-    public void SetRingShader() {
+    public void SetRingShader()
+    {
         GameObject rings = transform.GetChild(1).gameObject;
         rings.SetActive(false);
         ringShader.SetColor("_Color", ringColor);
@@ -295,11 +305,12 @@ public class Sphere : MonoBehaviour
         return;
     }
 
-    public void SetAtmoShader() {
+    public void SetAtmoShader()
+    {
         atmoShader.SetVector("_PlanetPos", transform.position);
         if (!event_manager) atmoShader.SetVector("_SunPos", sunPos);
         atmoShader.SetColor("_Color", atmoColor);
-        atmoShader.SetFloat("_Radius", radius+0.5f);
+        atmoShader.SetFloat("_Radius", radius + 0.5f);
         atmoShader.SetFloat("_CloudDensity", cloudDensity);
         atmoShader.SetFloat("_Density", atmosphereDensity);
         atmoShader.SetFloat("_OceanRad", transform.GetChild(0).transform.localScale.x);
@@ -309,7 +320,8 @@ public class Sphere : MonoBehaviour
 
     public Event_Manager_Script getEvent_Manager() { return event_manager; }
 
-    public ref List<Vector3> getWorleyPoints() {
+    public ref List<Vector3> getWorleyPoints()
+    {
         return ref worleyPoints;
     }
 
@@ -353,7 +365,7 @@ public class Sphere : MonoBehaviour
         Vector2 startingLOD = Vector2.one;
 
         patch.GetComponent<GeneratePlane>().patch = aConf;
-            
+
 
         //add patch to the LOD system
         PatchLOD newLOD = new PatchLOD(patch.gameObject, null);
@@ -388,23 +400,28 @@ public class Sphere : MonoBehaviour
         }
     }
 
-    public float getAtmosphereDistance() {
+    public float getAtmosphereDistance()
+    {
         return (radius + atmosphereHeight);
     }
 
-    public float getRadius() {
+    public float getRadius()
+    {
         return radius;
     }
 
-    public int getPlanetType() {
+    public int getPlanetType()
+    {
         return planetType;
     }
 
-    public float getOceanFloor() {
+    public float getOceanFloor()
+    {
         return oceanFloor;
     }
 
-    public float getOceanMultiplier() {
+    public float getOceanMultiplier()
+    {
         return oceanMultiplier;
     }
 
@@ -413,11 +430,13 @@ public class Sphere : MonoBehaviour
         return landMultiplier;
     }
 
-    public UInt64 getSeed() {
+    public UInt64 getSeed()
+    {
         return seed;
     }
 
-    public float getInitialDistanceThreshold() {
+    public float getInitialDistanceThreshold()
+    {
         return initialDistanceThreshold;
     }
 
@@ -428,14 +447,15 @@ public class Sphere : MonoBehaviour
     {
         //generate LOD tree
 
-        
+
         for (int i = 0; i < 6; i++)
         {
             GeneratePatch(patches[i], 1, 1); //GENERATES CUBE SIDE. THE 1, 1 ARGUMENT REFERS TO LOD
         }
     }
 
-    public Vector3 getSunPos() {
+    public Vector3 getSunPos()
+    {
         return sunPos;
     }
 

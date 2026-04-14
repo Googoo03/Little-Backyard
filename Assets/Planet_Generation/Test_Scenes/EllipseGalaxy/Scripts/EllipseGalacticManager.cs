@@ -40,14 +40,13 @@ public class EllipseGalacticManager : Manager
     private ComputeBuffer nebulaMatrixBuffer;
     private ComputeBuffer nebulaMatrixFOBuffer;
 
-    private Dictionary<Vector3, List<Matrix4x4>> galaxyHash = new();
-    private bool generatedHash = false;
+    private GalacticSpatialHashing galaxySpatialHash;
     [SerializeField] private int hashGridSize;
-    [SerializeField] private Vector3 neighborIndex;
 
     //GPU instance stars and modify positions via compute shader
     void Start()
     {
+        galaxySpatialHash = new GalacticSpatialHashing(hashGridSize);
 
         starMatrices = new Matrix4x4[starLimit];
         starMatrixBuffer = new ComputeBuffer(starLimit, sizeof(float) * 16);
@@ -60,7 +59,7 @@ public class EllipseGalacticManager : Manager
         LoadComputeShaderData();
 
         GenerateGalaxy();
-        GenerateGalaxyHash();
+        galaxySpatialHash.GenerateGalaxyHash(starMatrices);
     }
 
     void OnDestroy()
@@ -96,10 +95,10 @@ public class EllipseGalacticManager : Manager
         {
             GenerateGalaxy();
         }
-        else if (!generatedHash)
+        else if (!galaxySpatialHash.generatedHash)
         {
-            generatedHash = true;
-            GenerateGalaxyHash();
+            galaxySpatialHash.generatedHash = true;
+            galaxySpatialHash.GenerateGalaxyHash(starMatrices);
         }
 
         Floating_Origin_Manager.Instance.DispatchFloatingOriginShader(starMatrixBuffer, starMatrixFOBuffer, starMatrices, this);
@@ -133,24 +132,6 @@ public class EllipseGalacticManager : Manager
         nebulaMatrixBuffer.GetData(nebulaMatrices);
 
         stellarBodyComputeShader.SetMatrix("floating_origin_transform", floating_origin_transform.TRS);
-    }
-
-    private void GenerateGalaxyHash()
-    {
-        galaxyHash.Clear();
-        foreach (Matrix4x4 star in starMatrices)
-        {
-            Vector3 starPos = star.GetColumn(3);
-            Vector3 key = new Vector3(Mathf.Floor(starPos.x / hashGridSize), Mathf.Floor(starPos.y / hashGridSize), Mathf.Floor(starPos.z / hashGridSize));
-
-            if (!galaxyHash.TryGetValue(key, out var list))
-            {
-                list = new List<Matrix4x4>();
-                galaxyHash[key] = list;
-            }
-
-            galaxyHash[key].Add(star);
-        }
     }
 
     private void LoadStarData()
@@ -205,25 +186,38 @@ public class EllipseGalacticManager : Manager
     //Test Function to debug the hashmap system
     public void OnDrawGizmos()
     {
-        Vector3 floatingOriginSectorPos = new Vector3(Mathf.FloorToInt(floating_origin_transform.TRS.GetColumn(3).x / hashGridSize),
+        Vector3 FOSectorPos = new Vector3(Mathf.FloorToInt(floating_origin_transform.TRS.GetColumn(3).x / hashGridSize),
         Mathf.FloorToInt(floating_origin_transform.TRS.GetColumn(3).y / hashGridSize),
         Mathf.FloorToInt(floating_origin_transform.TRS.GetColumn(3).z / hashGridSize));
-
-        Vector3 key = -(floatingOriginSectorPos + Vector3.one);
-
-        floatingOriginSectorPos += Vector3.one;
-        floatingOriginSectorPos *= hashGridSize;
-
-
         Vector3 floating_origin_pos = floating_origin_transform.TRS.GetColumn(3);
 
-        if (!galaxyHash.ContainsKey(key)) return;
+        Vector3 floatingOriginSectorPos = FOSectorPos;
+        floatingOriginSectorPos *= hashGridSize;
 
         Gizmos.color = Color.magenta;
-        Gizmos.DrawWireCube(-floatingOriginSectorPos + floating_origin_pos + (hashGridSize * Vector3.one / 2), hashGridSize * Vector3.one);
-        foreach (Matrix4x4 star in galaxyHash[key])
+        Vector3 center = floatingOriginSectorPos + (hashGridSize * 0.5f * Vector3.one);
+        Gizmos.DrawWireCube(-center + floating_origin_pos, hashGridSize * Vector3.one);
+
+
+
+
+
+        //Draw a cube around each star in the sector. Draw a wireframe cube to see where the sector is in space
+        Matrix4x4 closestStar = galaxySpatialHash.FindClosestStar(floating_origin_pos);
+        if (closestStar != Matrix4x4.identity)
+        {
+            Gizmos.DrawLine(Vector3.zero, (Vector3)closestStar.GetColumn(3) + floating_origin_pos);
+        }
+        else
+        {
+            Debug.Log("No Stars Found in Sector");
+        }
+        List<Matrix4x4> starPositions = galaxySpatialHash?.GetStarPositionsInSector(FOSectorPos);
+        if (starPositions == null) return;
+        foreach (Matrix4x4 star in starPositions)
         {
             Gizmos.DrawCube((Vector3)star.GetColumn(3) + floating_origin_pos, galaxySize * starObj.instanceData.size * Vector3.one / 2);
+
         }
     }
 }
