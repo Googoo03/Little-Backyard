@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using FloatingOrigin;
 using System;
+using Unity.Collections;
 
 public class EllipseGalacticManager : Manager
 {
@@ -14,8 +15,8 @@ public class EllipseGalacticManager : Manager
     [SerializeField] private int nebulaLimit;
 
 
-    [SerializeField] StarScriptableObj starObj;
-    [SerializeField] StarScriptableObj nebulaObj;
+    [SerializeField] public StarScriptableObj starObj;
+    [SerializeField] public StarScriptableObj nebulaObj;
 
     //Procession modifier, galaxy size
     [Range(0, 0.5f)]
@@ -24,7 +25,7 @@ public class EllipseGalacticManager : Manager
     [Range(1, 100)]
     [SerializeField] private int numOrbits;
     [SerializeField] private Vector2 majorAxes;
-    [SerializeField] private float galaxySize;
+    [SerializeField] public float galaxySize;
 
     //Noise Texture (will add to Noise Pipeline later)
     [SerializeField] private Texture3D noiseTexture;
@@ -33,33 +34,36 @@ public class EllipseGalacticManager : Manager
     [SerializeField] private float starProcessionSpeed;
 
     private float t;
-    private Matrix4x4[] starMatrices;
+    private NativeArray<Matrix4x4> starMatrices;
     private ComputeBuffer starMatrixBuffer;
     private ComputeBuffer starMatrixFOBuffer;
-    private Matrix4x4[] nebulaMatrices;
+    private NativeArray<Matrix4x4> nebulaMatrices;
     private ComputeBuffer nebulaMatrixBuffer;
     private ComputeBuffer nebulaMatrixFOBuffer;
 
     private GalacticSpatialHashing galaxySpatialHash;
     [SerializeField] private int hashGridSize;
 
+    private object lockObj = new object();
+    public static EllipseGalacticManager Instance { get; private set; }
+
     //GPU instance stars and modify positions via compute shader
     void Start()
     {
+        Instance = this;
         galaxySpatialHash = new GalacticSpatialHashing(hashGridSize);
 
-        starMatrices = new Matrix4x4[starLimit];
+        starMatrices = new NativeArray<Matrix4x4>(starLimit, Allocator.Persistent);
         starMatrixBuffer = new ComputeBuffer(starLimit, sizeof(float) * 16);
         starMatrixFOBuffer = new ComputeBuffer(starLimit, sizeof(float) * 16);
 
-        nebulaMatrices = new Matrix4x4[nebulaLimit];
+        nebulaMatrices = new NativeArray<Matrix4x4>(nebulaLimit, Allocator.Persistent);
         nebulaMatrixBuffer = new ComputeBuffer(nebulaLimit, sizeof(float) * 16);
         nebulaMatrixFOBuffer = new ComputeBuffer(nebulaLimit, sizeof(float) * 16);
 
         LoadComputeShaderData();
 
         GenerateGalaxy();
-        galaxySpatialHash.GenerateGalaxyHash(starMatrices);
     }
 
     void OnDestroy()
@@ -91,14 +95,10 @@ public class EllipseGalacticManager : Manager
     // Update is called once per frame
     void Update()
     {
+        LoadComputeShaderData();
         if (starProcessionSpeed > 0)
         {
             GenerateGalaxy();
-        }
-        else if (!galaxySpatialHash.generatedHash)
-        {
-            galaxySpatialHash.generatedHash = true;
-            galaxySpatialHash.GenerateGalaxyHash(starMatrices);
         }
 
         Floating_Origin_Manager.Instance.DispatchFloatingOriginShader(starMatrixBuffer, starMatrixFOBuffer, starMatrices, this);
@@ -122,14 +122,43 @@ public class EllipseGalacticManager : Manager
         int groupX = Mathf.CeilToInt(starLimit / 64.0f);
         stellarBodyComputeShader.Dispatch(kernel, groupX, 1, 1);
 
-        starMatrixBuffer.GetData(starMatrices);
+        AsyncGPUReadback.Request(starMatrixBuffer, (request) =>
+        {
+            if (request.hasError)
+            {
+                Debug.LogError("GPU readback error");
+                return;
+            }
+
+
+            var temp = request.GetData<Matrix4x4>();
+            lock (lockObj)
+            {
+                starMatrices.CopyFrom(temp);
+                if (!galaxySpatialHash.generatedHash)
+                {
+                    galaxySpatialHash.generatedHash = true;
+                    galaxySpatialHash.GenerateGalaxyHash(starMatrices);
+                }
+            }
+        });
 
         LoadNebulaData();
         kernel = stellarBodyComputeShader.FindKernel("CSMain");
         groupX = Mathf.CeilToInt(nebulaLimit / 64.0f);
         stellarBodyComputeShader.Dispatch(kernel, groupX, 1, 1);
 
-        nebulaMatrixBuffer.GetData(nebulaMatrices);
+        AsyncGPUReadback.Request(nebulaMatrixBuffer, (request) =>
+        {
+            if (request.hasError)
+            {
+                Debug.LogError("GPU readback error");
+                return;
+            }
+
+            var temp = request.GetData<Matrix4x4>();
+            nebulaMatrices.CopyFrom(temp);
+        });
 
         stellarBodyComputeShader.SetMatrix("floating_origin_transform", floating_origin_transform.TRS);
     }
@@ -145,7 +174,7 @@ public class EllipseGalacticManager : Manager
         stellarBodyComputeShader.SetBool("billboard", false);
         stellarBodyComputeShader.SetInt("starLimit", starLimit);
         stellarBodyComputeShader.SetVector("starObjForward", new Vector4(starObjForward.x, starObjForward.y, starObjForward.z, starObjForward.w));
-        stellarBodyComputeShader.SetFloat("starObjSize", starObj.instanceData.size * galaxySize / 10);
+        stellarBodyComputeShader.SetFloat("starObjSize", starObj.instanceData.size * galaxySize);
     }
 
     private void LoadNebulaData()
@@ -160,7 +189,7 @@ public class EllipseGalacticManager : Manager
         //Nebula Body Data
         stellarBodyComputeShader.SetBool("billboard", true);
         stellarBodyComputeShader.SetInt("starLimit", nebulaLimit);
-        stellarBodyComputeShader.SetFloat("starObjSize", nebulaObj.instanceData.size * galaxySize / 10);
+        stellarBodyComputeShader.SetFloat("starObjSize", nebulaObj.instanceData.size * galaxySize);
     }
 
     private void LoadComputeShaderData()
@@ -178,9 +207,15 @@ public class EllipseGalacticManager : Manager
         stellarBodyComputeShader.SetVector("majorAxes", majorAxes);
 
         //Noise Modifiers
-        stellarBodyComputeShader.SetFloat("frequency", frequency);
-        stellarBodyComputeShader.SetFloat("amplitude", amplitude * galaxySize / 10);
+        stellarBodyComputeShader.SetFloat("frequency", frequency / (galaxySize / 10));
+        stellarBodyComputeShader.SetFloat("amplitude", amplitude * (galaxySize / 10));
 
+    }
+
+    //Returns identity matrix if nothing found, otherwise returns the matrix of the star
+    public Matrix4x4 GetClosestStar()
+    {
+        return galaxySpatialHash.FindClosestStar(floating_origin_transform.TRS.GetColumn(3));
     }
 
     //Test Function to debug the hashmap system
@@ -203,21 +238,10 @@ public class EllipseGalacticManager : Manager
 
 
         //Draw a cube around each star in the sector. Draw a wireframe cube to see where the sector is in space
-        Matrix4x4 closestStar = galaxySpatialHash.FindClosestStar(floating_origin_pos);
+        Matrix4x4 closestStar = galaxySpatialHash != null ? galaxySpatialHash.FindClosestStar(floating_origin_pos) : Matrix4x4.identity;
         if (closestStar != Matrix4x4.identity)
         {
             Gizmos.DrawLine(Vector3.zero, (Vector3)closestStar.GetColumn(3) + floating_origin_pos);
-        }
-        else
-        {
-            Debug.Log("No Stars Found in Sector");
-        }
-        List<Matrix4x4> starPositions = galaxySpatialHash?.GetStarPositionsInSector(FOSectorPos);
-        if (starPositions == null) return;
-        foreach (Matrix4x4 star in starPositions)
-        {
-            Gizmos.DrawCube((Vector3)star.GetColumn(3) + floating_origin_pos, galaxySize * starObj.instanceData.size * Vector3.one / 2);
-
         }
     }
 }

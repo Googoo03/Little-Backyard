@@ -4,25 +4,27 @@ using UnityEngine;
 using SparseVoxelOctree;
 using faces;
 
-public class CubeSphereSVOWrapper : MonoBehaviour
+public class PlanetWrapper : MonoBehaviour
 {
-    [SerializeField] SVOTest XFaceSVOTest;
-    [SerializeField] SVOTest NXFaceSVOTest;
-    [SerializeField] SVOTest YFaceSVOTest;
-    [SerializeField] SVOTest NYFaceSVOTest;
-    [SerializeField] SVOTest ZFaceSVOTest;
-    [SerializeField] SVOTest NZFaceSVOTest;
+    //Faces must be assigned in this order X -X Y -Y Z -Z
+    [SerializeField] List<SVOTest> Faces;
+    [SerializeField] private int planetRadius;
 
     public Face[] neighbors;
 
     void Awake()
     {
-        SVOTest XFace = XFaceSVOTest;
-        SVOTest NXFace = NXFaceSVOTest;
-        SVOTest YFace = YFaceSVOTest;
-        SVOTest NYFace = NYFaceSVOTest;
-        SVOTest ZFace = ZFaceSVOTest;
-        SVOTest NZFace = NZFaceSVOTest;
+        SVOTest XFace = Faces[0];// = XFaceSVOTest;
+        SVOTest NXFace = Faces[1];// = NXFaceSVOTest;
+        SVOTest YFace = Faces[2];// = YFaceSVOTest;
+        SVOTest NYFace = Faces[3];// = NYFaceSVOTest;
+        SVOTest ZFace = Faces[4];// = ZFaceSVOTest;
+        SVOTest NZFace = Faces[5];// = NZFaceSVOTest;
+
+        foreach (SVOTest face in Faces)
+        {
+            face.SetPatchSize(planetRadius);
+        }
 
         neighbors = new Face[6]
         {

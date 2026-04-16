@@ -8,7 +8,7 @@ using faces;
 public class SVOTest : MonoBehaviour
 {
     [SerializeField] private Transform player;
-    [SerializeField] private CubeSphereSVOWrapper planetFaceWrapper;
+    [SerializeField] private PlanetWrapper planetFaceWrapper;
     [SerializeField] private int getFaceNum;
 
     [SerializeField] private int dir;
@@ -78,7 +78,7 @@ public class SVOTest : MonoBehaviour
 
         foreach (var node in frontier)
         {
-            Vector3 delta = node.transformedPosition - playerPos;
+            Vector3 delta = (node.transformedPosition + transform.position) - playerPos;
             float distSq = delta.sqrMagnitude;
             minDist = node.size * node.size * 100f;
             maxDist = node.size * node.size * 400f;
@@ -177,4 +177,6 @@ public class SVOTest : MonoBehaviour
 
     public SVO GetSVO() { return svo; }
     public void SetFreeze(bool b) { freezeSubdivision = b; }
+
+    public void SetPatchSize(int patchSize_) { patchSize = patchSize_; }
 }

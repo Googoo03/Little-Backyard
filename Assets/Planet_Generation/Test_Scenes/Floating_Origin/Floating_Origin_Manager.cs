@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 using FloatingOrigin;
 using System;
 
@@ -21,6 +23,7 @@ public class Floating_Origin_Manager : Manager
     public bool update;
 
     public static Floating_Origin_Manager Instance { get; private set; }
+    private object lockObj = new object();
 
     // Start is called before the first frame update
     void Awake()
@@ -40,7 +43,7 @@ public class Floating_Origin_Manager : Manager
         UpdateTRS();
     }
 
-    public void DispatchFloatingOriginShader(ComputeBuffer buffer, ComputeBuffer FO_buffer, Matrix4x4[] arr, Manager m)
+    public void DispatchFloatingOriginShader(ComputeBuffer buffer, ComputeBuffer FO_buffer, NativeArray<Matrix4x4> arr, Manager m)
     {
         int kernel = floatingOriginShader.FindKernel("CSMain");
         int limit;
@@ -55,17 +58,30 @@ public class Floating_Origin_Manager : Manager
 
         floatingOriginShader.Dispatch(kernel, groupX, 1, 1);
 
-        FO_buffer.GetData(arr);
+        AsyncGPUReadback.Request(FO_buffer, (request) =>
+        {
+            if (request.hasError)
+            {
+                Debug.LogError("GPU readback error");
+                return;
+            }
 
-
+            var temp = request.GetData<Matrix4x4>();
+            lock (lockObj)
+            {
+                arr.CopyFrom(temp);
+            }
+            // Use data here
+        });
     }
+
+
 
     private void UpdateTRS()
     {
 
         foreach (Manager m in managersToUpdate)
         {
-            Matrix4x4 oldTRS = m.floating_origin_transform.TRS;
             Vector4 newPos = new(-CameraPosition.x, -CameraPosition.y, -CameraPosition.z, 1);
             m.floating_origin_transform.TRS.SetColumn(3, newPos);
         }

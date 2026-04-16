@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Collections;
 
 public class GalacticSpatialHashing
 {
@@ -16,7 +17,7 @@ public class GalacticSpatialHashing
         hashGridSize = hashgridSize_;
     }
 
-    public void GenerateGalaxyHash(Matrix4x4[] matrices)
+    public void GenerateGalaxyHash(NativeArray<Matrix4x4> matrices)
     {
         galaxyHash.Clear();
         foreach (Matrix4x4 star in matrices)
@@ -67,15 +68,18 @@ public class GalacticSpatialHashing
                     sectorPosition = key + new Vector3(i, j, k);
                     List<Matrix4x4> sectorStarPositions = GetStarPositionsInSector(sectorPosition);
 
-                    if (sectorStarPositions == null) continue;
-                    Debug.Log("Stars found in sector");
+                    if (sectorStarPositions == null)
+                    {
+                        //Debug.Log("No Stars found in sector");
+                        continue;
+                    }
+                    //Debug.Log("Stars found in sector");
                     foreach (Matrix4x4 star in sectorStarPositions)
                     {
                         Vector3 pos = star.GetColumn(3);
                         float distance = (-floatingOriginPos - pos).sqrMagnitude;
                         if (distance < minDistance)
                         {
-                            //Debug.Log("New Min Star Found at distance: " + distance);
                             minStar = star;
                             minDistance = distance;
                         }

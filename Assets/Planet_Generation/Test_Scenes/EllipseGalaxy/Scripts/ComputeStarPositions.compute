@@ -128,7 +128,6 @@ void GenerateStellarBody(int id)
             rotation = QuaternionFromMatrix(R);
         }
 
-        //matrices[k] = mul(floating_origin_transform, buildTRSMatrix(starPos, rotation, float3(starObjSize,starObjSize,starObjSize)));
         matrices[k] = buildTRSMatrix(starPos, rotation, float3(starObjSize,starObjSize,starObjSize));
 
     }

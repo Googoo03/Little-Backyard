@@ -243,7 +243,7 @@ Transform:
   m_GameObject: {fileID: 696919826}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -30.490282, y: -13.450226, z: 0.88041687}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -279,12 +279,101 @@ MonoBehaviour:
       e31: 0
       e32: 0
       e33: 0
-  CameraPosition: {x: 15000, y: 100000, z: 15000}
+  CameraPosition: {x: 1187014, y: 304382, z: 923812}
   floatingOriginShader: {fileID: 7200000, guid: 26192c2b2061c354f838e66885320140,
     type: 3}
   managersToUpdate:
   - {fileID: 2044936437}
+  - {fileID: 1337964437}
   update: 0
+--- !u!1 &1337964435
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1337964436}
+  - component: {fileID: 1337964437}
+  m_Layer: 0
+  m_Name: Solar_System_Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1337964436
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1337964435}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1337964437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1337964435}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a31416be9346c5d439cece7c06c4dadb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  floating_origin_transform:
+    TRS:
+      e00: 0
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 0
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 0
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 0
+  planetPrefab: {fileID: 6757457083733164432, guid: c0587e17e5757ba4f85df859faf67a21,
+    type: 3}
+  distanceThreshold: 50000
+  distanceToNearestStar: 0
+  distanceToOrigin: 0
+  timeToUnload: 0
+  timeUnloadThreshold: 10
+  state: 0
+  planets: []
+  closestStarTransform:
+    e00: 0
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 0
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 0
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 0
 --- !u!1 &1958864577
 GameObject:
   m_ObjectHideFlags: 0
@@ -457,12 +546,12 @@ MonoBehaviour:
   processionTheta: 0.29
   numOrbits: 20
   majorAxes: {x: 2.75, y: 2}
-  galaxySize: 1000000
+  galaxySize: 32768000
   noiseTexture: {fileID: 11700000, guid: b55a7fc95cc672f47a7b67e8955878a1, type: 2}
   frequency: 50
   amplitude: 50
   starProcessionSpeed: 0
-  hashGridSize: 30000
+  hashGridSize: 300000
 --- !u!4 &2044936438
 Transform:
   m_ObjectHideFlags: 0
@@ -486,3 +575,4 @@ SceneRoots:
   - {fileID: 290888567}
   - {fileID: 2044936438}
   - {fileID: 696919827}
+  - {fileID: 1337964436}
