@@ -322,6 +322,7 @@ Transform:
   - {fileID: 773249127515867096}
   - {fileID: 8332803410981056724}
   - {fileID: 8388179428782211946}
+  - {fileID: 4170249841472375137}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1831507260121567450
@@ -336,12 +337,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e1ff67b78bc2304c957c24d10de67fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  XFaceSVOTest: {fileID: 8481579883517926020}
-  NXFaceSVOTest: {fileID: 5350519792095803603}
-  YFaceSVOTest: {fileID: 6776998076988822908}
-  NYFaceSVOTest: {fileID: 5333493413704652586}
-  ZFaceSVOTest: {fileID: 2012384155878837428}
-  NZFaceSVOTest: {fileID: 4422396528582059158}
   Faces:
   - {fileID: 8481579883517926020}
   - {fileID: 5350519792095803603}
@@ -350,6 +345,7 @@ MonoBehaviour:
   - {fileID: 2012384155878837428}
   - {fileID: 4422396528582059158}
   planetRadius: 4096
+  atmosphere_Manager: {fileID: 1440667959296531023}
   neighbors: []
 --- !u!114 &4413069947145477080
 MonoBehaviour:
@@ -421,3 +417,89 @@ MonoBehaviour:
   vertexLength: 0
   blockVoxel: 0
   faceNum: 4
+--- !u!1001 &255852829314992907
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 874050368977333893}
+    m_Modifications:
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5665293599516889200, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: m_Name
+      value: AtmosphereManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 837c1c4bab7ecb3479222e43b7610556, type: 3}
+--- !u!114 &1440667959296531023 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1185219842000638276, guid: 837c1c4bab7ecb3479222e43b7610556,
+    type: 3}
+  m_PrefabInstance: {fileID: 255852829314992907}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9944cf41976cc444e8e65a6bab704a85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &4170249841472375137 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
+    type: 3}
+  m_PrefabInstance: {fileID: 255852829314992907}
+  m_PrefabAsset: {fileID: 0}

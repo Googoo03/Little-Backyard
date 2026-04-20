@@ -29,7 +29,7 @@ namespace SparseVoxelOctree
 
         public List<FlatNode> flatList = new();
         public List<Vector3> vertices = new();
-        private Material testMat = Resources.Load("TriplanarPlanetTest") as Material;
+        private Material testMat;
 
         public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
 
@@ -70,7 +70,7 @@ namespace SparseVoxelOctree
             // mark for renewal
             chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
         }
-        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null, GameObject parentObj = null, Face[] faceNeighbors = null, int faceNum = 0)
+        public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null, GameObject parentObj = null, Face[] faceNeighbors = null, int faceNum = 0, PlanetWrapper planetWrapper = null)
         {
             this.root = root;
             this.meshingAlgorithm = meshingAlgorithm;
@@ -78,6 +78,7 @@ namespace SparseVoxelOctree
             this.faceNeighbors = faceNeighbors;
             this.faceNum = faceNum;
             meshingAlgorithm.SetVertexList(vertices);
+            SetMaterial(planetWrapper);
         }
 
 
@@ -149,6 +150,12 @@ namespace SparseVoxelOctree
         void ResetLocalIndex()
         {
             TraverseLeaves((node) => { node.localIndex = -1; });
+        }
+
+        private void SetMaterial(PlanetWrapper planetWrapper)
+        {
+            Atmosphere_Manager atmosphere_Manager = planetWrapper.GetAtmosphere_Manager();
+            testMat = atmosphere_Manager.GetPlanetMat();
         }
 
         public void GenerateChunks()

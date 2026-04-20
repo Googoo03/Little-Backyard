@@ -50,7 +50,7 @@ public class SVOTest : MonoBehaviour
 
         //Define root node of SVO
         SVONode root = new(new Vector3Int(0, 0, 0), patchSize, null, -1, null);
-        svo = new SVO(root, dualContour, this.gameObject, planetFaceWrapper.neighbors, faceNum);
+        svo = new SVO(root, dualContour, this.gameObject, planetFaceWrapper.neighbors, faceNum, planetFaceWrapper);
         root.SetSVO(svo);
         frontier.Add(root);
     }

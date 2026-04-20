@@ -26,9 +26,10 @@ public class Atmosphere_Manager : MonoBehaviour
     [Range(1, 10)]
     public float densityFalloff = 4f;
 
-    public GameObject sun;
+    private Vector3 sunPos;
+    private Vector3 dirToSun;
 
-    void Update()
+    void Start()
     {
         targetTexture = new RenderTexture(targetTextureResolution, targetTextureResolution, 0, RenderTextureFormat.RFloat);
         targetTexture.enableRandomWrite = true;
@@ -42,14 +43,38 @@ public class Atmosphere_Manager : MonoBehaviour
         transmittanceLUT.SetFloat("atmosphereHeight", 4696f / 4096f);
         transmittanceLUT.SetFloat("densityFalloff", densityFalloff);
 
+        int groupX = Mathf.CeilToInt(targetTextureResolution / 8.0f);
+        int groupY = Mathf.CeilToInt(targetTextureResolution / 8.0f);
+        transmittanceLUT.Dispatch(kernel, groupX, groupY, 1);
+
+        //Set Camera Shaders
+        CameraDepthInitializer camera = Camera.main.gameObject.GetComponent<CameraDepthInitializer>();
+        camera.AddMaterial(atmosphereMat);
+        //camera.AddMaterial(cloudMat);
+    }
+
+    void Update()
+    {
+        LoadMaterialData(planetMat, atmosphereMat, cloudMat);
+    }
+
+    private void LoadMaterialData(Material planetMat, Material atmosphereMat = null, Material cloudMat = null)
+    {
+
+        //Set planet sun direction for lighting
+        planetMat.SetVector("_DirToSun", dirToSun);
+        planetMat.SetVector("planetCentre", transform.position);
+
+        if (atmosphereMat == null) return;
 
         atmosphereMat.SetVector("params", testParams);
         atmosphereMat.SetInt("numInScatteringPoints", 10);
         atmosphereMat.SetInt("numOpticalDepthPoints", 100);
         atmosphereMat.SetFloat("atmosphereRadius", 4696);
         atmosphereMat.SetFloat("planetRadius", 4096);
+        atmosphereMat.SetVector("planetCentre", transform.position);
         atmosphereMat.SetFloat("densityFalloff", densityFalloff);
-        atmosphereMat.SetVector("dirToSun", sun.transform.position.normalized);
+        atmosphereMat.SetVector("dirToSun", dirToSun);
 
         // Strength of (rayleigh) scattering is inversely proportional to wavelength^4
         float scatterX = Mathf.Pow(400 / wavelengths.x, 4);
@@ -63,20 +88,41 @@ public class Atmosphere_Manager : MonoBehaviour
         atmosphereMat.SetFloat("ditherStrength", ditherStrength);
         atmosphereMat.SetFloat("ditherScale", ditherScale);
 
-        int groupX = Mathf.CeilToInt(targetTextureResolution / 8.0f);
-        int groupY = Mathf.CeilToInt(targetTextureResolution / 8.0f);
-        transmittanceLUT.Dispatch(kernel, groupX, groupY, 1);
-
         atmosphereMat.SetTexture("_BakedOpticalDepth", targetTexture);
 
-        //Set planet sun direction for lighting
-        planetMat.SetVector("_DirToSun", sun.transform.position.normalized);
+        if (cloudMat == null) return;
 
         //Set cloud params
         cloudMat.SetVector("planetCentre", Vector3.zero);
         cloudMat.SetFloat("_AtmosphereRadius", 4296);
         cloudMat.SetFloat("cloudRadius", 4196);
         cloudMat.SetFloat("numCloudPoints", 50);
-        cloudMat.SetVector("_SunPos", sun.transform.position);
+        cloudMat.SetVector("_SunPos", sunPos);
     }
+
+    //Public methods------------------------------------------------------------------------------------
+
+    public void SetPlanetMaterial(Material planetMat_)
+    {
+        planetMat = planetMat_;
+    }
+
+    public void SetAtmosphereMaterial(Material atmosphereMat_)
+    {
+        atmosphereMat = atmosphereMat_;
+    }
+
+    public void SetCloudMaterial(Material cloudMat_)
+    {
+        cloudMat = cloudMat_;
+    }
+
+    public void SetSunProperties(Vector3 sunPos_, Vector3 dirToSun_)
+    {
+        sunPos = sunPos_;
+        dirToSun = dirToSun_;
+    }
+
+    public Material GetPlanetMat() { return planetMat; }
+    //--------------------------------------------------------------------------------------------------
 }

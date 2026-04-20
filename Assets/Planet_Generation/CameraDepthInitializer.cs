@@ -13,7 +13,7 @@ public class CameraDepthInitializer : MonoBehaviour
     [SerializeField] private Shader oceanDepthShader;
 
     [Header("Material List")]
-    [SerializeField] private Material[] materials;
+    [SerializeField] private List<Material> materials;
 
     [SerializeField] private Material depthCopier;
     //[SerializeField] private int planetCount = 3;
@@ -30,8 +30,8 @@ public class CameraDepthInitializer : MonoBehaviour
         playerCamera = this.GetComponent<Camera>();
         playerCamera.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.DepthNormals;
 
-        
-        if (!waterDepthTexture) waterDepthTexture = new RenderTexture(Screen.width,Screen.height, 32, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
+
+        if (!waterDepthTexture) waterDepthTexture = new RenderTexture(Screen.width, Screen.height, 32, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
         waterDepthTexture.Create();
 
         transparentCamera.depthTextureMode = DepthTextureMode.Depth;
@@ -69,12 +69,14 @@ public class CameraDepthInitializer : MonoBehaviour
         int i = 0;
         RenderTexture start = source;
         RenderTexture end = start;
-        foreach (Material _mat in materials) {
+        foreach (Material _mat in materials)
+        {
 
 
             start = i == 0 ? source : temp;
 
-            System.Func<RenderTexture> createTex = () => {
+            System.Func<RenderTexture> createTex = () =>
+            {
                 RenderTexture intermediate = new RenderTexture(source.width, source.height, 0, source.format)
                 {
                     enableRandomWrite = true
@@ -82,10 +84,10 @@ public class CameraDepthInitializer : MonoBehaviour
                 intermediate.Create();
                 return intermediate;
             };
-            end = i == materials.Length - 1 ? destination : createTex();
+            end = i == materials.Count - 1 ? destination : createTex();
 
             Graphics.Blit(start, end, _mat);
-            if (temp != end && i < materials.Length - 1)
+            if (temp != end && i < materials.Count - 1)
             {
                 temp.Release();
                 temp = end;
@@ -95,11 +97,12 @@ public class CameraDepthInitializer : MonoBehaviour
         destination = end;
         temp.Release();
         start.Release();
-        if(end) end.Release();
+        if (end) end.Release();
     }
 
-    private void MatchCameraSettings() {
-        if(playerCamera) transparentCamera.fieldOfView = playerCamera.fieldOfView;
+    private void MatchCameraSettings()
+    {
+        if (playerCamera) transparentCamera.fieldOfView = playerCamera.fieldOfView;
 
         if (waterDepthTexture.width != Screen.width || waterDepthTexture.height != Screen.height)
         {
@@ -111,6 +114,11 @@ public class CameraDepthInitializer : MonoBehaviour
             transparentCamera.depthTextureMode = DepthTextureMode.Depth;
             transparentCamera.targetTexture = waterDepthTexture;
         }
-        
+
+    }
+
+    public void AddMaterial(Material mat)
+    {
+        materials.Add(mat);
     }
 }

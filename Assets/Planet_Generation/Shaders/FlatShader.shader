@@ -60,6 +60,7 @@ Shader "Custom/FlatSurfaceShader"
             float3 _LightColor;
             float _SlopeThreshold;
             float3 _DirToSun;
+            float3 planetCentre;
 
             fixed4 frag(v2f i) : SV_Target
             {
@@ -78,7 +79,7 @@ Shader "Custom/FlatSurfaceShader"
                 NdotL = floor(NdotL * (_Bands-1)) / _Bands;
                 NdotL += _AmbientColor.r;
                 
-                float3 radialDir = normalize(worldPos);
+                float3 radialDir = normalize(worldPos - planetCentre);
 
                 
                 float slope = dot(-worldN, radialDir);

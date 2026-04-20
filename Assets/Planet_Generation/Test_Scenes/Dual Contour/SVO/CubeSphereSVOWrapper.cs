@@ -9,6 +9,7 @@ public class PlanetWrapper : MonoBehaviour
     //Faces must be assigned in this order X -X Y -Y Z -Z
     [SerializeField] List<SVOTest> Faces;
     [SerializeField] private int planetRadius;
+    [SerializeField] Atmosphere_Manager atmosphere_Manager;
 
     public Face[] neighbors;
 
@@ -35,5 +36,10 @@ public class PlanetWrapper : MonoBehaviour
             new Face(NZFace,YFace), //x
             new Face(NYFace,ZFace) //-x
         };
+    }
+
+    public Atmosphere_Manager GetAtmosphere_Manager()
+    {
+        return atmosphere_Manager;
     }
 }

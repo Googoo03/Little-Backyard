@@ -137,4 +137,8 @@ float4 QuaternionFromMatrix(float3x3 R)
     return normalize(q);
 }
 
+float2 Circle(float theta){
+    return float2(cosCustom(theta),sinCustom(theta));
+}
+
 #endif

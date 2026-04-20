@@ -7,6 +7,13 @@ using UnityEditorInternal;
 using UnityEngine;
 using NUnit.Framework;
 
+[System.Serializable]
+public struct PlanetMaterials
+{
+    public Material planetMat;
+    public Material atmosphereMat;
+    public Material cloudMat;
+};
 public struct SolarSystemProperties
 {
     public int numPlanets;
@@ -25,12 +32,18 @@ public struct SolarSystemProperties
 
     private void DerivePropertiesFromSeed()
     {
-        byte[] bytes = BitConverter.GetBytes(seed);
-
-        if (BitConverter.IsLittleEndian) Array.Reverse(bytes); //reverse if needed
+        byte[] bytes = GetSeedByteStream();
 
         numPlanets = bytes[0] & 0x07; //only capture the first 3 bits to determine planet number 0-7
         name = "Test System";
+    }
+
+    public byte[] GetSeedByteStream()
+    {
+        byte[] bytes = BitConverter.GetBytes(seed);
+
+        if (BitConverter.IsLittleEndian) Array.Reverse(bytes); //reverse if needed
+        return bytes;
     }
 };
 
@@ -39,10 +52,13 @@ public struct PlanetProperties
     public Vector3 localPosition;
     public GameObject planetObj;
 
-    public PlanetProperties(Vector3 localPosition_, GameObject planetObj_)
+    public Atmosphere_Manager planetAtmosphere_Manager;
+
+    public PlanetProperties(Vector3 localPosition_, GameObject planetObj_, Atmosphere_Manager planetAtmosphere_Manager_)
     {
         localPosition = localPosition_;
         planetObj = planetObj_;
+        planetAtmosphere_Manager = planetAtmosphere_Manager_;
     }
 };
 
@@ -81,6 +97,10 @@ public class SolarSystemManager : Manager
     Vector3 originPos;
 
     Vector3 floatingOriginPos;
+
+    //Planet Materials to Distribute on new objects
+    [SerializeField] PlanetMaterials sharedPlanetMaterials;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -179,21 +199,49 @@ public class SolarSystemManager : Manager
         //offset
         Vector3 offset = new(0, 0, 0);
 
+        byte[] seedByteStream = solarSystemProperties.GetSeedByteStream();
+        float theta_partition = 2 * 3.14159265f / 0xff;
+
         //It is assumed by this point the number of planets is decided.
         for (int i = 0; i < solarSystemProperties.numPlanets; ++i)
         {
             Assert.Less(i, planets.Capacity, "planet number exceeded buffer capacity");
-            offset.z = solarSystemProperties.sunScale + 5000 * (i + 1);
+            Assert.Less(i, seedByteStream.Length, "i exceeded byte stream capacity");
+
+            float theta = theta_partition * seedByteStream[i];
+
+            offset = Circle(theta) * (solarSystemProperties.sunScale + 10000 * (i + 1));
             GameObject newPlanetObj = Instantiate(planetPrefab, (originPos + floatingOriginPos) + offset, Quaternion.identity);
-            planets.Add(new PlanetProperties(offset, newPlanetObj));
+            Atmosphere_Manager atmosphere_Manager = newPlanetObj.GetComponent<PlanetWrapper>().GetAtmosphere_Manager();
+
+            planets.Add(new PlanetProperties(offset, newPlanetObj, atmosphere_Manager));
+            SetPlanetMaterialProperties(newPlanetObj);
         }
+    }
+
+    private void SetPlanetMaterialProperties(GameObject planetObj)
+    {
+        Atmosphere_Manager planetAtmosphere_Manager = planetObj.GetComponent<PlanetWrapper>().GetAtmosphere_Manager();
+
+        //Make new instances for each planet objects, that way they can be manipulated independently
+        planetAtmosphere_Manager.SetPlanetMaterial(Instantiate(sharedPlanetMaterials.planetMat));
+        planetAtmosphere_Manager.SetAtmosphereMaterial(Instantiate(sharedPlanetMaterials.atmosphereMat));
+        planetAtmosphere_Manager.SetCloudMaterial(Instantiate(sharedPlanetMaterials.cloudMat));
+
+    }
+
+    //Returns a point on a unit circle on the xz plane
+    private Vector3 Circle(float theta)
+    {
+        return new Vector3(Mathf.Cos(theta), 0, Mathf.Sin(theta));
     }
 
     private void UpdateFloatingOrigin()
     {
         foreach (PlanetProperties planetProp in planets)
         {
-            planetProp.planetObj.transform.position = (originPos + floatingOriginPos) + planetProp.localPosition;
+            planetProp.planetObj.transform.position = originPos + floatingOriginPos + planetProp.localPosition;
+            planetProp.planetAtmosphere_Manager.SetSunProperties(originPos + floatingOriginPos, -planetProp.localPosition.normalized);
         }
     }
 }
