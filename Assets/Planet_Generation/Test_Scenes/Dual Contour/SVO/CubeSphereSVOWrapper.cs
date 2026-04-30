@@ -7,7 +7,7 @@ using faces;
 public class PlanetWrapper : MonoBehaviour
 {
     //Faces must be assigned in this order X -X Y -Y Z -Z
-    [SerializeField] List<SVOTest> Faces;
+    [SerializeField] private SVOTest SVOParent;
     [SerializeField] private int planetRadius;
     [SerializeField] Atmosphere_Manager atmosphere_Manager;
 
@@ -15,31 +15,18 @@ public class PlanetWrapper : MonoBehaviour
 
     void Awake()
     {
-        SVOTest XFace = Faces[0];// = XFaceSVOTest;
-        SVOTest NXFace = Faces[1];// = NXFaceSVOTest;
-        SVOTest YFace = Faces[2];// = YFaceSVOTest;
-        SVOTest NYFace = Faces[3];// = NYFaceSVOTest;
-        SVOTest ZFace = Faces[4];// = ZFaceSVOTest;
-        SVOTest NZFace = Faces[5];// = NZFaceSVOTest;
+        //Initialize SVO settings
+        SVOParent.SetPatchSize(planetRadius * 2);
+        SVOParent.transform.localPosition = -Vector3.one * planetRadius;
 
-        foreach (SVOTest face in Faces)
-        {
-            face.SetPatchSize(planetRadius);
-        }
-
-        neighbors = new Face[6]
-        {
-            new Face(NYFace,XFace), //z
-            new Face(NXFace,YFace),  //-z
-            new Face(NXFace,ZFace), //y d
-            new Face(NZFace,XFace), //-y d
-            new Face(NZFace,YFace), //x
-            new Face(NYFace,ZFace) //-x
-        };
+        //Initialize Atmosphere Manager Settings
+        atmosphere_Manager.SetPlanetRadius(planetRadius * 0.8f);
     }
 
     public Atmosphere_Manager GetAtmosphere_Manager()
     {
         return atmosphere_Manager;
     }
+
+    public float GetPlanetRadius() { return planetRadius; }
 }

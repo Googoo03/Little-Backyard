@@ -13,7 +13,7 @@ public class SVOTest : MonoBehaviour
 
     [SerializeField] private int dir;
 
-    [SerializeField] private int patchSize;
+    [SerializeField] private int SVOGridSize;
     [SerializeField] private bool freezeSubdivision = false;
     private bool refreshChunks;
     [SerializeField] private float timeToRefresh;
@@ -41,15 +41,15 @@ public class SVOTest : MonoBehaviour
         //I dont like this, should be refactored somehow
         dualContour = new();
         dualContour.SetBlockVoxel(blockVoxel);
-        dualContour.SetRadius(patchSize);
-        dualContour.SetDir(dir);
-        dualContour.SetCubeAxis(faceNum);
+        dualContour.SetRadius(SVOGridSize / 2);
+        //dualContour.SetDir(dir);
+        //dualContour.SetCubeAxis(faceNum);
 
 
         refreshChunks = false;
 
         //Define root node of SVO
-        SVONode root = new(new Vector3Int(0, 0, 0), patchSize, null, -1, null);
+        SVONode root = new(new Vector3Int(0, 0, 0), SVOGridSize, null, -1, null);
         svo = new SVO(root, dualContour, this.gameObject, planetFaceWrapper.neighbors, faceNum, planetFaceWrapper);
         root.SetSVO(svo);
         frontier.Add(root);
@@ -69,10 +69,16 @@ public class SVOTest : MonoBehaviour
         Vector3 playerForward = player.forward.normalized;
         Vector3 playerPos = player.position;
 
-        nodesToSubdivide.Clear();
-        nodesToCollapse.Clear();
+        //freezeSubdivision = Vector3.Distance(playerPos, transform.position) > SVOGridSize * 4f;
 
         if (freezeSubdivision) return;
+
+        //Add time delta for update
+        elapsedTime += Time.deltaTime;
+        if (elapsedTime < timeToRefresh) return;
+
+        nodesToSubdivide.Clear();
+        nodesToCollapse.Clear();
 
         float minDist, maxDist;
 
@@ -97,7 +103,7 @@ public class SVOTest : MonoBehaviour
 
         foreach (var node in nodesToSubdivide)
         {
-            node.Subdivide(dualContour.CubeToSphere);
+            node.Subdivide();
             node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
             svo.MarkChunk(node);
 
@@ -138,10 +144,6 @@ public class SVOTest : MonoBehaviour
             refreshChunks = true;
         }
 
-        //Add time delta for update
-        elapsedTime += Time.deltaTime;
-        if (elapsedTime < timeToRefresh) return;
-
 
         if (refreshChunks)
         {
@@ -153,23 +155,30 @@ public class SVOTest : MonoBehaviour
 
     public void OnDrawGizmos()
     {
-
-        Vector3 start = transform.position + Face.Faces[faceNum].normal * patchSize;
+        return;
+        Vector3 start = transform.position + Face.Faces[faceNum].normal * SVOGridSize;
         float scale = 0.5f;
 
         Gizmos.color = Color.red;
-        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].normal * patchSize * scale));
+        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].normal * SVOGridSize * scale));
 
         Gizmos.color = Color.blue;
-        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].uaxis * patchSize * scale));
+        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].uaxis * SVOGridSize * scale));
 
         Gizmos.color = Color.green;
-        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].vaxis * patchSize * scale));
+        Gizmos.DrawLine(start, start + (Face.Faces[faceNum].vaxis * SVOGridSize * scale));
 
         Gizmos.DrawRay(
-            transform.position + Face.Faces[faceNum].normal * patchSize,
+            transform.position + Face.Faces[faceNum].normal * SVOGridSize,
             Face.Faces[faceNum].normal
         );
+
+        void action(SVONode node)
+        {
+            if (node.size < 1024) return;
+            Gizmos.DrawWireCube(node.center, Vector3.one * node.size);
+        }
+        svo.TraverseNodes(action);
 
     }
 
@@ -178,5 +187,5 @@ public class SVOTest : MonoBehaviour
     public SVO GetSVO() { return svo; }
     public void SetFreeze(bool b) { freezeSubdivision = b; }
 
-    public void SetPatchSize(int patchSize_) { patchSize = patchSize_; }
+    public void SetPatchSize(int patchSize_) { SVOGridSize = patchSize_; }
 }

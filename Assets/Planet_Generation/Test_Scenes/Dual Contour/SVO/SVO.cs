@@ -35,6 +35,10 @@ namespace SparseVoxelOctree
 
         public GameObject parentObj;
 
+        private const int X_AXIS = 4;
+        private const int Y_AXIS = 2;
+        private const int Z_AXIS = 1;
+
         public SVONode TraversePath(Vector3 targetPos)
 
         {
@@ -118,10 +122,8 @@ namespace SparseVoxelOctree
         {
             action(node);
             if (node.children == null) return;
-            for (int i = 0; i < 8; i++)
-            {
-                TraverseNodesRecursive(node.children[i], action);
-            }
+            foreach (SVONode child in node.children)
+                TraverseNodesRecursive(child, action);
         }
 
         //linearize the tree into a list for easier processing
@@ -163,21 +165,25 @@ namespace SparseVoxelOctree
 
             List<Vector3> verts = new();
             List<int> indices = new();
+            List<SVONode> nodes = new();
 
             //should have a dictionary and a list of vertices?
 
             void generateChunk(SVONode node)
             {
 
+
+
                 if (node.size != chunkSize || node.IsEmpty()) return;
 
+                bool chunkExists = chunks.ContainsKey(node.position);
                 //Generate gameObject for chunk
-                GameObject chunkObject = !chunks.ContainsKey(node.position) ? new("Chunk_" + node.position.ToString())
+                GameObject chunkObject = !chunkExists ? new("Chunk_" + node.position.ToString())
                     : chunks[node.position].Item2;
 
                 //if not marked for renewal, dont regenerate
 
-                if (!chunks.ContainsKey(node.position) || chunks[node.position].Item1 == true)
+                if (!chunkExists || chunks[node.position].Item1 == true)
                 {
                     //add if not present already, renew
                     chunks[node.position] = new Tuple<bool, GameObject>(false, chunkObject);
@@ -186,28 +192,71 @@ namespace SparseVoxelOctree
 
                     //Gather vertex nodes for home chunk
 
-                    List<SVONode> nodes = new();
-                    List<SVONode> startNodes = new();
+                    nodes.Clear();
 
                     verts.Clear();
                     indices.Clear();
 
-                    //Reset local indices
-                    //ResetLocalIndex(); //Does a DFS of entire tree
-
                     //adds to local list of vertices and dictionary of vertex nodes
                     node.GatherChunkVertices(nodes, verts);
-                    startNodes.AddRange(nodes);
+
+
+                    SVONode xNeighbor = SVONode.GetNeighborLOD(node, X_AXIS);
+                    SVONode zNeighbor = SVONode.GetNeighborLOD(node, Z_AXIS);
+                    SVONode yNeighbor = SVONode.GetNeighborLOD(node, Y_AXIS);
+                    SVONode zxNeighbor = SVONode.GetNeighborLOD(zNeighbor, X_AXIS);
+                    SVONode xyNeighbor = SVONode.GetNeighborLOD(xNeighbor, Y_AXIS);
+                    SVONode yzNeighbor = SVONode.GetNeighborLOD(yNeighbor, Z_AXIS);
+                    SVONode xyzNeighbor = SVONode.GetNeighborLOD(xyNeighbor, Z_AXIS);
+
+                    xNeighbor?.GatherChunkVerticesFace(nodes, verts, X_AXIS);
+                    yNeighbor?.GatherChunkVerticesFace(nodes, verts, Y_AXIS);
+                    zNeighbor?.GatherChunkVerticesFace(nodes, verts, Z_AXIS);
+                    zxNeighbor?.GatherChunkVerticesFace(nodes, verts, X_AXIS | Z_AXIS);
+                    xyNeighbor?.GatherChunkVerticesFace(nodes, verts, X_AXIS | Y_AXIS);
+                    yzNeighbor?.GatherChunkVerticesFace(nodes, verts, Y_AXIS | Z_AXIS);
+                    //xyzNeighbor?.GatherChunkVerticesShell(nodes, verts);
 
                     indices.Capacity = 3 * verts.Count;
 
 
-                    //for each of the vertex nodes, generate indices
-                    foreach (SVONode n in startNodes)
-                    {
-                        if (n.edge == -1) continue;
+                    //New DC quad generation
+                    meshingAlgorithm.quads.Clear(); //clear quad list
+                    meshingAlgorithm.CellProcHelper(node); //do the recursion from the paper, and fill the quad list. Constains vertex indices
 
-                        meshingAlgorithm.SVOQuad(n, nodes, indices, verts);
+                    //This may need to be flipped
+                    if (xNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, xNeighbor, X_AXIS);
+                    if (yNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, yNeighbor, Y_AXIS);
+                    if (zNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, zNeighbor, Z_AXIS);
+
+                    if (zxNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, zNeighbor, zxNeighbor, xNeighbor, X_AXIS | Z_AXIS);
+                    if (xyNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, yNeighbor, xyNeighbor, xNeighbor, X_AXIS | Y_AXIS);
+                    if (yzNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, zNeighbor, yzNeighbor, yNeighbor, Y_AXIS | Z_AXIS);
+                    //if (xyzNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, xyNeighbor, xyzNeighbor, yzNeighbor, X_AXIS | Z_AXIS);
+
+
+                    foreach (var quad in meshingAlgorithm.quads)
+                    {
+                        if ((quad.sign & quad.dir) == 0) //nothing set, negative flip
+                        {
+                            indices.Add(quad.v0);
+                            indices.Add(quad.v1);
+                            indices.Add(quad.v2);
+
+                            indices.Add(quad.v2);
+                            indices.Add(quad.v3);
+                            indices.Add(quad.v0);
+                        }
+                        else
+                        {
+                            indices.Add(quad.v0);
+                            indices.Add(quad.v2);
+                            indices.Add(quad.v1);
+
+                            indices.Add(quad.v2);
+                            indices.Add(quad.v0);
+                            indices.Add(quad.v3);
+                        }
 
                     }
 
@@ -257,6 +306,7 @@ namespace SparseVoxelOctree
 
             }
 
+            //we dont need to be doing a DFS every frame. just store the chunk positions and their corresponding nodes?
             TraverseNodes(generateChunk);
 
         }
@@ -438,7 +488,40 @@ namespace SparseVoxelOctree
                 vertexList?.Add(node.vertex);
                 nodes?.Add(node);
             }
+
             TraverseLeaves(gatherVertex);
+
+        }
+
+        public void GatherChunkVerticesFace(List<SVONode> nodes = null, List<Vector3> vertexList = null, int dir = 0)
+        {
+            void gatherVertex(SVONode node)
+            {
+                if (node.edge == -1) return; // No vertex to gather
+
+                //Add to vertex list
+                node.localIndex = vertexList.Count;
+                vertexList?.Add(node.vertex);
+                nodes?.Add(node);
+            }
+
+            TraverseLeavesFace(gatherVertex, dir);
+
+        }
+
+        public void GatherChunkVerticesShell(List<SVONode> nodes = null, List<Vector3> vertexList = null)
+        {
+            void gatherVertex(SVONode node)
+            {
+                if (node.edge == -1) return; // No vertex to gather
+
+                //Add to vertex list
+                node.localIndex = vertexList.Count;
+                vertexList?.Add(node.vertex);
+                nodes?.Add(node);
+            }
+
+            TraverseLeavesShell(gatherVertex);
 
         }
 
@@ -471,41 +554,47 @@ namespace SparseVoxelOctree
             }
         }
 
+        public void TraverseLeavesShell(System.Action<SVONode> action)
+        {
+            if (isLeaf)
+            {
+                action(this);
+                return;
+            }
+            if (children == null) return;
+            for (int i = 0; i < 8; i++)
+            {
+                //do the shell that aligns with the childindex
+                if ((i ^ childIndex) == 0b111) continue;
+                children[i].TraverseLeavesShell(action);
+            }
+        }
+
+        public void TraverseLeavesFace(System.Action<SVONode> action, int dir)
+        {
+            if (isLeaf)
+            {
+                action(this);
+                return;
+            }
+            if (children == null) return;
+            for (int i = 0; i < 8; i++)
+            {
+                //do the shell that aligns with the childindex
+                if (((~i) & dir) == 0) continue;
+                children[i].TraverseLeavesShell(action);
+            }
+        }
+
 
         // Finds the neighbor node in the given direction, handling differing LODs.
         // direction: 000 2bit is x, 1bit is y, 0bit is z
         // Returns the deepest adjacent node (may be larger or smaller than this node).
-        public static SVONode GetNeighborLOD(SVONode node, int direction, SVONode pivot = null)
+        public static SVONode GetNeighborLOD(SVONode node, int direction)
         {
             if (node == null) return null;
 
-            //must get waxis for normal. Use that to determine the face number
-            int faceNum = node.parentOBJ.faceNum;
-
-            //whether we are traveling on the u or v axis
-            int localAxis = direction & 1;
-
-            SVOTest faceNeighbor = node.parentOBJ.faceNeighbors[faceNum].neighbors[localAxis]; //get face neighbor from wrapper class
-            SVO faceNeighborSVO = faceNeighbor.GetSVO();
-            SVONode faceNeighborRootNode = faceNeighborSVO.root;
-
-
-            int neighborfaceNum = faceNeighborSVO.faceNum;
-            int pivotfaceNum = pivot?.parentOBJ.faceNum ?? -1;
-            bool sameCornerGroup = (faceNum & 1) == (neighborfaceNum & 1);
-            bool pivotSameCornerGroup = pivotfaceNum != -1 && ((faceNum & 1) == (pivotfaceNum & 1));
-            bool negativeGroup = (faceNum & 1) == 1;
-
             int baseDirection = direction;
-
-            if (pivotSameCornerGroup && faceNum != pivotfaceNum)
-            {
-                int zbit = (baseDirection & 1) != 0 ? 1 : 0;
-                int ybit = (baseDirection & 2) != 0 ? 1 : 0;
-                int xbit = (baseDirection & 4) != 0 ? 1 : 0;
-
-                baseDirection = ((zbit) << 2) | (ybit << 1) | (xbit);
-            }
 
 
             SVONode current = node;
@@ -548,39 +637,7 @@ namespace SparseVoxelOctree
                 current = current.parent;
             }
 
-            //if in the same corner group, rotate
-            int neighborDirection = direction; //start with original direction
-            if (sameCornerGroup)
-            {
-                int zbit = (neighborDirection & 1) != 0 ? 1 : 0;
-                int ybit = (neighborDirection & 2) != 0 ? 1 : 0;
-                int xbit = (neighborDirection & 4) != 0 ? 1 : 0;
-
-                neighborDirection = (zbit << 2) | (ybit << 1) | xbit;
-            }
-
-            //descend down face neighbor
-            for (int i = pathLength - 1; i > 0; i--)
-            {
-                if (faceNeighborRootNode.isLeaf || faceNeighborRootNode.children == null)
-                    break;
-
-                int childIndex = path[i];
-                if (sameCornerGroup)
-                {
-                    int zbit = (childIndex & 1);
-                    int ybit = (childIndex & 2) >> 1;
-                    int xbit = (childIndex & 4) >> 2;
-
-                    childIndex = !negativeGroup ? (zbit << 2) | (ybit << 1) | (xbit ^ 1) :
-                                                    ((zbit ^ 1) << 2) | (ybit << 1) | xbit;
-
-                }
-                childIndex ^= neighborDirection;
-                faceNeighborRootNode = faceNeighborRootNode.children[childIndex];
-            }
-
-            return faceNeighborRootNode; // Found orthogonal or diagonal neighbor
+            return null;
         }
 
 

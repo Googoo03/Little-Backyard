@@ -72,6 +72,7 @@ public class SolarSystemManager : Manager
     //There can be so-called "Phantom planets" that will be object pool placeholders?
 
     //Scriptable object for Star types and data?
+    public static SolarSystemManager Instance { get; private set; }
 
     enum States { UNLOADED, UNLOADED_TIMED, LOADED_TIMED, LOADED }
 
@@ -102,8 +103,9 @@ public class SolarSystemManager : Manager
     [SerializeField] PlanetMaterials sharedPlanetMaterials;
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
+        Instance = this;
         planets = new(10);
         state = States.UNLOADED;
     }
@@ -179,6 +181,11 @@ public class SolarSystemManager : Manager
     private void UnloadSolarSystem()
     {
         origin = Matrix4x4.identity;
+        foreach (PlanetProperties planetProp in planets)
+            Destroy(planetProp.planetObj);
+
+        planets.Clear();
+
     }
 
     private void LoadSolarSystem()
@@ -234,6 +241,23 @@ public class SolarSystemManager : Manager
     private Vector3 Circle(float theta)
     {
         return new Vector3(Mathf.Cos(theta), 0, Mathf.Sin(theta));
+    }
+
+    //Returns Vector2. X is distance, Y is radius of planet
+    public Vector2 ComputeShortestDistanceToPlanet(Vector3 dest)
+    {
+        float minDistance = float.MaxValue;
+        float planetRadius = 1f;
+        foreach (PlanetProperties planet in planets)
+        {
+            float distance = Vector3.Distance(planet.planetObj.transform.position, dest);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                planetRadius = planet.planetObj.GetComponent<PlanetWrapper>().GetPlanetRadius();
+            }
+        }
+        return new Vector2(minDistance, planetRadius);
     }
 
     private void UpdateFloatingOrigin()

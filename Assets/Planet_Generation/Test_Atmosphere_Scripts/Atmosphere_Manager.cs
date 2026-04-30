@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class Atmosphere_Manager : MonoBehaviour
 {
@@ -8,9 +9,7 @@ public class Atmosphere_Manager : MonoBehaviour
     [SerializeField] ComputeShader transmittanceLUT;
     [SerializeField] RenderTexture targetTexture;
 
-    [SerializeField] Material atmosphereMat;
-    [SerializeField] Material cloudMat;
-    [SerializeField] Material planetMat;
+    [SerializeField] Material atmosphereMat, cloudMat, planetMat;
     int targetTextureResolution = 256;
     public Vector3 wavelengths = new Vector3(700, 530, 460);
 
@@ -28,6 +27,10 @@ public class Atmosphere_Manager : MonoBehaviour
 
     private Vector3 sunPos;
     private Vector3 dirToSun;
+    [SerializeField] private float planetRadius;
+    [SerializeField] private float atmosphereThickness; //ratio of atmosphere radius to planet radius
+    [SerializeField] private Vector3 atmospherePosition;
+    private Vector3 scatterVector;
 
     void Start()
     {
@@ -55,7 +58,14 @@ public class Atmosphere_Manager : MonoBehaviour
 
     void Update()
     {
+        atmospherePosition = transform.position;
         LoadMaterialData(planetMat, atmosphereMat, cloudMat);
+    }
+
+    void OnDestroy()
+    {
+        CameraDepthInitializer camera = Camera.main?.gameObject.GetComponent<CameraDepthInitializer>();
+        camera?.RemoveMaterial(atmosphereMat);
     }
 
     private void LoadMaterialData(Material planetMat, Material atmosphereMat = null, Material cloudMat = null)
@@ -63,24 +73,24 @@ public class Atmosphere_Manager : MonoBehaviour
 
         //Set planet sun direction for lighting
         planetMat.SetVector("_DirToSun", dirToSun);
-        planetMat.SetVector("planetCentre", transform.position);
+        planetMat.SetVector("planetCentre", atmospherePosition);
 
         if (atmosphereMat == null) return;
 
         atmosphereMat.SetVector("params", testParams);
         atmosphereMat.SetInt("numInScatteringPoints", 10);
         atmosphereMat.SetInt("numOpticalDepthPoints", 100);
-        atmosphereMat.SetFloat("atmosphereRadius", 4696);
-        atmosphereMat.SetFloat("planetRadius", 4096);
-        atmosphereMat.SetVector("planetCentre", transform.position);
+        atmosphereMat.SetFloat("atmosphereRadius", planetRadius * atmosphereThickness);
+        atmosphereMat.SetFloat("planetRadius", planetRadius);
+        atmosphereMat.SetVector("planetCentre", atmospherePosition);
         atmosphereMat.SetFloat("densityFalloff", densityFalloff);
         atmosphereMat.SetVector("dirToSun", dirToSun);
 
         // Strength of (rayleigh) scattering is inversely proportional to wavelength^4
-        float scatterX = Mathf.Pow(400 / wavelengths.x, 4);
-        float scatterY = Mathf.Pow(400 / wavelengths.y, 4);
-        float scatterZ = Mathf.Pow(400 / wavelengths.z, 4);
-        atmosphereMat.SetVector("scatteringCoefficients", new Vector3(scatterX, scatterY, scatterZ) * scatteringStrength);
+        scatterVector.x = Mathf.Pow(400 / wavelengths.x, 4);
+        scatterVector.y = Mathf.Pow(400 / wavelengths.y, 4);
+        scatterVector.z = Mathf.Pow(400 / wavelengths.z, 4);
+        atmosphereMat.SetVector("scatteringCoefficients", scatterVector * scatteringStrength);
 
 
 
@@ -94,8 +104,8 @@ public class Atmosphere_Manager : MonoBehaviour
 
         //Set cloud params
         cloudMat.SetVector("planetCentre", Vector3.zero);
-        cloudMat.SetFloat("_AtmosphereRadius", 4296);
-        cloudMat.SetFloat("cloudRadius", 4196);
+        cloudMat.SetFloat("_AtmosphereRadius", planetRadius * atmosphereThickness);
+        cloudMat.SetFloat("cloudRadius", planetRadius);
         cloudMat.SetFloat("numCloudPoints", 50);
         cloudMat.SetVector("_SunPos", sunPos);
     }
@@ -116,6 +126,8 @@ public class Atmosphere_Manager : MonoBehaviour
     {
         cloudMat = cloudMat_;
     }
+
+    public void SetPlanetRadius(float radius_) { planetRadius = radius_; }
 
     public void SetSunProperties(Vector3 sunPos_, Vector3 dirToSun_)
     {

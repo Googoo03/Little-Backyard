@@ -13,8 +13,8 @@ public class FloatingOriginManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        GameObject[] plaents = GameObject.FindGameObjectsWithTag("Planet");
-        foreach (var item in plaents)
+        GameObject[] planets = GameObject.FindGameObjectsWithTag("Planet");
+        foreach (var item in planets)
         {
             objectsToMove.Add(item.transform);
         }

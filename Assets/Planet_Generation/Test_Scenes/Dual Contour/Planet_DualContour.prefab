@@ -16,7 +16,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &7869705950944056197
 Transform:
   m_ObjectHideFlags: 0
@@ -48,7 +48,7 @@ MonoBehaviour:
   planetFaceWrapper: {fileID: 1831507260121567450}
   getFaceNum: 0
   dir: 41
-  patchSize: 4096
+  SVOGridSize: 0
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
@@ -73,7 +73,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3589851006915046273
 Transform:
   m_ObjectHideFlags: 0
@@ -105,11 +105,11 @@ MonoBehaviour:
   planetFaceWrapper: {fileID: 1831507260121567450}
   getFaceNum: 0
   dir: 65
-  patchSize: 4096
+  SVOGridSize: 0
   freezeSubdivision: 0
   timeToRefresh: 0.1
   elapsedTime: 0
-  nodeSizeMin: 4
+  nodeSizeMin: 2
   nodeSizeMax: 256
   vertexLength: 0
   blockVoxel: 0
@@ -130,7 +130,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8388179428782211946
 Transform:
   m_ObjectHideFlags: 0
@@ -162,7 +162,7 @@ MonoBehaviour:
   planetFaceWrapper: {fileID: 1831507260121567450}
   getFaceNum: 0
   dir: 194
-  patchSize: 4096
+  SVOGridSize: 0
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
@@ -171,6 +171,63 @@ MonoBehaviour:
   vertexLength: 0
   blockVoxel: 0
   faceNum: 1
+--- !u!1 &4102129778096485557
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1252050872816953524}
+  - component: {fileID: 5749493046378337190}
+  m_Layer: 0
+  m_Name: SVO
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1252050872816953524
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4102129778096485557}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 874050368977333893}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5749493046378337190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4102129778096485557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fd3256d8a4f31146be1bdd49292d0f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 0}
+  planetFaceWrapper: {fileID: 1831507260121567450}
+  getFaceNum: 0
+  dir: 65
+  SVOGridSize: 8192
+  freezeSubdivision: 0
+  timeToRefresh: 1
+  elapsedTime: 0
+  nodeSizeMin: 16
+  nodeSizeMax: 1024
+  vertexLength: 0
+  blockVoxel: 0
+  faceNum: 2
 --- !u!1 &4334485872507971508
 GameObject:
   m_ObjectHideFlags: 0
@@ -187,7 +244,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8332803410981056724
 Transform:
   m_ObjectHideFlags: 0
@@ -219,7 +276,7 @@ MonoBehaviour:
   planetFaceWrapper: {fileID: 1831507260121567450}
   getFaceNum: 0
   dir: 66
-  patchSize: 4096
+  SVOGridSize: 0
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
@@ -244,7 +301,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &773249127515867096
 Transform:
   m_ObjectHideFlags: 0
@@ -276,7 +333,7 @@ MonoBehaviour:
   planetFaceWrapper: {fileID: 1831507260121567450}
   getFaceNum: 0
   dir: 193
-  patchSize: 4096
+  SVOGridSize: 0
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
@@ -323,6 +380,7 @@ Transform:
   - {fileID: 8332803410981056724}
   - {fileID: 8388179428782211946}
   - {fileID: 4170249841472375137}
+  - {fileID: 1252050872816953524}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1831507260121567450
@@ -337,13 +395,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e1ff67b78bc2304c957c24d10de67fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Faces:
-  - {fileID: 8481579883517926020}
-  - {fileID: 5350519792095803603}
-  - {fileID: 6776998076988822908}
-  - {fileID: 5333493413704652586}
-  - {fileID: 2012384155878837428}
-  - {fileID: 4422396528582059158}
+  SVOParent: {fileID: 5749493046378337190}
   planetRadius: 4096
   atmosphere_Manager: {fileID: 1440667959296531023}
   neighbors: []
@@ -376,7 +428,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4163629998875707996
 Transform:
   m_ObjectHideFlags: 0
@@ -408,7 +460,7 @@ MonoBehaviour:
   planetFaceWrapper: {fileID: 1831507260121567450}
   getFaceNum: 0
   dir: 33
-  patchSize: 4096
+  SVOGridSize: 0
   freezeSubdivision: 0
   timeToRefresh: 1
   elapsedTime: 0
@@ -425,6 +477,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 874050368977333893}
     m_Modifications:
+    - target: {fileID: 1185219842000638276, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: atmosphereThickness
+      value: 1.2
+      objectReference: {fileID: 0}
     - target: {fileID: 4202787437246562922, guid: 837c1c4bab7ecb3479222e43b7610556,
         type: 3}
       propertyPath: m_LocalPosition.x

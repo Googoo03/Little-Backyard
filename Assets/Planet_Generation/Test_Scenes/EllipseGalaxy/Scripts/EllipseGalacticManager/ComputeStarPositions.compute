@@ -114,19 +114,6 @@ void GenerateStellarBody(int id)
         float4 rotation = starObjForward;
         float3 originalPos = CalculateStarPosition(procession, angle, majorAxes.x * size, majorAxes.y * size);
         starPos = CalculateStarPosition(procession, angle - (t), majorAxes.x * size, majorAxes.y * size) + GetNoiseModifier(originalPos);
-        
-        
-        if(billboard){
-            float3 floatingOriginPos = floating_origin_position.xyz;
-            float3 dir = normalize(-(floatingOriginPos+starPos));
-            float3 up = (abs(dir.y) > 0.9999) ? float3(1,0,0) : float3(0,1,0);
-
-            float3 right = normalize(cross(up,dir));
-            float3 newup = cross(dir,right);
-
-            float3x3 R = float3x3(right, newup, dir);
-            rotation = QuaternionFromMatrix(R);
-        }
 
         matrices[k] = buildTRSMatrix(starPos, rotation, float3(starObjSize,starObjSize,starObjSize));
 

@@ -40,11 +40,15 @@ public class EllipseGalacticManager : Manager
     private NativeArray<Matrix4x4> nebulaMatrices;
     private ComputeBuffer nebulaMatrixBuffer;
     private ComputeBuffer nebulaMatrixFOBuffer;
+    private ComputeBuffer StarArgsBuffer;
+    private ComputeBuffer NebulaArgsBuffer;
+    private uint[] starArgs;
+    private uint[] nebulaArgs;
 
     private GalacticSpatialHashing galaxySpatialHash;
     [SerializeField] private int hashGridSize;
 
-    private object lockObj = new object();
+    private object lockObj = new();
     public static EllipseGalacticManager Instance { get; private set; }
 
     //GPU instance stars and modify positions via compute shader
@@ -61,9 +65,71 @@ public class EllipseGalacticManager : Manager
         nebulaMatrixBuffer = new ComputeBuffer(nebulaLimit, sizeof(float) * 16);
         nebulaMatrixFOBuffer = new ComputeBuffer(nebulaLimit, sizeof(float) * 16);
 
+        starArgs = new uint[5] {
+        starObj.instanceData.mesh.GetIndexCount(0),
+        (uint)starLimit, // start at 0 → compute shader will fill this
+        starObj.instanceData.mesh.GetIndexStart(0),
+        starObj.instanceData.mesh.GetBaseVertex(0),
+        0
+        };
+        nebulaArgs = new uint[5] {
+        nebulaObj.instanceData.mesh.GetIndexCount(0),
+        (uint)nebulaLimit, // start at 0 → compute shader will fill this
+        nebulaObj.instanceData.mesh.GetIndexStart(0),
+        nebulaObj.instanceData.mesh.GetBaseVertex(0),
+        0
+        };
+        StarArgsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+        NebulaArgsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+
+        StarArgsBuffer.SetData(starArgs);
+        NebulaArgsBuffer.SetData(nebulaArgs);
+
         LoadComputeShaderData();
 
         GenerateGalaxy();
+    }
+
+
+
+    // Update is called once per frame
+    void Update()
+    {
+        LoadComputeShaderData();
+        if (starProcessionSpeed > 0)
+        {
+            GenerateGalaxy();
+        }
+
+
+
+        Floating_Origin_Manager.Instance.DispatchFloatingOriginShader(starMatrixBuffer, starMatrixFOBuffer, this, starLimit);
+        Floating_Origin_Manager.Instance.DispatchFloatingOriginShader(nebulaMatrixBuffer, nebulaMatrixFOBuffer, this, nebulaLimit);
+
+        starObj.instanceData.mat.SetBuffer("_Matrices", starMatrixFOBuffer);
+
+
+        Graphics.DrawMeshInstancedIndirect(
+            starObj.instanceData.mesh,
+            0,
+            starObj.instanceData.mat,
+            new Bounds(Vector3.zero, Vector3.one * 100000000f),
+            StarArgsBuffer
+        );
+
+        nebulaObj.instanceData.mat.SetBuffer("_Matrices", nebulaMatrixFOBuffer);
+
+        Graphics.DrawMeshInstancedIndirect(
+            nebulaObj.instanceData.mesh,
+            0,
+            nebulaObj.instanceData.mat,
+            new Bounds(Vector3.zero, Vector3.one * 100000000f),
+            NebulaArgsBuffer
+        );
+
+
+        //Graphics.RenderMeshInstanced(new RenderParams(starObj.instanceData.mat), starObj.instanceData.mesh, 0, starMatrices);
+        //Graphics.RenderMeshInstanced(new RenderParams(nebulaObj.instanceData.mat), nebulaObj.instanceData.mesh, 0, nebulaMatrices);
     }
 
     void OnDestroy()
@@ -89,26 +155,6 @@ public class EllipseGalacticManager : Manager
             nebulaMatrixFOBuffer = null;
         }
     }
-
-
-
-    // Update is called once per frame
-    void Update()
-    {
-        LoadComputeShaderData();
-        if (starProcessionSpeed > 0)
-        {
-            GenerateGalaxy();
-        }
-
-        Floating_Origin_Manager.Instance.DispatchFloatingOriginShader(starMatrixBuffer, starMatrixFOBuffer, starMatrices, this);
-        Floating_Origin_Manager.Instance.DispatchFloatingOriginShader(nebulaMatrixBuffer, nebulaMatrixFOBuffer, nebulaMatrices, this);
-
-        Graphics.RenderMeshInstanced(new RenderParams(starObj.instanceData.mat), starObj.instanceData.mesh, 0, starMatrices);
-        Graphics.RenderMeshInstanced(new RenderParams(nebulaObj.instanceData.mat), nebulaObj.instanceData.mesh, 0, nebulaMatrices);
-    }
-
-
 
     private void GenerateGalaxy()
     {
@@ -157,7 +203,10 @@ public class EllipseGalacticManager : Manager
             }
 
             var temp = request.GetData<Matrix4x4>();
-            nebulaMatrices.CopyFrom(temp);
+            lock (lockObj)
+            {
+                nebulaMatrices.CopyFrom(temp);
+            }
         });
 
         stellarBodyComputeShader.SetMatrix("floating_origin_transform", floating_origin_transform.TRS);

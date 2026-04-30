@@ -1,0 +1,47 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#include "Assets/Shaders/Includes/Math.cginc"
+
+
+//TRS matrices
+StructuredBuffer<float4x4> matrices;
+RWStructuredBuffer<float4x4> FO_matrices;
+
+uint floatingOriginLimit;
+
+float4x4 floating_origin_transform;
+float3 floating_origin_position;
+
+void FloatingOrigin(int id){
+    uint FO_Over64 = floatingOriginLimit / 64;
+    uint FO_PerThread = FO_Over64 * id;
+    uint startIndex = id * (FO_Over64);
+    uint endIndex = startIndex + (FO_Over64);
+
+    float scale = length(matrices[0]._m00_m10_m20);
+
+    for(uint k = startIndex; k < endIndex; ++k){
+        float3 starPos = matrices[k]._m03_m13_m23; 
+        float3 dir = normalize(-(floating_origin_position+starPos)); 
+        float3 up = (abs(dir.y) > 0.9999) ? float3(1,0,0) : float3(0,1,0); 
+        float3 right = normalize(cross(up,dir)); 
+        float3 newup = cross(dir,right); 
+        float3x3 Rdelta = float3x3( 
+            right.x, newup.x, dir.x, 
+            right.y, newup.y, dir.y, 
+            right.z, newup.z, dir.z ); 
+        float4x4 m = matrices[k]; 
+        m[0].xyz = Rdelta[0]*scale; 
+        m[1].xyz = Rdelta[1]*scale; 
+        m[2].xyz = Rdelta[2]*scale;
+        
+        FO_matrices[k] = mul(floating_origin_transform, m);
+    }
+}
+
+[numthreads(64,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+    FloatingOrigin(id.x);
+}

@@ -38,17 +38,12 @@ public class CameraDepthInitializer : MonoBehaviour
         transparentCamera.targetTexture = waterDepthTexture;
     }
 
-    private void LateUpdate()
-    {
-        transparentCamera.RenderWithShader(oceanDepthShader, "");
-    }
-
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
         MatchCameraSettings();
 
         //Render depth texture with oceanDepthShader by rendering everything in view with a shadow cast
-        transparentCamera.RenderWithShader(oceanDepthShader, "");
+        //transparentCamera.RenderWithShader(oceanDepthShader, "");
 
 
         /*if (planet != null)
@@ -120,5 +115,10 @@ public class CameraDepthInitializer : MonoBehaviour
     public void AddMaterial(Material mat)
     {
         materials.Add(mat);
+    }
+
+    public void RemoveMaterial(Material mat)
+    {
+        materials.Remove(mat);
     }
 }

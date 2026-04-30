@@ -2,38 +2,46 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public class BaseFreeCamProperties
+{
+    public Vector3 position;
+    public Vector3 delta;
+}
+
+
 public class BaseFreeCam : MonoBehaviour
 {
-    [SerializeField] private float currentSpeed;
-    [SerializeField] private float baseSpeed;
+    [SerializeField] protected float currentSpeed;
+    [SerializeField] protected float baseSpeed;
+    protected float clampedSpeed;
 
     public Quaternion targetRotation;
     public Quaternion lastOrientation;
 
-    [SerializeField] private float mouseSensitivityX;
-    [SerializeField] private float mouseSensitivityY;
-    [SerializeField] private float rollSensitivity;
+    [SerializeField] private float mouseSensitivityX, mouseSensitivityY, rollSensitivity;
 
-    [SerializeField] private float rollInput;
-    [SerializeField] private float pitchInput;
-    [SerializeField] private float yawInput;
+    private float rollInput, pitchInput, yawInput;
 
-    private float rollChange;
-    private float yawChange;
-    [SerializeField] private float pitchChange;
 
-    private Quaternion yaw;
-    private Quaternion pitch;
-    private Quaternion roll;
+    private float rollChange, yawChange, pitchChange;
+
+    private Quaternion yaw, pitch, roll;
 
     private float forward;
 
-    private Vector3 delta;
+    protected Vector3 delta;
+    protected Vector3 position;
+    void Start() { clampedSpeed = baseSpeed; position = transform.position; }
 
-    // Update is called once per frame
     void Update()
     {
         MovementProtocol();
+    }
+
+    void LateUpdate()
+    {
+        ApplyForwardDelta();
+        delta = Vector3.zero;
     }
 
     protected void MovementProtocol()
@@ -44,7 +52,7 @@ public class BaseFreeCam : MonoBehaviour
         //change ship speed when in atmosphere. Slows down closer it gets
         bool sprint = (Input.GetKey(KeyCode.LeftShift));
 
-        currentSpeed = (sprint ? 4 * baseSpeed : baseSpeed);
+        currentSpeed = (sprint ? 4 * clampedSpeed : clampedSpeed);
 
 
         setKeyInputs();
@@ -67,10 +75,17 @@ public class BaseFreeCam : MonoBehaviour
 
         ///////////////////////
 
-        delta = (transform.forward * forward) * currentSpeed * Time.deltaTime;
-        transform.position += delta;
+        delta += (transform.forward * forward) * currentSpeed * Time.deltaTime;
 
     }
+
+    protected virtual void ApplyForwardDelta()
+    {
+        position += delta;
+        transform.position += delta;
+    }
+
+
 
     private void setKeyInputs()
     {
@@ -103,19 +118,23 @@ public class BaseFreeCam : MonoBehaviour
     {
         if (axisChange == 0)
         {
-            axis *= 1 - (sensitivity * Time.deltaTime); //diminish roll with time if no input change
+            axis *= Mathf.Exp(-sensitivity * Time.deltaTime); //diminish roll with time if no input change
             if (Mathf.Abs(axis) <= .00001f) axis = 0; //arbitrary small number so there is no creep
         }
         else
         {
 
-            axis += axisChange * Time.deltaTime; //smooth rolling
+            axis += axisChange * Mathf.Min(0.01f, Time.deltaTime); //smooth rolling
             axis = Mathf.Clamp(axis, -sensitivity, sensitivity); //prevents infinite speed increase
         }
     }
 
-    public Vector3 GetDelta()
-    {
-        return delta;
-    }
+    public Vector3 GetDelta() { return delta; }
+
+    public void AddDelta(Vector3 delta_) { delta += delta_; }
+
+    public void SetDelta(Vector3 delta_) { delta = delta_; }
+
+    public Vector3 GetPosition() { return position; }
+    public void SetPosition(Vector3 position_) { position = position_; }
 }
