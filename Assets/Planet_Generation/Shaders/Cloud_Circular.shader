@@ -125,6 +125,7 @@ Shader "Custom/Cloud_Circular"
             float3 planetCentre;
             float _AtmosphereRadius;
             float cloudRadius;
+            float cloudThicknessRatio;
             float numCloudPoints;
 
             bool RayAABBIntersect(float3 rayOrigin, float3 rayDir, float3 boxMin, float3 boxMax,
@@ -244,7 +245,7 @@ Shader "Custom/Cloud_Circular"
                 // Decide sun direction once (assume _SunPos is a world position)
                 // If _SunPos is already a direction, replace with normalize(_SunPos).
 
-                float2 shellInfo = raySphereShell(planetCentre, _AtmosphereRadius, cloudRadius / _AtmosphereRadius, start_point, ray_direction);
+                float2 shellInfo = raySphereShell(planetCentre, cloudRadius, cloudThicknessRatio, start_point, ray_direction);
                 
                 float distToShell = shellInfo.x;
                 float distThroughShell = min(shellInfo.y, max(length(terrainDist) - distToShell, 0.0));
@@ -260,8 +261,8 @@ Shader "Custom/Cloud_Circular"
                 for(int i = 0; i < numCloudPoints; ++i){
                     
                     // Map world pos into 3D texture coordinates (UVW).
-                    float3 cloudUVW = (pos * _CloudTex_ST).xyz + _WindVec.xyz * _Time.y;
-                    float3 perlinUVW = (pos * _PerlinNoise_ST).xyz + _WindVec.xyz * _Time.y;
+                    float3 cloudUVW = ((pos - planetCentre) * _CloudTex_ST).xyz + _WindVec.xyz * _Time.y;
+                    float3 perlinUVW = ((pos - planetCentre) * _PerlinNoise_ST).xyz + _WindVec.xyz * _Time.y;
                     float4 cloudSample = tex3D(_CloudTex, cloudUVW);
                     float4 perlinSample = tex3D(_PerlinNoise, perlinUVW);
                     
@@ -275,7 +276,7 @@ Shader "Custom/Cloud_Circular"
                     float SunDotSurface = max(0,dot(normalize(pos- planetCentre), sunDir));
                     float lightTransmission = _LightIntensity * SunDotSurface;
                     
-                    float2 sun_shellInfo = raySphereShell(planetCentre, _AtmosphereRadius, cloudRadius / _AtmosphereRadius, pos, sunDir);
+                    float2 sun_shellInfo = raySphereShell(planetCentre, cloudRadius, cloudThicknessRatio, pos, sunDir);
                     float sun_distToShell = sun_shellInfo.x;
                     float sun_distThroughShell = sun_shellInfo.y;
                     float sunStep = sun_distThroughShell / 5;
@@ -283,8 +284,8 @@ Shader "Custom/Cloud_Circular"
 
                     [unroll(5)]
                     for(int j = 0; j < 5; ++j){
-                        float3 toSunUVW = (sunPos * _CloudTex_ST).xyz + _WindVec.xyz * _Time.y;
-                        float3 toSunPerlinUVW = (sunPos * _PerlinNoise_ST).xyz + _WindVec.xyz * _Time.y;
+                        float3 toSunUVW = ((sunPos-planetCentre) * _CloudTex_ST).xyz + _WindVec.xyz * _Time.y;
+                        float3 toSunPerlinUVW = ((sunPos-planetCentre) * _PerlinNoise_ST).xyz + _WindVec.xyz * _Time.y;
                         float4 toSunCloudSample = tex3D(_CloudTex, toSunUVW);
                         float4 toSunPerlinSample = tex3D(_PerlinNoise, toSunPerlinUVW);
                         

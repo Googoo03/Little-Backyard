@@ -13,6 +13,7 @@ TagManager:
   - Event_Manager
   - Object_Manager
   - Wind_Manager
+  - Chunk
   layers:
   - Default
   - TransparentFX

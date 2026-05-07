@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+
 public class Atmosphere_Manager : MonoBehaviour
 {
     // Start is called before the first frame update
@@ -52,8 +53,8 @@ public class Atmosphere_Manager : MonoBehaviour
 
         //Set Camera Shaders
         CameraDepthInitializer camera = Camera.main.gameObject.GetComponent<CameraDepthInitializer>();
-        camera.AddMaterial(atmosphereMat);
-        //camera.AddMaterial(cloudMat);
+        camera.AddMaterial(atmosphereMat, 1f);
+        camera.AddMaterial(cloudMat, 1f);
     }
 
     void Update()
@@ -66,6 +67,7 @@ public class Atmosphere_Manager : MonoBehaviour
     {
         CameraDepthInitializer camera = Camera.main?.gameObject.GetComponent<CameraDepthInitializer>();
         camera?.RemoveMaterial(atmosphereMat);
+        camera?.RemoveMaterial(cloudMat);
     }
 
     private void LoadMaterialData(Material planetMat, Material atmosphereMat = null, Material cloudMat = null)
@@ -103,9 +105,10 @@ public class Atmosphere_Manager : MonoBehaviour
         if (cloudMat == null) return;
 
         //Set cloud params
-        cloudMat.SetVector("planetCentre", Vector3.zero);
+        cloudMat.SetVector("planetCentre", atmospherePosition);
         cloudMat.SetFloat("_AtmosphereRadius", planetRadius * atmosphereThickness);
-        cloudMat.SetFloat("cloudRadius", planetRadius);
+        cloudMat.SetFloat("cloudRadius", planetRadius * ((atmosphereThickness - 1f) * 0.50f + 1f));
+        cloudMat.SetFloat("cloudThicknessRatio", 0.99f);
         cloudMat.SetFloat("numCloudPoints", 50);
         cloudMat.SetVector("_SunPos", sunPos);
     }

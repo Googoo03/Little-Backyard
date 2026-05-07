@@ -126,10 +126,6 @@ public class EllipseGalacticManager : Manager
             new Bounds(Vector3.zero, Vector3.one * 100000000f),
             NebulaArgsBuffer
         );
-
-
-        //Graphics.RenderMeshInstanced(new RenderParams(starObj.instanceData.mat), starObj.instanceData.mesh, 0, starMatrices);
-        //Graphics.RenderMeshInstanced(new RenderParams(nebulaObj.instanceData.mat), nebulaObj.instanceData.mesh, 0, nebulaMatrices);
     }
 
     void OnDestroy()

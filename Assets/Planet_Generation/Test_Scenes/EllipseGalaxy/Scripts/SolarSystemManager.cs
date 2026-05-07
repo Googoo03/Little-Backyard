@@ -35,6 +35,7 @@ public struct SolarSystemProperties
         byte[] bytes = GetSeedByteStream();
 
         numPlanets = bytes[0] & 0x07; //only capture the first 3 bits to determine planet number 0-7
+        numPlanets = Mathf.Clamp(numPlanets, 1, 7);
         name = "Test System";
     }
 
@@ -217,7 +218,7 @@ public class SolarSystemManager : Manager
 
             float theta = theta_partition * seedByteStream[i];
 
-            offset = Circle(theta) * (solarSystemProperties.sunScale + 10000 * (i + 1));
+            offset = Circle(theta) * (solarSystemProperties.sunScale + Mathf.Lerp(0, distanceThreshold * 0.5f, (i + 1) / solarSystemProperties.numPlanets));
             GameObject newPlanetObj = Instantiate(planetPrefab, (originPos + floatingOriginPos) + offset, Quaternion.identity);
             Atmosphere_Manager atmosphere_Manager = newPlanetObj.GetComponent<PlanetWrapper>().GetAtmosphere_Manager();
 
@@ -258,6 +259,22 @@ public class SolarSystemManager : Manager
             }
         }
         return new Vector2(minDistance, planetRadius);
+    }
+
+    public PlanetProperties GetClosestPlanet(Vector3 dest)
+    {
+        float minDistance = float.MaxValue;
+        PlanetProperties closestPlanet = planets.Count > 0 ? planets[0] : new();
+        foreach (PlanetProperties planet in planets)
+        {
+            float distance = Vector3.Distance(planet.planetObj.transform.position, dest);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                closestPlanet = planet;
+            }
+        }
+        return closestPlanet;
     }
 
     private void UpdateFloatingOrigin()

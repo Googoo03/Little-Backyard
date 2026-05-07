@@ -10,6 +10,7 @@ using faces;
 using UnityEngine.SocialPlatforms;
 using Unity.Collections;
 using Unity.Mathematics;
+using SignedDistanceFields;
 
 namespace SparseVoxelOctree
 {
@@ -33,6 +34,8 @@ namespace SparseVoxelOctree
 
         public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
 
+        public List<ISDF> sdfEdits = new();
+
         public GameObject parentObj;
 
         private const int X_AXIS = 4;
@@ -47,10 +50,10 @@ namespace SparseVoxelOctree
             {
                 float half = node.size / 2;
                 int childIndex = 0;
-                if (targetPos.x >= node.position.x + half) childIndex |= 1 << 2;
-                if (targetPos.y >= node.position.y + half) childIndex |= 1 << 1;
-                if (targetPos.z >= node.position.z + half) childIndex |= 1;
-                if (node.children == null || node.children[childIndex] == null) return null;
+                if (targetPos.x >= node.position.x + half) childIndex |= X_AXIS;
+                if (targetPos.y >= node.position.y + half) childIndex |= Y_AXIS;
+                if (targetPos.z >= node.position.z + half) childIndex |= Z_AXIS;
+                if (node.children == null || node.children[childIndex] == null) return node;
                 node = node.children[childIndex];
             }
             return node;
@@ -71,9 +74,22 @@ namespace SparseVoxelOctree
             if (!chunks.TryGetValue(node.position, out var entry))
                 return;
 
+            //if already marked, dont allocate more memory for gc
+            if (chunks[node.position].Item1 == true) return;
+
+
             // mark for renewal
             chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
         }
+
+        public void MarkChunk(Vector3 pos)
+        {
+            //takes the local position and finds the chunk associated
+            SVONode targetNode = TraversePath(pos);
+
+            MarkChunk(targetNode);
+        }
+
         public SVO(SVONode root = null, Dual_Contour meshingAlgorithm = null, GameObject parentObj = null, Face[] faceNeighbors = null, int faceNum = 0, PlanetWrapper planetWrapper = null)
         {
             this.root = root;
@@ -82,16 +98,13 @@ namespace SparseVoxelOctree
             this.faceNeighbors = faceNeighbors;
             this.faceNum = faceNum;
             meshingAlgorithm.SetVertexList(vertices);
+            meshingAlgorithm.SetSDFEditList(sdfEdits);
             SetMaterial(planetWrapper);
         }
 
+        public void AddSDFEdit(ISDF edit) { sdfEdits.Add(edit); }
 
-        // Methods for building, updating, and querying the tree
-        // Methods for mesh extraction in a region (for chunk mesh generation)
 
-        /// <summary>
-        /// Traverse all leaf nodes in the SVO and apply the given action.
-        /// </summary>
         public void TraverseLeaves(System.Action<SVONode> action)
         {
             if (root == null) return;
@@ -187,7 +200,7 @@ namespace SparseVoxelOctree
                 {
                     //add if not present already, renew
                     chunks[node.position] = new Tuple<bool, GameObject>(false, chunkObject);
-
+                    chunkObject.tag = "Chunk";
                     // Assumed all chunks beyond this point are brand new or marked for renewal. Regenerate mesh
 
                     //Gather vertex nodes for home chunk
@@ -400,11 +413,9 @@ namespace SparseVoxelOctree
         public bool isLeaf;         // True if this node is a leaf
         public Vector3 vertex; // Index in the mesh vertex list (if leaf)
         public int localIndex; // Local index in the chunk mesh (if leaf)
+        public int gpuBufferIndex;
 
         public int edge;
-
-        public int startChildIndex; // when in a list, this points to its first child index
-
         public bool voteToCollapse;
 
         public float minSDF, maxSDF;
@@ -424,6 +435,7 @@ namespace SparseVoxelOctree
             this.parentOBJ = parentOBJ;
             this.parent = parent;
             this.childIndex = childIndex;
+            gpuBufferIndex = -1;
         }
 
         public void Subdivide(System.Func<Vector3, Vector3> transformFunc = null)
@@ -446,8 +458,8 @@ namespace SparseVoxelOctree
 
             isLeaf = false;
             voteToCollapse = false;
-            vertex = Vector3.zero; // No dual vertex for non-leaf nodes
-            edge = -1;
+            //vertex = Vector3.zero; // No dual vertex for non-leaf nodes
+            //edge = -1;
 
             //what happens to vertices that are no longer referenced? Do we simply keep them? Should remove?
         }
@@ -474,7 +486,7 @@ namespace SparseVoxelOctree
 
         public int GetChildIndex => childIndex;
 
-        public bool MayContainCrossing() { return Mathf.Min(minSDF, maxSDF) <= size; }
+        public bool MayContainCrossing() { return (minSDF <= maxSDF && minSDF <= size) || (maxSDF <= minSDF && maxSDF <= size); }
 
 
         public void GatherChunkVertices(List<SVONode> nodes = null, List<Vector3> vertexList = null)
@@ -527,19 +539,36 @@ namespace SparseVoxelOctree
 
 
 
-        public void GenerateVerticesForLeaves(System.Action<SVONode> vertexFunc)
+        public void GenerateVerticesForLeaves(System.Action<SVONode> vertexFunc, bool forceGenerate = false, ISDF sdf = null)
         {
             TraverseLeaves((node) =>
             {
-                if (node.edge != -1) return;
+                if (node.edge != -1 && !forceGenerate) return;
 
-                //assigns index and axis information
-                //adds to vertex list
+                if (forceGenerate && sdf?.Evaluate(node.position) > 2 * node.size) return; //if a new SDF is specified and were outside, dont calculate
+                if (forceGenerate) { node.edge = -1; vertex = Vector3.zero; }
+                //if not determined to be empty
                 vertexFunc(node);
 
             });
 
         }
+
+        public void AppendLeavesToBuffer(List<GPUSVONode> buffer, List<SVONode> updateList, bool forceGenerate = false)
+        {
+            TraverseLeaves((node) =>
+            {
+                if (node.edge != -1 && !forceGenerate) return;
+
+                if (forceGenerate) { node.edge = -1; vertex = Vector3.zero; }
+                //if not determined to be empty
+                node.gpuBufferIndex = buffer.Count;
+                buffer.Add(new(node));
+                updateList.Add(node);
+            });
+
+        }
+
         public void TraverseLeaves(System.Action<SVONode> action)
         {
             if (isLeaf)

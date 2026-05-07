@@ -395,8 +395,8 @@ MonoBehaviour:
   transparentCamera: {fileID: 1624216327}
   oceanDepthShader: {fileID: 4800000, guid: f5c7aa42cf6366e4db8715b4f00bf220, type: 3}
   materials:
-  - {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
-  - {fileID: 2100000, guid: 6fea5fb9a3a75d9408f567a098e6ad57, type: 2}
+  - mat: {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
+    resolutionFactor: 1
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
 --- !u!81 &801113655
@@ -474,37 +474,6 @@ Transform:
   - {fileID: 1624216328}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 273.746, z: 0}
---- !u!1 &813262298
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 813262299}
-  m_Layer: 0
-  m_Name: Features Manager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &813262299
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 813262298}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3491.9412, y: 1331.9673, z: -1569.6704}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7482145955451061602}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1001277151
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1052,10 +1021,7 @@ MonoBehaviour:
   playerCamera: {fileID: 1557406410}
   transparentCamera: {fileID: 1010059176}
   oceanDepthShader: {fileID: 4800000, guid: f5c7aa42cf6366e4db8715b4f00bf220, type: 3}
-  materials:
-  - {fileID: 2100000, guid: 6f991c02b62c9ec43a710e5ff267ee3e, type: 2}
-  - {fileID: 2100000, guid: 6fea5fb9a3a75d9408f567a098e6ad57, type: 2}
-  - {fileID: 2100000, guid: 185b1b01dbaaccd4eb2d28ba2529a8c1, type: 2}
+  materials: []
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
 --- !u!81 &1557406412
@@ -1477,19 +1443,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 874050368977333893, guid: c0587e17e5757ba4f85df859faf67a21,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 813262299}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c0587e17e5757ba4f85df859faf67a21, type: 3}
---- !u!4 &7482145955451061602 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 874050368977333893, guid: c0587e17e5757ba4f85df859faf67a21,
-    type: 3}
-  m_PrefabInstance: {fileID: 7482145955451061601}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

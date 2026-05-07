@@ -1,7 +1,21 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+
+[System.Serializable]
+public struct MaterialPair
+{
+    public Material mat;
+    public float resolutionFactor;
+    public MaterialPair(Material mat_, float res)
+    {
+        mat = mat_;
+        resolutionFactor = res;
+    }
+
+};
 
 public class CameraDepthInitializer : MonoBehaviour
 {
@@ -13,7 +27,7 @@ public class CameraDepthInitializer : MonoBehaviour
     [SerializeField] private Shader oceanDepthShader;
 
     [Header("Material List")]
-    [SerializeField] private List<Material> materials;
+    [SerializeField] private List<MaterialPair> materials;
 
     [SerializeField] private Material depthCopier;
     //[SerializeField] private int planetCount = 3;
@@ -42,19 +56,6 @@ public class CameraDepthInitializer : MonoBehaviour
     {
         MatchCameraSettings();
 
-        //Render depth texture with oceanDepthShader by rendering everything in view with a shadow cast
-        //transparentCamera.RenderWithShader(oceanDepthShader, "");
-
-
-        /*if (planet != null)
-        {
-            mat.SetVector("_PlanetPos", planet.transform.position); //sets new planet position for atmosphere shader when adequately close.
-            mat.SetFloat("_Radius", planet.GetComponent<Sphere>().getRadius());
-            mat.SetFloat("_OceanRad", planet.transform.GetChild(0).transform.localScale.x);
-            planetRings.SetVector("_PlanetPos", planet.transform.position);
-            //planet.GetComponent<Sphere>().SetRingShader();
-        }*/
-
         RenderTexture temp = new RenderTexture(source.width, source.height, 0, source.format)
         {
             enableRandomWrite = true
@@ -64,22 +65,23 @@ public class CameraDepthInitializer : MonoBehaviour
         int i = 0;
         RenderTexture start = source;
         RenderTexture end = start;
-        foreach (Material _mat in materials)
+        foreach (MaterialPair mPair in materials)
         {
-
+            Material _mat = mPair.mat;
+            float resolution = mPair.resolutionFactor;
 
             start = i == 0 ? source : temp;
 
-            System.Func<RenderTexture> createTex = () =>
+            System.Func<float, RenderTexture> createTex = (float resolution) =>
             {
-                RenderTexture intermediate = new RenderTexture(source.width, source.height, 0, source.format)
+                RenderTexture intermediate = new RenderTexture((int)(source.width * resolution), (int)(source.height * resolution), 0, source.format)
                 {
                     enableRandomWrite = true
                 };
                 intermediate.Create();
                 return intermediate;
             };
-            end = i == materials.Count - 1 ? destination : createTex();
+            end = i == materials.Count - 1 ? destination : createTex(resolution);
 
             Graphics.Blit(start, end, _mat);
             if (temp != end && i < materials.Count - 1)
@@ -112,13 +114,14 @@ public class CameraDepthInitializer : MonoBehaviour
 
     }
 
-    public void AddMaterial(Material mat)
+    public void AddMaterial(Material mat, float resolution = 1f)
     {
-        materials.Add(mat);
+        materials.Add(new MaterialPair(mat, resolution));
     }
 
     public void RemoveMaterial(Material mat)
     {
-        materials.Remove(mat);
+        MaterialPair matPair = materials.Find(m => m.mat == mat);
+        materials.Remove(matPair);
     }
 }

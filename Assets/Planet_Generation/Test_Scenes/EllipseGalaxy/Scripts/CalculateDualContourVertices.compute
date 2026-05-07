@@ -1,0 +1,227 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#include "Assets/Shaders/Includes/Math.cginc"
+#include "Assets/Shaders/Includes/SDF.cginc"
+
+struct SVONode{
+    float3 position;
+    float size;
+    float min, max;
+    int edge;
+    float3 vertex;
+};
+
+Texture3D<float4> NoiseTexture;
+SamplerState samplerNoiseTexture;
+uint width, height, depth;
+
+RWStructuredBuffer<SVONode> nodes;
+int nodeLimit;
+
+
+// axis bit constants used throughout the method
+const int X_AXIS = 4;
+const int Y_AXIS = 2;
+const int Z_AXIS = 1;
+
+//float min and max values
+const float MAX = 3.402823466e+38;
+const float MIN = 1.175494351e-38;
+
+//planet data
+float radius;
+
+
+float DetermineSDFValue(float3 pos){
+    float3 sphereCenter = float3(1,1,1) * radius;
+    float3 spherePos = pos - sphereCenter;
+
+    float sphereSDF = length(spherePos) - radius * 0.8;
+    float frequency = .05;
+    float amplitude = 50.0;
+    spherePos /= width; //even dimensions
+
+    //In the future, this continent value will be baked into the actual texture
+    float3 uvwContinent = frac(spherePos * .01);
+    float contVal = (NoiseTexture.SampleLevel(samplerNoiseTexture, uvwContinent, 0)).r;
+    contVal = (1.0 - (contVal < 0 ? -contVal : contVal))*100;
+    //-------------------------------------------------------------------------
+
+    float3 uvw = frac(spherePos * frequency);
+    float value = (NoiseTexture.SampleLevel(samplerNoiseTexture, uvw, 0)).r;
+    value = (1.0 - (value < 0 ? -value : value))*amplitude;
+
+    return value - sphereSDF + contVal;
+}
+
+float Adapt(float x0, float x1) { return (-x0) / (x1 - x0);}
+
+void SVOVertex(SVONode node, int index)
+{
+    //these are being allocated every frame, which is bad
+    const float eps = 1e-9f;
+
+    float xPos, yPos, zPos;
+    float min = MIN, max = MAX;
+
+    float3 vertPos[8];
+    float vertValues[8];
+
+    int i = 0;
+    for (; i < 8; ++i)
+    {
+        //eulerian coordinate grid at resolution node.size
+        xPos = node.position.x + ((i >> 2) & 0x01) * node.size;
+        yPos = node.position.y + ((i >> 1) & 0x01) * node.size;
+        zPos = node.position.z + (i & 0x01) * node.size;
+
+        //evaluate the position and value of each vertex in the unit cube
+        vertPos[i] = float3(xPos, yPos, zPos);
+
+        vertValues[i] = DetermineSDFValue(vertPos[i]); //base SDF
+        max = vertValues[i] > max ? vertValues[i] : max;
+        min = vertValues[i] < min ? vertValues[i] : min;
+    }
+    //calculate the adapt of only the edges that cross, rather than the whole thing
+    //calculate the positions of the edges itself
+
+    node.min = min;
+    node.max = max;
+    node.edge = -1;
+    node.vertex = float3(0,0,0);
+
+    float3 avg = float3(0,0,0);
+    int count = 0;
+
+    //replace Vector3 with dynamic sizing
+
+    //we then identify where changes in the function are (sign changes)
+    bool signChange = false;
+    bool xCross;
+    bool yCross;
+    bool zCross;
+
+    //set sign change if any edge is crossed
+    signChange = signChange || ((vertValues[0] > eps) != (vertValues[4] > eps));
+    signChange = signChange || (vertValues[0] > eps) != (vertValues[1] > eps);
+    signChange = signChange || (vertValues[5] > eps) != (vertValues[1] > eps);
+    signChange = signChange || (vertValues[5] > eps) != (vertValues[4] > eps);
+    signChange = signChange || (vertValues[4] > eps) != (vertValues[6] > eps);
+    signChange = signChange || (vertValues[1] > eps) != (vertValues[3] > eps);
+    signChange = signChange || (vertValues[0] > eps) != (vertValues[2] > eps);
+    yCross = (vertValues[5] > eps) != (vertValues[7] > eps);
+    zCross = (vertValues[6] > eps) != (vertValues[7] > eps);
+    xCross = (vertValues[3] > eps) != (vertValues[7] > eps);
+    signChange = signChange || yCross;
+    signChange = signChange || zCross;
+    signChange = signChange || xCross;
+    signChange = signChange || (vertValues[2] > eps) != (vertValues[3] > eps);
+    signChange = signChange || (vertValues[2] > eps) != (vertValues[6] > eps);
+
+    if (!signChange) {
+        nodes[index] = node;
+        return;
+    }
+
+    //X EDGES NEW 
+    for (i = 0; i < 4; ++i)
+    {
+        float a = vertValues[i];
+        float b = vertValues[i | 0x04];
+        if (a > 0 != b > 0)
+        {
+            avg += vertPos[i] + Adapt(a, b) * (vertPos[i | 0x04] - vertPos[i]);
+            count++;
+        }
+    }
+
+    //Y EDGES
+    int j = 0;
+    for (i = 0; i < 4; ++i)
+    {
+
+        if (i < 2)
+        {
+            j = i;
+        }
+        else
+        {
+            j = i == 2 ? 4 : 5;
+        }
+        float a = vertValues[j];
+        float b = vertValues[j | 0x02];
+        if (a > 0 != b > 0)
+        {
+            avg += vertPos[j] + Adapt(a, b) * (vertPos[j | 0x02] - vertPos[j]);
+            count++;
+        }
+    }
+
+    //Z EDGES
+    for (i = 0; i < 4; ++i)
+    {
+        float a = vertValues[(i << 1)];
+        float b = vertValues[(i << 1) | 0x01];
+        if (a > 0 != b > 0)
+        {
+            avg += vertPos[i << 1] + Adapt(a, b) * (vertPos[(i << 1) | 0x01] - vertPos[i << 1]);
+            count++;
+        }
+    }
+
+    avg /= count > 1 ? count : 1;
+    //convert the average position to a sphere
+
+    //figure out what edge was crossed (axis)
+
+    //Assign the sign of the edge according to how the flip occurs
+
+    //The normals shouldn't have x,y,z as their parameters, but should instead reflect
+    //the positions of the intermediate point on the edge.
+
+    int newedge = 0;
+
+    if (xCross)
+    {
+        newedge |= 1 << 5;
+        newedge |= (((vertValues[3] > 0) && !(vertValues[7] > 0)) ? 1 : 0) << 2;
+    }
+    if (yCross)
+    {
+        newedge |= 1 << 4;
+        newedge |= ((!(vertValues[5] > 0) && (vertValues[7] > 0)) ? 1 : 0) << 1;
+    }
+    if (zCross)
+    {
+        newedge |= 1 << 3;
+        newedge |= ((vertValues[6] > 0) && !(vertValues[7] > 0)) ? 1 : 0;
+    }
+
+    bool block_voxel = false;
+    float3 vertex = block_voxel ? vertPos[0] : avg;
+
+    node.vertex = vertex;
+    node.edge = newedge;
+
+    nodes[index] = node;
+}
+
+void CalculateVertex(int id){
+    uint nodesOver64 = nodeLimit / 64;
+    uint nodesPerThread = nodesOver64 * id;
+    uint startIndex = id * (nodesOver64);
+    uint endIndex = startIndex + (nodesOver64);
+
+    for(uint i = startIndex; i < endIndex; ++i){
+        SVOVertex(nodes[i], i);
+    }
+} 
+
+[numthreads(64,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    
+    NoiseTexture.GetDimensions(width, height, depth);
+    // TODO: insert actual code here!
+    CalculateVertex(id.x);
+}

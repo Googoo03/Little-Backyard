@@ -98,9 +98,11 @@ void GenerateStellarBody(int id)
     float3 starPos;
 
     uint starsOver64 = starLimit / 64;
+    uint remainder = starLimit % 64;
     uint starsPerThread = starsOver64 * id;
     uint startIndex = id * (starsOver64);
     uint endIndex = startIndex + (starsOver64);
+    endIndex += ((id == 63) ? remainder : 0);
     //start at correct position starlimit / 64 * id
     for(uint k = startIndex; k < endIndex; ++k){
         uint orbit =  ((k) / starsPerOrbit);

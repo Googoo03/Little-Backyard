@@ -235,7 +235,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 391c06e68d62c5e439c1e803b4cb46b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseGalacticMapCameraPosition: {x: 0, y: 84734880, z: 0}
+  baseGalacticMapCameraPosition: {x: 0, y: 147348800, z: 0}
   playerPositionFloatingOrigin: {x: 0, y: 0, z: 0}
   galacticMapCamera: {fileID: 791424663}
   interpolationT: 0
@@ -633,8 +633,8 @@ MonoBehaviour:
   transparentCamera: {fileID: 39797972}
   oceanDepthShader: {fileID: 4800000, guid: f5c7aa42cf6366e4db8715b4f00bf220, type: 3}
   materials:
-  - {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
-  - {fileID: 2100000, guid: 185b1b01dbaaccd4eb2d28ba2529a8c1, type: 2}
+  - mat: {fileID: 2100000, guid: 185b1b01dbaaccd4eb2d28ba2529a8c1, type: 2}
+    resolutionFactor: 1
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
 --- !u!1 &1337964435
@@ -741,6 +741,7 @@ GameObject:
   - component: {fileID: 1958864578}
   - component: {fileID: 1958864582}
   - component: {fileID: 1958864583}
+  - component: {fileID: 1958864584}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -839,8 +840,8 @@ MonoBehaviour:
   transparentCamera: {fileID: 230602040}
   oceanDepthShader: {fileID: 4800000, guid: f5c7aa42cf6366e4db8715b4f00bf220, type: 3}
   materials:
-  - {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
-  - {fileID: 2100000, guid: 185b1b01dbaaccd4eb2d28ba2529a8c1, type: 2}
+  - mat: {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
+    resolutionFactor: 1
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
 --- !u!114 &1958864583
@@ -862,6 +863,18 @@ MonoBehaviour:
   mouseSensitivityX: 10
   mouseSensitivityY: 10
   rollSensitivity: 2
+--- !u!114 &1958864584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1958864577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e40df9c2c32c1b14ea83ac1f0a429a84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2044936436
 GameObject:
   m_ObjectHideFlags: 0

@@ -15,7 +15,7 @@ public class Features_Manager : MonoBehaviour
     //Let's say it does, any additional meshes generated will be sent to the object calling it.
     //We'll separate functions accordingly
 
-    public Flora_L_System flora_L_System;
+    [SerializeField] public Flora_L_System flora_L_System;
 
     //the seed will propagate from the planet, from the solar system manager
     int seed;
@@ -23,7 +23,8 @@ public class Features_Manager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
+        flora_L_System = new(seed);
+        flora_L_System.GenerateFlora();
     }
 
     // Update is called once per frame

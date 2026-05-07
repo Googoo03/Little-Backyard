@@ -4,7 +4,30 @@ using UnityEngine;
 
 namespace SignedDistanceFields
 {
-    public class SDF {
+    public interface ISDF
+    {
+        public float Evaluate(Vector3 p);
+    }
+
+    public class SphereSDF : ISDF
+    {
+        public Vector3 center;
+        private float radius;
+        private bool invert;
+        public float Evaluate(Vector3 p)
+        {
+            float factor = invert ? -1 : 1;
+            return SDF.Sphere(p, center, radius) * factor;
+        }
+
+        public SphereSDF(Vector3 center_, float radius_ = 50, bool invert_ = false) { center = center_; radius = radius_; invert = invert_; }
+    }
+
+
+    public class SDF
+    {
+        public static float Sphere(Vector3 p, Vector3 center, float r = 5) { return (p - center).magnitude - r; }
+
         public static float OctahedronNotExact(Vector3 p, Vector3 global, float s)
         {
             p = new Vector3(
@@ -18,7 +41,7 @@ namespace SignedDistanceFields
         public static float Link(Vector3 p, Vector3 global, float le, float r1, float r2)
         {
             Vector3 q = new Vector3(p.x + global.x, Mathf.Max(Mathf.Abs(p.y + global.y) - le, 0.0f), p.z + global.z);
-            return new Vector2( new Vector2(q.x,q.y).magnitude - r1, q.z).magnitude - r2;
+            return new Vector2(new Vector2(q.x, q.y).magnitude - r1, q.z).magnitude - r2;
         }
 
         public static float CutHollowSphere(Vector3 p, Vector3 global, float r, float h, float t)
@@ -40,8 +63,8 @@ namespace SignedDistanceFields
                             );
             Vector3 q = p - b;
             q = new Vector3(
-                            Mathf.Max(q.x, 0f), Mathf.Max(q.y, 0f), Mathf.Max(q.z,0f)
-                ) ;
+                            Mathf.Max(q.x, 0f), Mathf.Max(q.y, 0f), Mathf.Max(q.z, 0f)
+                );
             return (q).magnitude + Mathf.Min(Mathf.Max(q.x, Mathf.Max(q.y, q.z)), 0.0f);
         }
     }

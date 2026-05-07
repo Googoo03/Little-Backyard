@@ -17,10 +17,10 @@ namespace FloraLSystem
         private float stepLength = 1f;
         [SerializeField] protected uint age = 0;
 
-        [SerializeField] private List<char> symbols;
+        [SerializeField] private List<char> symbols = new() { 'F', 'X', 'L' };
 
 
-        [SerializeField] private List<char> constants;
+        [SerializeField] private List<char> constants = new() { '[', ']', '+', '-' };
 
         [SerializeField] private List<Production> productionList;
 
@@ -46,14 +46,15 @@ namespace FloraLSystem
 
         public List<char> GetSymbolList() { return symbols; }
         public uint GetAge() { return age; }
+        public string GetFloraString() { return floraString; }
         public void SetMesh(Mesh mesh_) { mesh = mesh_; }
     };
 
-    public abstract class Flora_L_System : MonoBehaviour
+    [System.Serializable]
+    public class Flora_L_System : MonoBehaviour
     {
-        private List<Flora> floraList;
+        [SerializeField] private List<Flora> floraList;
         private int seed;
-        //[SerializeField] private Flora_ScriptableObject rules;
         //Symbols
         [SerializeField] protected List<char> symbols;
 
@@ -104,6 +105,7 @@ namespace FloraLSystem
                 constants = f.GetConstantList();
 
                 symbols = f.GetSymbolList();
+                floraString = f.GetFloraString();
                 //------------------------------
 
                 //Assume all relevant data is loaded into Flora f already
@@ -306,11 +308,14 @@ namespace FloraLSystem
 
                         Quaternion leafRotation = twist * rotation;
 
-                        Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
-                        Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
-                        Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
+                        if (leaf != null)
+                        {
+                            Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
+                            Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
+                            Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
+                        }
                         break;
-                    case 'R':
+                    /*case 'R':
                         // Ring Leaf
                         float scaleFactor = 1 - ((float)age / floraString.Length);
                         for (int i = 0; i < n; ++i)
@@ -319,7 +324,7 @@ namespace FloraLSystem
                             GameObject leafObj = Instantiate(leaf, position + transform.position, twist * rotation);
                             leafObj.transform.localScale *= scaleFactor;
                         }
-                        break;
+                        break;*/
                     case 'X':
                         break;
                     case 'F':
