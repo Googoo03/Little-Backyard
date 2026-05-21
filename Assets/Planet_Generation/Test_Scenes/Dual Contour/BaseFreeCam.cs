@@ -9,8 +9,10 @@ public class BaseFreeCamProperties
 }
 
 
+[RequireComponent(typeof(Camera))]
 public class BaseFreeCam : MonoBehaviour
 {
+    [SerializeField] protected Camera cam;
     [SerializeField] protected float currentSpeed;
     [SerializeField] protected float baseSpeed;
     protected float clampedSpeed;
@@ -18,11 +20,11 @@ public class BaseFreeCam : MonoBehaviour
     public Quaternion targetRotation;
     public Quaternion lastOrientation;
 
-    [SerializeField] private float mouseSensitivityX, mouseSensitivityY, rollSensitivity;
+    [SerializeField] protected float rollSensitivity;
+    [SerializeField] protected Vector2 mouseSensitivity;
+    [SerializeField] protected Vector2 LookExtinctionFactor;
 
     private float rollInput, pitchInput, yawInput;
-
-
     private float rollChange, yawChange, pitchChange;
 
     private Quaternion yaw, pitch, roll;
@@ -31,7 +33,12 @@ public class BaseFreeCam : MonoBehaviour
 
     protected Vector3 delta;
     protected Vector3 position;
-    void Start() { clampedSpeed = baseSpeed; position = transform.position; }
+    void Start()
+    {
+        if (cam == null) cam = GetComponent<Camera>();
+        clampedSpeed = baseSpeed;
+        position = transform.position;
+    }
 
     void Update()
     {
@@ -41,6 +48,7 @@ public class BaseFreeCam : MonoBehaviour
     void LateUpdate()
     {
         ApplyForwardDelta();
+        ApplyScrollDelta();
         delta = Vector3.zero;
     }
 
@@ -57,9 +65,9 @@ public class BaseFreeCam : MonoBehaviour
 
         setKeyInputs();
 
-        smoothKey(ref rollInput, rollSensitivity, rollChange);
-        smoothKey(ref pitchInput, mouseSensitivityY, pitchChange);
-        smoothKey(ref yawInput, mouseSensitivityX, yawChange);
+        smoothKey(ref rollInput, rollSensitivity, rollSensitivity, rollChange);
+        smoothKey(ref pitchInput, mouseSensitivity.y, LookExtinctionFactor.y, pitchChange);
+        smoothKey(ref yawInput, mouseSensitivity.x, LookExtinctionFactor.x, yawChange);
 
 
         yaw = Quaternion.AngleAxis(yawInput, transform.up);
@@ -85,6 +93,8 @@ public class BaseFreeCam : MonoBehaviour
         transform.position += delta;
     }
 
+    protected virtual void ApplyScrollDelta() { }
+
 
 
     private void setKeyInputs()
@@ -92,8 +102,8 @@ public class BaseFreeCam : MonoBehaviour
         forward = Input.GetAxis("Vertical");
 
 
-        yawChange = Input.GetAxis("Mouse X") * mouseSensitivityX;
-        pitchChange = Input.GetAxis("Mouse Y") * mouseSensitivityY;
+        yawChange = Input.GetAxis("Mouse X") * mouseSensitivity.x;
+        pitchChange = Input.GetAxis("Mouse Y") * mouseSensitivity.y;
         rollChange = -InputAxis(KeyCode.Q, KeyCode.E) * rollSensitivity;
 
     }
@@ -114,11 +124,11 @@ public class BaseFreeCam : MonoBehaviour
 
 
 
-    private void smoothKey(ref float axis, float sensitivity, float axisChange)
+    private void smoothKey(ref float axis, float sensitivity, float extinction, float axisChange)
     {
         if (axisChange == 0)
         {
-            axis *= Mathf.Exp(-sensitivity * Time.deltaTime); //diminish roll with time if no input change
+            axis *= Mathf.Exp(-extinction * Time.deltaTime); //diminish roll with time if no input change
             if (Mathf.Abs(axis) <= .00001f) axis = 0; //arbitrary small number so there is no creep
         }
         else

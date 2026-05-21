@@ -103,12 +103,19 @@ public class SolarSystemManager : Manager
     //Planet Materials to Distribute on new objects
     [SerializeField] PlanetMaterials sharedPlanetMaterials;
 
+    EllipseGalacticManager ellipseGalacticManager;
+
     // Start is called before the first frame update
     void Awake()
     {
         Instance = this;
         planets = new(10);
         state = States.UNLOADED;
+    }
+
+    void Start()
+    {
+        ellipseGalacticManager = EllipseGalacticManager.Instance;
     }
 
     // Update is called once per frame
@@ -194,18 +201,23 @@ public class SolarSystemManager : Manager
         //determine hash by the origin star's local position in the galaxy.
         //this is origin pos - floating origin.
 
+        //more consistent method needed, perhaps based on the galactic hash
+
         Vector3 localGalacticPosition = originPos - floatingOriginPos;
+        Vector3 galacticSectorPosition = ellipseGalacticManager.galaxySpatialHash.GetSectorID(floatingOriginPos);
 
         var hash = new Hash128();
-        hash.Append(localGalacticPosition.x);
-        hash.Append(localGalacticPosition.y);
-        hash.Append(localGalacticPosition.z);
+        hash.Append(galacticSectorPosition.x);
+        hash.Append(galacticSectorPosition.y);
+        hash.Append(galacticSectorPosition.z);
 
         int seed = hash.GetHashCode();
         solarSystemProperties = new SolarSystemProperties(seed); //set seed properties. The struct will derive the rest
 
+        var planetHash = new Hash128();
+
         //offset
-        Vector3 offset = new(0, 0, 0);
+        Vector3 offset;
 
         byte[] seedByteStream = solarSystemProperties.GetSeedByteStream();
         float theta_partition = 2 * 3.14159265f / 0xff;
@@ -218,9 +230,14 @@ public class SolarSystemManager : Manager
 
             float theta = theta_partition * seedByteStream[i];
 
+            planetHash.Append(seed);
+            int newSeed = planetHash.GetHashCode();
+
             offset = Circle(theta) * (solarSystemProperties.sunScale + Mathf.Lerp(0, distanceThreshold * 0.5f, (i + 1) / solarSystemProperties.numPlanets));
             GameObject newPlanetObj = Instantiate(planetPrefab, (originPos + floatingOriginPos) + offset, Quaternion.identity);
             Atmosphere_Manager atmosphere_Manager = newPlanetObj.GetComponent<PlanetWrapper>().GetAtmosphere_Manager();
+            SVOTest planetSVO = newPlanetObj.GetComponent<PlanetWrapper>().GetSVOTest();
+            planetSVO.SetSeed(newSeed);
 
             planets.Add(new PlanetProperties(offset, newPlanetObj, atmosphere_Manager));
             SetPlanetMaterialProperties(newPlanetObj);

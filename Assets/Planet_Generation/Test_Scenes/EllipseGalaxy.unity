@@ -237,7 +237,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseGalacticMapCameraPosition: {x: 0, y: 147348800, z: 0}
   playerPositionFloatingOrigin: {x: 0, y: 0, z: 0}
-  galacticMapCamera: {fileID: 791424663}
+  galacticMapCamera: {fileID: 791424668}
   interpolationT: 0
   waitingToUpdate: 0
 --- !u!4 &54328048
@@ -256,6 +256,74 @@ Transform:
   - {fileID: 791424666}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &224631973
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 773673821968226240, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146331828623934766, guid: 8b029d7e912d1e348942f77e7c448c91,
+        type: 3}
+      propertyPath: m_Name
+      value: TerrainEditorShapes
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 8b029d7e912d1e348942f77e7c448c91, type: 3}
 --- !u!1 &230602039
 GameObject:
   m_ObjectHideFlags: 0
@@ -514,8 +582,8 @@ GameObject:
   - component: {fileID: 791424666}
   - component: {fileID: 791424665}
   - component: {fileID: 791424664}
-  - component: {fileID: 791424663}
   - component: {fileID: 791424667}
+  - component: {fileID: 791424668}
   m_Layer: 0
   m_Name: Galactic_Map_Camera
   m_TagString: Untagged
@@ -523,25 +591,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &791424663
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 791424662}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c46a7c25bfa3d2a4ebc44c32d136dfd0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  currentSpeed: 0
-  baseSpeed: 1000
-  targetRotation: {x: 0, y: 0, z: 0, w: 0}
-  lastOrientation: {x: 0, y: 0, z: 0, w: 0}
-  mouseSensitivityX: 10
-  mouseSensitivityY: 10
-  rollSensitivity: 0
 --- !u!81 &791424664
 AudioListener:
   m_ObjectHideFlags: 0
@@ -585,7 +634,7 @@ Camera:
   far clip plane: 100000000
   field of view: 60
   orthographic: 0
-  orthographic size: 5
+  orthographic size: 52358230
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -633,10 +682,78 @@ MonoBehaviour:
   transparentCamera: {fileID: 39797972}
   oceanDepthShader: {fileID: 4800000, guid: f5c7aa42cf6366e4db8715b4f00bf220, type: 3}
   materials:
-  - mat: {fileID: 2100000, guid: 185b1b01dbaaccd4eb2d28ba2529a8c1, type: 2}
+  - mat: {fileID: 2100000, guid: 7364f74ec0245734a82bfc99fb795b4a, type: 2}
     resolutionFactor: 1
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
+--- !u!114 &791424668
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 791424662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67ddf4e9f8ec1e144b834d87c7f0032e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cam: {fileID: 791424665}
+  currentSpeed: 0
+  baseSpeed: 0
+  targetRotation: {x: 0, y: 0, z: 0, w: 0}
+  lastOrientation: {x: 0, y: 0, z: 0, w: 0}
+  rollSensitivity: 0
+  mouseSensitivity: {x: 10, y: 10}
+  LookExtinctionFactor: {x: 10, y: 10}
+  scrollSensitivity: 2
+  scrollDelta: {x: 0, y: 0}
+  baseMouseSensitivity: {x: 0, y: 0}
+--- !u!1 &1316088240
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1316088242}
+  - component: {fileID: 1316088241}
+  m_Layer: 0
+  m_Name: NoisePipeline
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1316088241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1316088240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 140decb5f82388d4a85d9f5d78cd4228, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  noiseShader: {fileID: 7200000, guid: 8f757f5a121ce7240ac1b7d61a3103c6, type: 3}
+--- !u!4 &1316088242
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1316088240}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1452.3718, y: 418.4687, z: -244.91748}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1337964435
 GameObject:
   m_ObjectHideFlags: 0
@@ -842,6 +959,8 @@ MonoBehaviour:
   materials:
   - mat: {fileID: 2100000, guid: e0d771d8309435444886882ce00adb5d, type: 2}
     resolutionFactor: 1
+  - mat: {fileID: 2100000, guid: 185b1b01dbaaccd4eb2d28ba2529a8c1, type: 2}
+    resolutionFactor: 1
   depthCopier: {fileID: 0}
   planet: {fileID: 0}
 --- !u!114 &1958864583
@@ -856,13 +975,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c46a7c25bfa3d2a4ebc44c32d136dfd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cam: {fileID: 1958864579}
   currentSpeed: 0
   baseSpeed: 1000
   targetRotation: {x: 0, y: 0, z: 0, w: 0}
   lastOrientation: {x: 0, y: 0, z: 0, w: 0}
-  mouseSensitivityX: 10
-  mouseSensitivityY: 10
   rollSensitivity: 2
+  mouseSensitivity: {x: 10, y: 10}
+  LookExtinctionFactor: {x: 10, y: 10}
 --- !u!114 &1958864584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -875,6 +995,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e40df9c2c32c1b14ea83ac1f0a429a84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  fireRate: 0.1
 --- !u!1 &2044936436
 GameObject:
   m_ObjectHideFlags: 0
@@ -962,3 +1083,5 @@ SceneRoots:
   - {fileID: 696919827}
   - {fileID: 1337964436}
   - {fileID: 54328048}
+  - {fileID: 224631973}
+  - {fileID: 1316088242}

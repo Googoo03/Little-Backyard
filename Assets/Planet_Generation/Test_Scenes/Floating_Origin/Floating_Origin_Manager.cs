@@ -65,6 +65,8 @@ public class Floating_Origin_Manager : Manager
 
     public Tuple<BaseFreeCam, Vector3> GetCameraInfo() { return new Tuple<BaseFreeCam, Vector3>(Camera, CameraPosition); }
 
+    public Vector3 GetFloatingOriginPosition() { return -CameraPosition; }
+
     public void SetCameraPosition(Vector3 cameraPosition_, BaseFreeCam cam)
     {
         Camera.gameObject.SetActive(false); //disable old camera

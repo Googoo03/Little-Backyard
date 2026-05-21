@@ -34,7 +34,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 90b228892b0878242b939db292a3ca90, type: 3}
+        m_Texture: {fileID: 18700000, guid: 659eb14b781a7bc4394025f95743045d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMapTop:
@@ -63,13 +63,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Bands: 40
     - _BlendExponent: 2.01
     - _BlendOffset: 0.055
     - _CliffThreshold: 0.1
     - _Glossiness: 0
     - _L2: 0.5
     - _Levels: 2
-    - _LightWrap: 0
+    - _LightWrap: 0.5
     - _Metallic: 0
     - _PlanetType: 2
     - _SlopeExponent: 1

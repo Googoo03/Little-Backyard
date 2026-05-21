@@ -5,14 +5,15 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 using ProductionRules;
+using Unity.Mathematics;
 
 namespace FloraLSystem
 {
     [System.Serializable]
     public class Flora
     {
-        private Mesh mesh;
-        protected string floraString;
+        [SerializeField] private Mesh mesh;
+        [SerializeField] protected string floraString;
         private float theta = 25f;
         private float stepLength = 1f;
         [SerializeField] protected uint age = 0;
@@ -36,6 +37,19 @@ namespace FloraLSystem
 
         public List<Production> GetProductionList() { return productionList; }
 
+
+
+        public Flora()
+        {
+            productionList = new(){
+                new Production('X',"[-FLX][+FLX]"),
+                new Production('F',"FF"),
+                new Production('L',""),
+                };
+
+            floraString = "FX";
+        }
+
         public Vector3 GetRotationBias() { return rotationBias; }
         public Vector3 GetAttractionBias() { return attractionBias; }
         public float GetRadiusNoiseFactor() { return radiusNoiseFactor; }
@@ -46,12 +60,15 @@ namespace FloraLSystem
 
         public List<char> GetSymbolList() { return symbols; }
         public uint GetAge() { return age; }
+        public void ProgressAge() { age++; }
         public string GetFloraString() { return floraString; }
         public void SetMesh(Mesh mesh_) { mesh = mesh_; }
+        public Mesh GetMesh() { return mesh; }
+        public void SetFloraString(string floraString_) { floraString = floraString_; }
     };
 
     [System.Serializable]
-    public class Flora_L_System : MonoBehaviour
+    public class Flora_L_System
     {
         [SerializeField] private List<Flora> floraList;
         private int seed;
@@ -81,10 +98,12 @@ namespace FloraLSystem
 
         [SerializeField] GameObject leaf;
 
-        public Flora_L_System(int seed_ = 0)
+        public Flora_L_System(int seed_ = 0, Texture3D noisetexture_ = null)
         {
             seed = seed_;
+            perlinNoiseTexture = noisetexture_;
             floraList = new(5);
+            UnityEngine.Debug.Log("Starting L System");
         }
 
         public void GenerateFlora()
@@ -92,8 +111,10 @@ namespace FloraLSystem
 
 
             //convert production list from scriptableObject to a dictionary
-            foreach (Flora f in floraList)
+            for (int i = 0; i < floraList.Capacity; ++i)
             {
+                Flora f = new();
+
                 //Load symbols
                 productions = new();
                 symbols = new();
@@ -111,22 +132,24 @@ namespace FloraLSystem
                 //Assume all relevant data is loaded into Flora f already
 
                 //Progress age until it meets requirements
-                uint intendedAge = 3; //Should not be a constant later on
-                while (age < intendedAge) ProgressAge();
+                uint intendedAge = 4; //Should not be a constant later on
+                while (f.GetAge() < intendedAge)
+                {
+                    ProgressAge();
+                    f.ProgressAge();
+                }
 
 
 
                 CreateMesh(f);
+                f.SetFloraString(floraString);
 
                 //load the resulting mesh into the Flora object
+                floraList.Add(f);
             }
 
 
         }
-
-        void Start() { }
-
-        void Update() { }
 
         //Generate
         [ContextMenu("Progress Age")]
@@ -208,6 +231,11 @@ namespace FloraLSystem
             }
 
             return segments;
+        }
+
+        public Mesh GetMesh(int index = 0)
+        {
+            return floraList[index].GetMesh();
         }
 
         private void NGonRingVertices(int n, float radius, Vector3 position, Vector3 forward, Vector3 right, Vector3 up)
@@ -310,9 +338,9 @@ namespace FloraLSystem
 
                         if (leaf != null)
                         {
-                            Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
-                            Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
-                            Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
+                            //Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
+                            //Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
+                            //Instantiate(leaf, position + transform.position, UnityEngine.Random.rotation);
                         }
                         break;
                     /*case 'R':
@@ -330,6 +358,8 @@ namespace FloraLSystem
                     case 'F':
 
                         ApplyAttraction();
+
+                        Assert.IsNotNull(perlinNoiseTexture, "Perlin Texture found to be null");
                         Color centerPixel = perlinNoiseTexture.GetPixel(
                             ((int)position.x * noiseScale) % perlinNoiseTexture.width,
                             ((int)position.y * noiseScale) % perlinNoiseTexture.height,

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using SignedDistanceFields;
 using SparseVoxelOctree;
+using UnityEngine.Rendering;
+using TerrainEditing;
 
 public class TerrainEditor : MonoBehaviour
 {
@@ -11,56 +13,103 @@ public class TerrainEditor : MonoBehaviour
     //Can lock shape "down" to planet center, or free in space
 
     //Can left click to delete, right click to add
+    private const int X_AXIS = 4;
+    private const int Y_AXIS = 2;
+    private const int Z_AXIS = 1;
+
+    [SerializeField] private float fireRate = 0.1f;
+    private float fireTimer = 0f;
+    private GameObject selectedShape;
+    private enum STATES { EDIT, NOEDIT };
+    private STATES state;
 
     void Start()
     {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        //raycast out, get planet associated with it, and cause it to update SVO with SDF
-
+        state = STATES.NOEDIT;
+        selectedShape = TerrainShapeManager.Instance.GetShapeObject(SHAPES.SPHERE); //default sphere
     }
 
     void FixedUpdate()
     {
+        if (state == STATES.NOEDIT) return;
         CalculateFire();
+        fireTimer += Time.fixedDeltaTime;
+    }
+
+    void Update()
+    {
+        StateMachineTick();
+    }
+
+    void StateMachineTick()
+    {
+        bool buttonPress = Input.GetKeyDown(KeyCode.V);
+        if (!buttonPress) return;
+        switch (state)
+        {
+            case STATES.EDIT:
+                state = STATES.NOEDIT;
+                selectedShape.SetActive(false);
+                break;
+            case STATES.NOEDIT:
+                state = STATES.EDIT;
+                selectedShape.SetActive(true);
+                break;
+            default:
+                break;
+        }
+    }
+
+    void DisplayTerrainShape(Vector3 pos, bool inReach = true)
+    {
+        selectedShape.transform.position = pos;
+        selectedShape.transform.localScale = new Vector3(25, 25, 25);
+        selectedShape.GetComponent<Renderer>().material.color = inReach ? new Color(0f, 1f, 0f, 5f) : new Color(1f, 0f, 0f, 5f);
+    }
+
+    void ProcessRaycast(RaycastHit hit)
+    {
+        if (hit.transform.CompareTag("Chunk"))
+        {
+
+            SVOTest svoTest = hit.transform.parent.GetComponent<SVOTest>();
+            SVO svo = svoTest.GetSVO();
+
+
+            Vector3 relativePosition = hit.point - hit.transform.position;
+            int additive = Input.GetKey(KeyCode.Mouse1) ? 1 : 0;
+
+            SphereSDF sdf = new(relativePosition, 25, additive);
+            svo.AddSDFEdit(sdf);
+
+            SVONode node = svo.TraversePath(relativePosition); //get the target node
+            node = svo.GetChunkFromNode(node); //get chunk that the node is under
+
+            //need to enqueue changes for when the GPU is done
+            //svoTest.GatherLeavesBuffer(node, forceGenerate: true, sdf);
+            svo.MarkChunk(node);
+            svoTest.FlagRefreshChunks();
+        }
     }
 
     void CalculateFire()
     {
-
-        if (!Input.GetKeyDown(KeyCode.Mouse0) && !Input.GetKeyDown(KeyCode.Mouse1)) return;
-        bool additive = Input.GetKeyDown(KeyCode.Mouse1);
-        // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out RaycastHit hit, 100))
-
+        if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, 100))
         {
-            if (hit.transform.CompareTag("Chunk"))
+            DisplayTerrainShape(hit.point);
+
+            //If we didn't click, don't count it
+            if (!Input.GetKey(KeyCode.Mouse0) && !Input.GetKey(KeyCode.Mouse1)) return;
+
+            if (fireTimer > fireRate)
             {
-                SVO svo = hit.transform.parent.GetComponent<SVOTest>().GetSVO();
-                Vector3 relativePosition = hit.point - hit.transform.position;
-                SphereSDF sdf = new SphereSDF(relativePosition, 50, additive);
-                svo.AddSDFEdit(sdf);
-
-                //ideally, we only force generate the local neighborhood of vertices
-                //we dont want nodes to even begin to calculate if its out of range.
-
-                svo.root.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex, forceGenerate: true, sdf);
-                svo.MarkChunk(relativePosition);
-
-                svo.GenerateChunks();
+                fireTimer = 0f;
+                ProcessRaycast(hit);
             }
-
-            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * hit.distance, Color.yellow);
-            Debug.Log("Did Hit");
         }
         else
         {
-            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 1000, Color.white);
-            Debug.Log("Did not Hit");
+            DisplayTerrainShape(transform.forward * 100, false);
         }
     }
 }

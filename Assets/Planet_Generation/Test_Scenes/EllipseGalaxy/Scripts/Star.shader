@@ -76,6 +76,7 @@ Shader "Unlit/Star"
                 float intensity = _Intensity * exp(-length(i.worldPos) / 5000000);
                 fixed4 col = _Color*intensity;
                 col /= max(0.01,pow(1-fresnel,_Blowout));
+                col = float4(1,1,1,1);
                 return col;
             }
             ENDCG

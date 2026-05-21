@@ -7,6 +7,11 @@ using SparseVoxelOctree;
 using DualContour;
 using faces;
 using UnityEngine.Rendering;
+using SignedDistanceFields;
+using NoiseComputeDispatch;
+using NUnit.Framework.Internal;
+using System;
+using Voxel_Data;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct GPUSVONode
@@ -16,6 +21,7 @@ public struct GPUSVONode
     public float min, max;
     public int edge;
     public Vector3 vertex;
+    public int materialIndex;
 
     public GPUSVONode(SVONode node)
     {
@@ -25,34 +31,47 @@ public struct GPUSVONode
         max = 0;
         edge = -1;
         vertex = Vector3.zero;
+        materialIndex = 0;
+    }
+};
 
+public struct GPUSDF
+{
+    volatile int id;
+    volatile int invert;
+    Vector3 center;
+    Vector3 args;
+
+    public GPUSDF(BISDF sdf)
+    {
+        id = 0;
+        invert = sdf.invert;
+        center = sdf.center;
+        args = sdf.args;
     }
 };
 public class SVOTest : MonoBehaviour
 {
     [SerializeField] private Transform player;
     [SerializeField] private PlanetWrapper planetFaceWrapper;
-    [SerializeField] private int getFaceNum;
-
-    [SerializeField] private int dir;
 
     [SerializeField] private int SVOGridSize;
     [SerializeField] private bool freezeSubdivision = false;
     private bool refreshChunks;
     private bool returnedCompute;
-    [SerializeField] private float timeToRefresh;
-    [SerializeField] private float elapsedTime;
-    [SerializeField] private float nodeSizeMin;
-    [SerializeField] private float nodeSizeMax;
+    [SerializeField] private float timeToRefresh, elapsedTime;
+    [SerializeField] private float nodeSizeMin, nodeSizeMax;
 
     [SerializeField] private int vertexLength;
     [SerializeField] private bool blockVoxel;
     [SerializeField] private int faceNum;
     [SerializeField] private ComputeShader computeVertices;
+    [SerializeField] private int seed;
     ComputeBuffer nodesToGenerateBuffer;
+    ComputeBuffer sdfsToInclude;
     object lockObj = new();
 
-    HashSet<SVONode> frontier = new();
+    List<SVONode> frontier = new();
     SVO svo;
     Dual_Contour dualContour;
 
@@ -61,9 +80,18 @@ public class SVOTest : MonoBehaviour
     public List<GPUSVONode> nodesToGenerate = new();
     public List<SVONode> updatedLeaves = new();
 
+    [SerializeField] private RenderTexture continentNoiseTexture;
+    [SerializeField] private RenderTexture mountainNoiseTexture;
+    [SerializeField] private RenderTexture octaveNoiseTexture;
+
+    //Each planet will have its own set of biomes. Each biome will have a color palette to choose from.
+    //The color palette will affect the grass and greenery.
+
     // Start is called before the first frame update
     void Start()
     {
+        CreateNoiseRenderTextures();
+
         //Set main camera at start
         player = Camera.main.transform;
 
@@ -75,11 +103,15 @@ public class SVOTest : MonoBehaviour
         refreshChunks = false;
         returnedCompute = true;
 
+        nodesToGenerate.Capacity = 2048;
+        updatedLeaves.Capacity = 2048;
+
         //Define root node of SVO
         SVONode root = new(new Vector3Int(0, 0, 0), SVOGridSize, null, -1, null);
         svo = new SVO(root, dualContour, this.gameObject, planetFaceWrapper.neighbors, faceNum, planetFaceWrapper);
+        nodeSizeMax = svo.chunkSize / 2;
         root.SetSVO(svo);
-        frontier.Add(root);
+        AddFrontier(root);
     }
 
     // Update is called once per frame
@@ -95,6 +127,7 @@ public class SVOTest : MonoBehaviour
         vertexLength = svo.vertices.Count;
         Vector3 playerForward = player.forward.normalized;
         Vector3 playerPos = player.position;
+        Vector3 positionDelta = transform.position - playerPos;
 
         //freezeSubdivision = Vector3.Distance(playerPos, transform.position) > SVOGridSize * 4f;
 
@@ -106,22 +139,24 @@ public class SVOTest : MonoBehaviour
 
         nodesToSubdivide.Clear();
         nodesToCollapse.Clear();
-        nodesToGenerate.Clear();
-
-        updatedLeaves.Clear();
 
         float minDist, maxDist;
-        int count = frontier.Count;
+        int count;
 
-        foreach (SVONode node in frontier)
+        count = frontier.Count;
+        for (int n = 0; n < count; ++n)
         {
-            Vector3 delta = (node.transformedPosition + transform.position) - playerPos;
-            float distSq = delta.sqrMagnitude;
-            minDist = node.size * node.size * 100f;
-            maxDist = node.size * node.size * 400f;
+            SVONode node = frontier[n];
+            float deltaX = node.transformedPosition.x + positionDelta.x;
+            float deltaY = node.transformedPosition.y + positionDelta.y;
+            float deltaZ = node.transformedPosition.z + positionDelta.z;
+            float distSq = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
+            //Vector3 delta = node.transformedPosition + positionDelta;
+            //float distSq = delta.magnitude;
+            minDist = node.size * node.size * 25f;
+            maxDist = node.size * node.size * 100f;
 
-            if (node.isLeaf && node.MayContainCrossing() &&
-                (((distSq < minDist) && node.size > nodeSizeMin) || node.size > nodeSizeMax))
+            if ((node.size > nodeSizeMax) || (node.isLeaf && node.MayContainCrossing() && distSq < minDist && node.size > nodeSizeMin))
             {
                 nodesToSubdivide.Add(node);
             }
@@ -132,23 +167,33 @@ public class SVOTest : MonoBehaviour
             }
         }
 
-        foreach (SVONode node in nodesToSubdivide)
+        count = nodesToSubdivide.Count;
+        for (int n = 0; n < count; n++)
         {
+            SVONode node = nodesToSubdivide[n];
+
+
+            if (node.edge == -1 && !node.MayContainCrossing())
+            {
+                RemoveSwap(node.frontierIndex);
+                continue;
+            }
             node.Subdivide();
-            //node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
-            node.AppendLeavesToBuffer(nodesToGenerate, updatedLeaves);
+            //GatherLeavesBuffer(node);
             svo.MarkChunk(node);
 
             //get neighbors to mark chunks as well.
 
             refreshChunks = true;
 
-            for (int i = 0; i < 8; ++i) { frontier.Add(node.children[i]); }
-            frontier.Remove(node);
+            for (int i = 0; i < 8; ++i) { AddFrontier(node.children[i]); }
+            RemoveSwap(node.frontierIndex);
         }
 
-        foreach (SVONode node in nodesToCollapse)
+        count = nodesToCollapse.Count;
+        for (int n = 0; n < count; n++)
         {
+            SVONode node = nodesToCollapse[n];
             bool collapse = true;
             if (node.children == null) continue;
             for (int i = 0; i < 8; ++i)
@@ -161,24 +206,68 @@ public class SVOTest : MonoBehaviour
             }
             if (!collapse) continue;
 
-            frontier.Add(node);
-            for (int i = 0; i < 8; ++i) { frontier.Remove(node.children[i]); }
+            AddFrontier(node);
+            for (int i = 0; i < 8; ++i) { RemoveSwap(node.children[i].frontierIndex); }
 
             node.Collapse();
-            //node.GenerateVerticesForLeaves(svo.meshingAlgorithm.SVOVertex);
-            node.AppendLeavesToBuffer(nodesToGenerate, updatedLeaves);
+            //GatherLeavesBuffer(node);
             svo.MarkChunk(node);
             refreshChunks = true;
         }
 
 
-        if (refreshChunks)
+        if (refreshChunks && returnedCompute)
         {
-            returnedCompute = false;
-            LoadandDispatchComputeShaderData();
+            refreshChunks = false;
+            GatherChunkLeaves();
+            if (nodesToGenerate.Count > 0)
+            {
+                returnedCompute = false;
+                lock (lockObj) { LoadandDispatchComputeShaderData(); }
+                InitiateReadbackRequest();
+            }
+        }
+        elapsedTime = 0;
+
+    }
+
+    void GatherChunkLeaves()
+    {
+        foreach (SVONode chunk in svo.chunksToProcess)
+        {
+            GatherLeavesBuffer(chunk, true);
+        }
+    }
+
+    public void GatherLeavesBuffer(SVONode node, bool forceGenerate = false, BISDF sdf = null)
+    {
+        lock (lockObj)
+        {
+            node?.AppendLeavesToBuffer(nodesToGenerate, updatedLeaves, forceGenerate, sdf);
+        }
+    }
+
+    private void RemoveSwap(int index)
+    {
+        int lastIndex = frontier.Count - 1;
+        frontier[lastIndex].frontierIndex = index;
+        frontier[index].frontierIndex = -1;
+        frontier[index] = frontier[lastIndex];
+
+        frontier.RemoveAt(lastIndex);
+    }
+
+    private void AddFrontier(SVONode node)
+    {
+        node.frontierIndex = frontier.Count;
+        frontier.Add(node);
+    }
 
 
-            AsyncGPUReadback.Request(nodesToGenerateBuffer, (request) =>
+    public void InitiateReadbackRequest() //just makes sure the readback is called, should still be concurrent.
+    {
+
+        AsyncGPUReadback.Request(nodesToGenerateBuffer, (request) =>
             {
                 if (request.hasError)
                 {
@@ -187,48 +276,111 @@ public class SVOTest : MonoBehaviour
                 }
 
 
-                var temp = request.GetData<GPUSVONode>();
+
                 //load into SVO
                 lock (lockObj)
                 {
+                    var temp = request.GetData<GPUSVONode>();
                     foreach (SVONode node in updatedLeaves)
                     {
                         if (node.gpuBufferIndex == -1) continue;
-
                         GPUSVONode returnedNode = temp[node.gpuBufferIndex];
+
+                        if (float.IsNaN(returnedNode.vertex.x) || float.IsNaN(returnedNode.vertex.y) || float.IsNaN(returnedNode.vertex.z))
+                        {
+                            Debug.LogError("NaN vertex returned from GPU");
+                            continue;
+                        }
+
                         node.vertex = returnedNode.vertex;
                         node.minSDF = returnedNode.min;
                         node.maxSDF = returnedNode.max;
                         node.edge = returnedNode.edge;
+                        node.materialIndex = (VOXEL)returnedNode.materialIndex;
                         node.gpuBufferIndex = -1;
 
                     }
                     temp.Dispose();
+                    sdfsToInclude.Dispose();
+                    nodesToGenerateBuffer.Dispose();
+
+                    //reset for next iteration
+                    nodesToGenerate.Clear();
+                    updatedLeaves.Clear();
 
                     svo.GenerateChunks();
                     returnedCompute = true;
                 }
             });
-
-
-        }
-        elapsedTime = 0;
-        refreshChunks = false;
     }
 
-    private void LoadandDispatchComputeShaderData()
+    private void CreateNoiseRenderTextures()
     {
-        nodesToGenerateBuffer = new(nodesToGenerate.Count, Marshal.SizeOf<GPUSVONode>());
-        nodesToGenerateBuffer.SetData(nodesToGenerate.ToArray()); // this is incorrect, GPU node and CPU node are different
+        continentNoiseTexture = new(64, 64, 0)
+        {
+            enableRandomWrite = true,
+            wrapMode = TextureWrapMode.Repeat,
+            format = RenderTextureFormat.RFloat,
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = 64
+        };
+        continentNoiseTexture.Create();
 
+        NoiseProperties continentProp = new(NOISETYPE.PERLIN, seed, 8, 0.5f, 4f);
+        NoisePipeline.Instance.ComputeNoiseTexture(continentNoiseTexture, continentProp);
+
+        mountainNoiseTexture = new(64, 64, 0)
+        {
+            enableRandomWrite = true,
+            wrapMode = TextureWrapMode.Repeat,
+            format = RenderTextureFormat.RFloat,
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = 64
+        };
+        mountainNoiseTexture.Create();
+
+        NoiseProperties mountainProp = new(NOISETYPE.PERLIN, seed * seed, 12, 0.5f, 2f);
+        NoisePipeline.Instance.ComputeNoiseTexture(mountainNoiseTexture, mountainProp);
+
+        octaveNoiseTexture = new(128, 128, 0)
+        {
+            enableRandomWrite = true,
+            wrapMode = TextureWrapMode.Repeat,
+            format = RenderTextureFormat.RFloat,
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = 128
+        };
+        octaveNoiseTexture.Create();
+
+        NoiseProperties octaveProp = new(NOISETYPE.PERLIN, seed * seed * seed, 12, 0.5f, 256f);
+        NoisePipeline.Instance.ComputeNoiseTexture(octaveNoiseTexture, octaveProp);
+    }
+
+    public void LoadandDispatchComputeShaderData()
+    {
         int kernel = computeVertices.FindKernel("CSMain");
+
+        nodesToGenerateBuffer = new(Mathf.Max(1, nodesToGenerate.Count), Marshal.SizeOf<GPUSVONode>());
+        nodesToGenerateBuffer.SetData(nodesToGenerate.ToArray());
+
         int nodeLimit = nodesToGenerate.Count;
         computeVertices.SetBuffer(kernel, "nodes", nodesToGenerateBuffer);
         computeVertices.SetInt("nodeLimit", nodeLimit);
 
+        sdfsToInclude = new(Mathf.Max(1, svo.sdfEdits.Count), Marshal.SizeOf<GPUSDF>());
+        List<GPUSDF> gpuSDFList = new();
+        foreach (BISDF sdf in svo.sdfEdits) { gpuSDFList.Add(new GPUSDF(sdf)); }
+        sdfsToInclude.SetData(gpuSDFList.ToArray());
+
+        int sdfLimit = sdfsToInclude.count;
+        computeVertices.SetBuffer(kernel, "sdfs", sdfsToInclude);
+        computeVertices.SetInt("sdfLimit", sdfLimit);
+
         //noise data
-        Texture3D noiseTexture = Resources.Load("PlanetTexture") as Texture3D;
-        computeVertices.SetTexture(kernel, "NoiseTexture", noiseTexture);
+        //Texture3D noiseTexture = Resources.Load("PlanetTexture") as Texture3D;
+        computeVertices.SetTexture(kernel, "ContinentTexture", continentNoiseTexture);
+        computeVertices.SetTexture(kernel, "MountainTexture", mountainNoiseTexture);
+        computeVertices.SetTexture(kernel, "OctaveTexture", octaveNoiseTexture);
 
         //planet data
         computeVertices.SetFloat("radius", SVOGridSize / 2);
@@ -239,8 +391,8 @@ public class SVOTest : MonoBehaviour
     }
 
     public void OnDrawGizmos()
-    {/*
-        return;
+    {
+        /*
         Vector3 start = transform.position + Face.Faces[faceNum].normal * SVOGridSize;
         float scale = 0.5f;
 
@@ -258,13 +410,14 @@ public class SVOTest : MonoBehaviour
             Face.Faces[faceNum].normal
         );
 
-        void action(SVONode node)
+        static void action(SVONode node)
         {
-            if (node.size < 1024) return;
+            if (node.size > 1024) return;
+            Gizmos.color = Color.green / (node.size / 2);
             Gizmos.DrawWireCube(node.center, Vector3.one * node.size);
         }
         svo.TraverseNodes(action);
-*/
+        */
     }
 
 
@@ -273,4 +426,9 @@ public class SVOTest : MonoBehaviour
     public void SetFreeze(bool b) { freezeSubdivision = b; }
 
     public void SetPatchSize(int patchSize_) { SVOGridSize = patchSize_; }
+
+    public void FlagRefreshChunks() { refreshChunks = true; }
+    public bool GetReturnedCompute() { return returnedCompute; }
+
+    public void SetSeed(int seed_) { seed = seed_; }
 }

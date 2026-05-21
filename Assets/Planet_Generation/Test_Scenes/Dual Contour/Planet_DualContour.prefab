@@ -1,179 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &244506931491546264
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7869705950944056197}
-  - component: {fileID: 5350519792095803603}
-  m_Layer: 0
-  m_Name: SVO_Side-X
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &7869705950944056197
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 244506931491546264}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 874050368977333893}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5350519792095803603
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 244506931491546264}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd3256d8a4f31146be1bdd49292d0f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  planetFaceWrapper: {fileID: 1831507260121567450}
-  getFaceNum: 0
-  dir: 41
-  SVOGridSize: 0
-  freezeSubdivision: 0
-  timeToRefresh: 1
-  elapsedTime: 0
-  nodeSizeMin: 4
-  nodeSizeMax: 256
-  vertexLength: 0
-  blockVoxel: 0
-  faceNum: 5
-  computeVertices: {fileID: 0}
---- !u!1 &556980762757154208
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3589851006915046273}
-  - component: {fileID: 6776998076988822908}
-  m_Layer: 0
-  m_Name: SVO_Top
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &3589851006915046273
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 556980762757154208}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 874050368977333893}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6776998076988822908
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 556980762757154208}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd3256d8a4f31146be1bdd49292d0f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  planetFaceWrapper: {fileID: 1831507260121567450}
-  getFaceNum: 0
-  dir: 65
-  SVOGridSize: 0
-  freezeSubdivision: 0
-  timeToRefresh: 0.1
-  elapsedTime: 0
-  nodeSizeMin: 2
-  nodeSizeMax: 256
-  vertexLength: 0
-  blockVoxel: 0
-  faceNum: 2
-  computeVertices: {fileID: 0}
---- !u!1 &1818078865706248251
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8388179428782211946}
-  - component: {fileID: 4422396528582059158}
-  m_Layer: 0
-  m_Name: SVO_Side-Z
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &8388179428782211946
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1818078865706248251}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 874050368977333893}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4422396528582059158
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1818078865706248251}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd3256d8a4f31146be1bdd49292d0f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  planetFaceWrapper: {fileID: 1831507260121567450}
-  getFaceNum: 0
-  dir: 194
-  SVOGridSize: 0
-  freezeSubdivision: 0
-  timeToRefresh: 1
-  elapsedTime: 0
-  nodeSizeMin: 4
-  nodeSizeMax: 256
-  vertexLength: 0
-  blockVoxel: 0
-  faceNum: 1
-  computeVertices: {fileID: 0}
 --- !u!1 &4102129778096485557
 GameObject:
   m_ObjectHideFlags: 0
@@ -220,134 +46,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 0}
   planetFaceWrapper: {fileID: 1831507260121567450}
-  getFaceNum: 0
-  dir: 65
   SVOGridSize: 8192
   freezeSubdivision: 0
-  timeToRefresh: 1
-  elapsedTime: 0
-  nodeSizeMin: 8
-  nodeSizeMax: 1024
+  timeToRefresh: 0
+  elapsedTime: 0.25
+  nodeSizeMin: 2
+  nodeSizeMax: 512
   vertexLength: 0
   blockVoxel: 0
   faceNum: 2
   computeVertices: {fileID: 7200000, guid: 0da027debe8bb77408347e8e1574467b, type: 3}
---- !u!1 &4334485872507971508
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8332803410981056724}
-  - component: {fileID: 2012384155878837428}
-  m_Layer: 0
-  m_Name: SVO_Side+Z
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &8332803410981056724
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4334485872507971508}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 874050368977333893}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2012384155878837428
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4334485872507971508}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd3256d8a4f31146be1bdd49292d0f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  planetFaceWrapper: {fileID: 1831507260121567450}
-  getFaceNum: 0
-  dir: 66
-  SVOGridSize: 0
-  freezeSubdivision: 0
-  timeToRefresh: 1
-  elapsedTime: 0
-  nodeSizeMin: 4
-  nodeSizeMax: 256
-  vertexLength: 0
-  blockVoxel: 0
-  faceNum: 0
-  computeVertices: {fileID: 0}
---- !u!1 &5224832370361530293
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 773249127515867096}
-  - component: {fileID: 5333493413704652586}
-  m_Layer: 0
-  m_Name: SVO_Bottom
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &773249127515867096
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5224832370361530293}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 874050368977333893}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5333493413704652586
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5224832370361530293}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd3256d8a4f31146be1bdd49292d0f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  planetFaceWrapper: {fileID: 1831507260121567450}
-  getFaceNum: 0
-  dir: 193
-  SVOGridSize: 0
-  freezeSubdivision: 0
-  timeToRefresh: 1
-  elapsedTime: 0
-  nodeSizeMin: 4
-  nodeSizeMax: 256
-  vertexLength: 0
-  blockVoxel: 0
-  faceNum: 3
-  computeVertices: {fileID: 0}
+  seed: 0
+  continentNoiseTexture: {fileID: 0}
+  mountainNoiseTexture: {fileID: 0}
+  octaveNoiseTexture: {fileID: 0}
 --- !u!1 &6757457083733164432
 GameObject:
   m_ObjectHideFlags: 0
@@ -379,12 +91,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3589851006915046273}
-  - {fileID: 4163629998875707996}
-  - {fileID: 7869705950944056197}
-  - {fileID: 773249127515867096}
-  - {fileID: 8332803410981056724}
-  - {fileID: 8388179428782211946}
   - {fileID: 4170249841472375137}
   - {fileID: 1252050872816953524}
   - {fileID: 3744192380382112505}
@@ -405,6 +111,7 @@ MonoBehaviour:
   SVOParent: {fileID: 5749493046378337190}
   planetRadius: 4096
   atmosphere_Manager: {fileID: 1440667959296531023}
+  features_Manager: {fileID: 8336061357895863861}
   neighbors: []
 --- !u!114 &4413069947145477080
 MonoBehaviour:
@@ -419,64 +126,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gravity: -9.8
---- !u!1 &8228789823123588763
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4163629998875707996}
-  - component: {fileID: 8481579883517926020}
-  m_Layer: 0
-  m_Name: SVO_Side+X
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &4163629998875707996
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8228789823123588763}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 874050368977333893}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8481579883517926020
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8228789823123588763}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fd3256d8a4f31146be1bdd49292d0f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  planetFaceWrapper: {fileID: 1831507260121567450}
-  getFaceNum: 0
-  dir: 33
-  SVOGridSize: 0
-  freezeSubdivision: 0
-  timeToRefresh: 1
-  elapsedTime: 0
-  nodeSizeMin: 4
-  nodeSizeMax: 256
-  vertexLength: 0
-  blockVoxel: 0
-  faceNum: 4
-  computeVertices: {fileID: 0}
 --- !u!1 &8267584970955527837
 GameObject:
   m_ObjectHideFlags: 0
@@ -503,7 +152,7 @@ Transform:
   m_GameObject: {fileID: 8267584970955527837}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3491.9412, y: 1331.9673, z: -1569.6704}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -521,7 +170,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2aea3370c17e20b4eb7db25bc63d4fd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flora_L_System: {fileID: 0}
+  planetWrapper: {fileID: 1831507260121567450}
+  floating_Origin_Manager: {fileID: 0}
+  flora_L_System:
+    floraList: []
+    symbols: 
+    constants: 
+    age: 0
+    floraString: 
+    theta: 0
+    stepLength: 0
+    perlinNoiseTexture: {fileID: 11700000, guid: b55a7fc95cc672f47a7b67e8955878a1,
+      type: 2}
+    leaf: {fileID: 0}
+  noiseTexture: {fileID: 11700000, guid: b55a7fc95cc672f47a7b67e8955878a1, type: 2}
+  floraMat: {fileID: 2100000, guid: dca60c59698e59b45bf32f9e88eeeeb8, type: 2}
+  grass: {fileID: 8254687373856176130, guid: 2e7b669bc3e136441b75252ee429dd75, type: 3}
 --- !u!1001 &255852829314992907
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -530,6 +194,16 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 874050368977333893}
     m_Modifications:
+    - target: {fileID: 1185219842000638276, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: intensity
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1185219842000638276, guid: 837c1c4bab7ecb3479222e43b7610556,
+        type: 3}
+      propertyPath: scatteringStrength
+      value: 5.5
+      objectReference: {fileID: 0}
     - target: {fileID: 1185219842000638276, guid: 837c1c4bab7ecb3479222e43b7610556,
         type: 3}
       propertyPath: atmosphereThickness

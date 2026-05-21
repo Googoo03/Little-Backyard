@@ -45,16 +45,20 @@ public class EllipseGalacticManager : Manager
     private uint[] starArgs;
     private uint[] nebulaArgs;
 
-    private GalacticSpatialHashing galaxySpatialHash;
+    public GalacticSpatialHashing galaxySpatialHash { get; private set; }
     [SerializeField] private int hashGridSize;
 
     private object lockObj = new();
     public static EllipseGalacticManager Instance { get; private set; }
 
     //GPU instance stars and modify positions via compute shader
-    void Start()
+    void Awake()
     {
         Instance = this;
+    }
+
+    void Start()
+    {
         galaxySpatialHash = new GalacticSpatialHashing(hashGridSize);
 
         starMatrices = new NativeArray<Matrix4x4>(starLimit, Allocator.Persistent);
@@ -67,14 +71,14 @@ public class EllipseGalacticManager : Manager
 
         starArgs = new uint[5] {
         starObj.instanceData.mesh.GetIndexCount(0),
-        (uint)starLimit, // start at 0 → compute shader will fill this
+        (uint)starLimit,
         starObj.instanceData.mesh.GetIndexStart(0),
         starObj.instanceData.mesh.GetBaseVertex(0),
         0
         };
         nebulaArgs = new uint[5] {
         nebulaObj.instanceData.mesh.GetIndexCount(0),
-        (uint)nebulaLimit, // start at 0 → compute shader will fill this
+        (uint)nebulaLimit,
         nebulaObj.instanceData.mesh.GetIndexStart(0),
         nebulaObj.instanceData.mesh.GetBaseVertex(0),
         0
@@ -130,26 +134,17 @@ public class EllipseGalacticManager : Manager
 
     void OnDestroy()
     {
-        if (starMatrixBuffer != null)
-        {
-            starMatrixBuffer.Release();
-            starMatrixBuffer = null;
-        }
-        if (starMatrixFOBuffer != null)
-        {
-            starMatrixFOBuffer.Release();
-            starMatrixFOBuffer = null;
-        }
-        if (nebulaMatrixBuffer != null)
-        {
-            nebulaMatrixBuffer.Release();
-            nebulaMatrixBuffer = null;
-        }
-        if (nebulaMatrixFOBuffer != null)
-        {
-            nebulaMatrixFOBuffer.Release();
-            nebulaMatrixFOBuffer = null;
-        }
+        starMatrixBuffer?.Release();
+        starMatrixBuffer = null;
+
+        starMatrixFOBuffer?.Release();
+        starMatrixFOBuffer = null;
+
+        nebulaMatrixBuffer?.Release();
+        nebulaMatrixBuffer = null;
+
+        nebulaMatrixFOBuffer?.Release();
+        nebulaMatrixFOBuffer = null;
     }
 
     private void GenerateGalaxy()

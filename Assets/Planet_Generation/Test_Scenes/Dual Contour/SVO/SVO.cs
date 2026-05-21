@@ -11,6 +11,8 @@ using UnityEngine.SocialPlatforms;
 using Unity.Collections;
 using Unity.Mathematics;
 using SignedDistanceFields;
+using System.Runtime.CompilerServices;
+using Voxel_Data;
 
 namespace SparseVoxelOctree
 {
@@ -23,9 +25,10 @@ namespace SparseVoxelOctree
         /// Returns the leaf node, or null if the path does not exist.
         /// </summary>
         public Dual_Contour meshingAlgorithm;
+        public Features_Manager features_Manager;
         public SVONode root;
         public Face[] faceNeighbors;
-        public int chunkSize = 1024;
+        public int chunkSize = 512;
         public int faceNum;
 
         public List<FlatNode> flatList = new();
@@ -33,14 +36,17 @@ namespace SparseVoxelOctree
         private Material testMat;
 
         public Dictionary<Vector3, Tuple<bool, GameObject>> chunks = new();
+        public Queue<SVONode> chunksToProcess = new();
 
-        public List<ISDF> sdfEdits = new();
+        public List<BISDF> sdfEdits = new();
 
         public GameObject parentObj;
 
         private const int X_AXIS = 4;
         private const int Y_AXIS = 2;
         private const int Z_AXIS = 1;
+
+        public Color[] materialColors = new Color[3] { Color.green, new(0.5f, 0.25f, 0.125f), Color.gray };
 
         public SVONode TraversePath(Vector3 targetPos)
 
@@ -64,22 +70,37 @@ namespace SparseVoxelOctree
             SVONode node = start;
 
             // climb up until we find a node at least chunkSize
-            while (node != null && node.size < chunkSize)
-            {
-                node = node.parent;
-            }
+            node = GetChunkFromNode(node);
 
             if (node == null) return; // went past root
+
+            //UnityEngine.Debug.Log("Enqueueing " + node);
+            if (!chunksToProcess.Contains(node)) chunksToProcess.Enqueue(node);
 
             if (!chunks.TryGetValue(node.position, out var entry))
                 return;
 
             //if already marked, dont allocate more memory for gc
-            if (chunks[node.position].Item1 == true) return;
+            //if (chunks[node.position].Item1 == true) return;
 
 
             // mark for renewal
-            chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
+            //chunks[node.position] = new Tuple<bool, GameObject>(true, entry.Item2);
+        }
+
+        public bool ChunkMarked(SVONode node)
+        {
+            if (!chunks.TryGetValue(node.position, out var entry))
+                return false;
+
+            //if already marked, dont allocate more memory for gc
+            return chunks[node.position].Item1;
+        }
+
+        public SVONode GetChunkFromNode(SVONode node)
+        {
+            while (node != null && node.size < chunkSize) { node = node.parent; }
+            return node; // went past root
         }
 
         public void MarkChunk(Vector3 pos)
@@ -100,9 +121,10 @@ namespace SparseVoxelOctree
             meshingAlgorithm.SetVertexList(vertices);
             meshingAlgorithm.SetSDFEditList(sdfEdits);
             SetMaterial(planetWrapper);
+            SetFeaturesManager(planetWrapper);
         }
 
-        public void AddSDFEdit(ISDF edit) { sdfEdits.Add(edit); }
+        public void AddSDFEdit(BISDF edit) { sdfEdits.Add(edit); }
 
 
         public void TraverseLeaves(System.Action<SVONode> action)
@@ -129,6 +151,19 @@ namespace SparseVoxelOctree
         {
             if (root == null) return;
             TraverseNodesRecursive(root, action);
+        }
+
+        public void TraverseChunks(System.Action<SVONode> action)
+        {
+            if (root == null) return;
+            TraverseChunksRecursive(root, action);
+        }
+        private void TraverseChunksRecursive(SVONode node, System.Action<SVONode> action)
+        {
+            if (node.size == chunkSize) action(node);
+            if (node.children == null || node.size <= chunkSize) return;
+            foreach (SVONode child in node.children)
+                TraverseChunksRecursive(child, action);
         }
 
         private void TraverseNodesRecursive(SVONode node, System.Action<SVONode> action)
@@ -162,15 +197,15 @@ namespace SparseVoxelOctree
             return currentIndex;
         }
 
-        void ResetLocalIndex()
-        {
-            TraverseLeaves((node) => { node.localIndex = -1; });
-        }
-
         private void SetMaterial(PlanetWrapper planetWrapper)
         {
             Atmosphere_Manager atmosphere_Manager = planetWrapper.GetAtmosphere_Manager();
             testMat = atmosphere_Manager.GetPlanetMat();
+        }
+
+        private void SetFeaturesManager(PlanetWrapper planetWrapper)
+        {
+            features_Manager = planetWrapper.GetFeatures_Manager();
         }
 
         public void GenerateChunks()
@@ -179,6 +214,7 @@ namespace SparseVoxelOctree
             List<Vector3> verts = new();
             List<int> indices = new();
             List<SVONode> nodes = new();
+            List<Color> colors = new();
 
             //should have a dictionary and a list of vertices?
 
@@ -196,131 +232,155 @@ namespace SparseVoxelOctree
 
                 //if not marked for renewal, dont regenerate
 
-                if (!chunkExists || chunks[node.position].Item1 == true)
+                //add if not present already, renew
+                chunks[node.position] = new Tuple<bool, GameObject>(false, chunkObject);
+                chunkObject.tag = "Chunk";
+                // Assumed all chunks beyond this point are brand new or marked for renewal. Regenerate mesh
+
+                //Gather vertex nodes for home chunk
+
+                nodes.Clear();
+
+                verts.Clear();
+                indices.Clear();
+                colors.Clear();
+
+                //adds to local list of vertices and dictionary of vertex nodes
+                node.GatherChunkVertices(nodes, verts, colors);
+
+
+                SVONode xNeighbor = SVONode.GetNeighborLOD(node, X_AXIS);
+                SVONode zNeighbor = SVONode.GetNeighborLOD(node, Z_AXIS);
+                SVONode yNeighbor = SVONode.GetNeighborLOD(node, Y_AXIS);
+                SVONode zxNeighbor = SVONode.GetNeighborLOD(zNeighbor, X_AXIS);
+                SVONode xyNeighbor = SVONode.GetNeighborLOD(xNeighbor, Y_AXIS);
+                SVONode yzNeighbor = SVONode.GetNeighborLOD(yNeighbor, Z_AXIS);
+                SVONode xyzNeighbor = SVONode.GetNeighborLOD(xyNeighbor, Z_AXIS);
+
+                xNeighbor?.GatherChunkVerticesFace(nodes, verts, colors, X_AXIS);
+                yNeighbor?.GatherChunkVerticesFace(nodes, verts, colors, Y_AXIS);
+                zNeighbor?.GatherChunkVerticesFace(nodes, verts, colors, Z_AXIS);
+                zxNeighbor?.GatherChunkVerticesFace(nodes, verts, colors, X_AXIS | Z_AXIS);
+                xyNeighbor?.GatherChunkVerticesFace(nodes, verts, colors, X_AXIS | Y_AXIS);
+                yzNeighbor?.GatherChunkVerticesFace(nodes, verts, colors, Y_AXIS | Z_AXIS);
+                //xyzNeighbor?.GatherChunkVerticesShell(nodes, verts);
+
+                indices.Capacity = 3 * verts.Count;
+
+
+                //New DC quad generation
+                meshingAlgorithm.quads.Clear(); //clear quad list
+                meshingAlgorithm.CellProcHelper(node); //do the recursion from the paper, and fill the quad list. Constains vertex indices
+
+                //This may need to be flipped
+                if (xNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, xNeighbor, X_AXIS);
+                if (yNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, yNeighbor, Y_AXIS);
+                if (zNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, zNeighbor, Z_AXIS);
+
+                if (zxNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, zNeighbor, zxNeighbor, xNeighbor, X_AXIS | Z_AXIS);
+                if (xyNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, yNeighbor, xyNeighbor, xNeighbor, X_AXIS | Y_AXIS);
+                if (yzNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, zNeighbor, yzNeighbor, yNeighbor, Y_AXIS | Z_AXIS);
+                //if (xyzNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, xyNeighbor, xyzNeighbor, yzNeighbor, X_AXIS | Z_AXIS);
+
+
+                foreach (var quad in meshingAlgorithm.quads)
                 {
-                    //add if not present already, renew
-                    chunks[node.position] = new Tuple<bool, GameObject>(false, chunkObject);
-                    chunkObject.tag = "Chunk";
-                    // Assumed all chunks beyond this point are brand new or marked for renewal. Regenerate mesh
-
-                    //Gather vertex nodes for home chunk
-
-                    nodes.Clear();
-
-                    verts.Clear();
-                    indices.Clear();
-
-                    //adds to local list of vertices and dictionary of vertex nodes
-                    node.GatherChunkVertices(nodes, verts);
-
-
-                    SVONode xNeighbor = SVONode.GetNeighborLOD(node, X_AXIS);
-                    SVONode zNeighbor = SVONode.GetNeighborLOD(node, Z_AXIS);
-                    SVONode yNeighbor = SVONode.GetNeighborLOD(node, Y_AXIS);
-                    SVONode zxNeighbor = SVONode.GetNeighborLOD(zNeighbor, X_AXIS);
-                    SVONode xyNeighbor = SVONode.GetNeighborLOD(xNeighbor, Y_AXIS);
-                    SVONode yzNeighbor = SVONode.GetNeighborLOD(yNeighbor, Z_AXIS);
-                    SVONode xyzNeighbor = SVONode.GetNeighborLOD(xyNeighbor, Z_AXIS);
-
-                    xNeighbor?.GatherChunkVerticesFace(nodes, verts, X_AXIS);
-                    yNeighbor?.GatherChunkVerticesFace(nodes, verts, Y_AXIS);
-                    zNeighbor?.GatherChunkVerticesFace(nodes, verts, Z_AXIS);
-                    zxNeighbor?.GatherChunkVerticesFace(nodes, verts, X_AXIS | Z_AXIS);
-                    xyNeighbor?.GatherChunkVerticesFace(nodes, verts, X_AXIS | Y_AXIS);
-                    yzNeighbor?.GatherChunkVerticesFace(nodes, verts, Y_AXIS | Z_AXIS);
-                    //xyzNeighbor?.GatherChunkVerticesShell(nodes, verts);
-
-                    indices.Capacity = 3 * verts.Count;
-
-
-                    //New DC quad generation
-                    meshingAlgorithm.quads.Clear(); //clear quad list
-                    meshingAlgorithm.CellProcHelper(node); //do the recursion from the paper, and fill the quad list. Constains vertex indices
-
-                    //This may need to be flipped
-                    if (xNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, xNeighbor, X_AXIS);
-                    if (yNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, yNeighbor, Y_AXIS);
-                    if (zNeighbor != null) meshingAlgorithm.RefreshNeighborChunk(node, zNeighbor, Z_AXIS);
-
-                    if (zxNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, zNeighbor, zxNeighbor, xNeighbor, X_AXIS | Z_AXIS);
-                    if (xyNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, yNeighbor, xyNeighbor, xNeighbor, X_AXIS | Y_AXIS);
-                    if (yzNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, zNeighbor, yzNeighbor, yNeighbor, Y_AXIS | Z_AXIS);
-                    //if (xyzNeighbor != null) meshingAlgorithm.RefreshNeighborCorner(node, xyNeighbor, xyzNeighbor, yzNeighbor, X_AXIS | Z_AXIS);
-
-
-                    foreach (var quad in meshingAlgorithm.quads)
+                    if ((quad.sign & quad.dir) != 0) //nothing set, negative flip
                     {
-                        if ((quad.sign & quad.dir) == 0) //nothing set, negative flip
-                        {
-                            indices.Add(quad.v0);
-                            indices.Add(quad.v1);
-                            indices.Add(quad.v2);
+                        indices.Add(quad.v0);
+                        indices.Add(quad.v1);
+                        indices.Add(quad.v2);
 
-                            indices.Add(quad.v2);
-                            indices.Add(quad.v3);
-                            indices.Add(quad.v0);
-                        }
-                        else
-                        {
-                            indices.Add(quad.v0);
-                            indices.Add(quad.v2);
-                            indices.Add(quad.v1);
-
-                            indices.Add(quad.v2);
-                            indices.Add(quad.v0);
-                            indices.Add(quad.v3);
-                        }
-
-                    }
-
-                    foreach (SVONode n in nodes) { n.localIndex = -1; } //clear local indices after use
-
-
-
-                    //Apply mesh data to gameObject
-                    MeshFilter mf = chunkObject.GetComponent<MeshFilter>();
-                    mf = mf != null ? mf : chunkObject.AddComponent<MeshFilter>();
-                    MeshRenderer rend = chunkObject.GetComponent<MeshRenderer>();
-                    rend = rend != null ? rend : chunkObject.AddComponent<MeshRenderer>();
-
-                    chunkObject.transform.parent = parentObj.transform;
-                    chunkObject.transform.localPosition = Vector3.zero;
-
-
-                    if (mf.sharedMesh == null)
-                    {
-                        mf.sharedMesh = new Mesh();
+                        indices.Add(quad.v2);
+                        indices.Add(quad.v3);
+                        indices.Add(quad.v0);
                     }
                     else
                     {
-                        mf.sharedMesh.Clear();
+                        indices.Add(quad.v0);
+                        indices.Add(quad.v2);
+                        indices.Add(quad.v1);
+
+                        indices.Add(quad.v2);
+                        indices.Add(quad.v0);
+                        indices.Add(quad.v3);
                     }
-                    Mesh m = mf.sharedMesh;
-                    rend.material = testMat;
 
-                    if (indices.Count < 3) return;
-
-                    m.vertices = verts.ToArray();
-                    m.normals = new Vector3[verts.Count]; //placeholders
-
-                    m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
-                    m.RecalculateNormals();
-
-                    MeshCollider col = chunkObject.GetComponent<MeshCollider>();
-                    if (col == null)
-                    {
-                        chunkObject.AddComponent<MeshCollider>().sharedMesh = m;
-                    }
-                    else
-                    {
-                        col.sharedMesh = m;
-                    }
                 }
 
+                foreach (SVONode n in nodes) { n.localIndex = -1; } //clear local indices after use
+
+
+
+                //Apply mesh data to gameObject
+                MeshFilter mf = chunkObject.GetComponent<MeshFilter>();
+                mf = mf != null ? mf : chunkObject.AddComponent<MeshFilter>();
+                MeshRenderer rend = chunkObject.GetComponent<MeshRenderer>();
+                rend = rend != null ? rend : chunkObject.AddComponent<MeshRenderer>();
+
+                chunkObject.transform.parent = parentObj.transform;
+                chunkObject.transform.localPosition = Vector3.zero;
+
+
+                if (mf.sharedMesh == null)
+                {
+                    mf.sharedMesh = new Mesh();
+                }
+                else
+                {
+                    mf.sharedMesh.Clear();
+                }
+                Mesh m = mf.sharedMesh;
+                rend.material = testMat;
+
+                if (indices.Count < 3) return;
+
+                m.vertices = verts.ToArray();
+                m.normals = new Vector3[verts.Count]; //placeholders
+                m.colors = colors.ToArray();
+
+                m.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
+                m.RecalculateNormals();
+
+                MeshCollider col = chunkObject.GetComponent<MeshCollider>();
+                if (col == null)
+                {
+                    chunkObject.AddComponent<MeshCollider>().sharedMesh = m;
+                }
+                else
+                {
+                    col.sharedMesh = m;
+                }
+            }
+            List<Vector3> featureVertices = new();
+            void GenerateFlora(SVONode node)
+            {
+                if (node.size != chunkSize || node.IsEmpty()) return;
+
+                //need to identify the chunk node and the corresponding mesh
+
+
+                node.GatherVoxelIDS(VOXEL.GRASS, threshold: 4, featureVertices);
+
+                //send off to features manager, which will generate
+
+
+                //given a poisson disc map (assumingly a set of positions, 2D)
+                //Find nearby vertices, and interpolate
+
+                //Add position to gpu instancing
             }
 
+
+
             //we dont need to be doing a DFS every frame. just store the chunk positions and their corresponding nodes?
-            TraverseNodes(generateChunk);
+            while (chunksToProcess.Count > 0)
+            {
+                SVONode node = chunksToProcess.Dequeue();
+                generateChunk(node);
+                GenerateFlora(node);
+            }
+            features_Manager.GenerateFeatures(featureVertices);
 
         }
 
@@ -414,6 +474,8 @@ namespace SparseVoxelOctree
         public Vector3 vertex; // Index in the mesh vertex list (if leaf)
         public int localIndex; // Local index in the chunk mesh (if leaf)
         public int gpuBufferIndex;
+        public VOXEL materialIndex;
+        public int frontierIndex;
 
         public int edge;
         public bool voteToCollapse;
@@ -436,6 +498,8 @@ namespace SparseVoxelOctree
             this.parent = parent;
             this.childIndex = childIndex;
             gpuBufferIndex = -1;
+            materialIndex = 0;
+            frontierIndex = -1;
         }
 
         public void Subdivide(System.Func<Vector3, Vector3> transformFunc = null)
@@ -486,10 +550,11 @@ namespace SparseVoxelOctree
 
         public int GetChildIndex => childIndex;
 
-        public bool MayContainCrossing() { return (minSDF <= maxSDF && minSDF <= size) || (maxSDF <= minSDF && maxSDF <= size); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MayContainCrossing() { return minSDF <= 0 && maxSDF >= 0; }
 
 
-        public void GatherChunkVertices(List<SVONode> nodes = null, List<Vector3> vertexList = null)
+        public void GatherChunkVertices(List<SVONode> nodes = null, List<Vector3> vertexList = null, List<Color> colors = null)
         {
             void gatherVertex(SVONode node)
             {
@@ -498,6 +563,9 @@ namespace SparseVoxelOctree
                 //Add to vertex list
                 node.localIndex = vertexList.Count;
                 vertexList?.Add(node.vertex);
+                Color col = parentOBJ.materialColors[(int)node.materialIndex];
+                col.a = (int)node.materialIndex;
+                colors?.Add(col);
                 nodes?.Add(node);
             }
 
@@ -505,7 +573,7 @@ namespace SparseVoxelOctree
 
         }
 
-        public void GatherChunkVerticesFace(List<SVONode> nodes = null, List<Vector3> vertexList = null, int dir = 0)
+        public void GatherChunkVerticesFace(List<SVONode> nodes = null, List<Vector3> vertexList = null, List<Color> colors = null, int dir = 0)
         {
             void gatherVertex(SVONode node)
             {
@@ -514,11 +582,28 @@ namespace SparseVoxelOctree
                 //Add to vertex list
                 node.localIndex = vertexList.Count;
                 vertexList?.Add(node.vertex);
+                Color col = parentOBJ.materialColors[(int)node.materialIndex];
+                col.a = (int)node.materialIndex;
+                colors?.Add(col);
                 nodes?.Add(node);
             }
 
             TraverseLeavesFace(gatherVertex, dir);
 
+        }
+
+        public void GatherVoxelIDS(VOXEL requestedID, int threshold = 16, List<Vector3> vertexList = null)
+        {
+            void gatherVertex(SVONode node)
+            {
+                if (node.edge == -1 || node.materialIndex != requestedID || node.size > threshold) return; // No vertex to gather or not matching ID
+
+                //Add to vertex list
+                vertexList?.Add(node.vertex);
+
+            }
+
+            TraverseLeaves(gatherVertex);
         }
 
         public void GatherChunkVerticesShell(List<SVONode> nodes = null, List<Vector3> vertexList = null)
@@ -554,16 +639,19 @@ namespace SparseVoxelOctree
 
         }
 
-        public void AppendLeavesToBuffer(List<GPUSVONode> buffer, List<SVONode> updateList, bool forceGenerate = false)
+        public void AppendLeavesToBuffer(List<GPUSVONode> buffer, List<SVONode> updateList, bool forceGenerate = false, BISDF sdf = null)
         {
             TraverseLeaves((node) =>
             {
                 if (node.edge != -1 && !forceGenerate) return;
+                if (sdf != null && Mathf.Abs(sdf.Evaluate(node.position)) > 2 * node.size) return;
 
-                if (forceGenerate) { node.edge = -1; vertex = Vector3.zero; }
+
+                if (forceGenerate) { node.edge = -1; }
                 //if not determined to be empty
                 node.gpuBufferIndex = buffer.Count;
                 buffer.Add(new(node));
+                //UnityEngine.Debug.Log("Appending node to buffer: " + node.gpuBufferIndex);
                 updateList.Add(node);
             });
 

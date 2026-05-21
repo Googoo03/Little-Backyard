@@ -43,12 +43,18 @@ public class GalacticSpatialHashing
         return galaxyHash[key];
     }
 
-    public Matrix4x4 FindClosestStar(Vector3 floatingOriginPos)
+    public Vector3 GetSectorID(Vector3 floatingOriginPos)
     {
-        //convert to sector
         Vector3 floatingOriginSectorPos = new Vector3(Mathf.FloorToInt(floatingOriginPos.x / hashGridSize),
         Mathf.FloorToInt(floatingOriginPos.y / hashGridSize),
         Mathf.FloorToInt(floatingOriginPos.z / hashGridSize));
+        return floatingOriginSectorPos;
+    }
+
+    public Matrix4x4 FindClosestStar(Vector3 floatingOriginPos)
+    {
+        //convert to sector
+        Vector3 floatingOriginSectorPos = GetSectorID(floatingOriginPos);
 
         //Original key
         Vector3 key = floatingOriginSectorPos;

@@ -108,8 +108,8 @@ public class Atmosphere_Manager : MonoBehaviour
         cloudMat.SetVector("planetCentre", atmospherePosition);
         cloudMat.SetFloat("_AtmosphereRadius", planetRadius * atmosphereThickness);
         cloudMat.SetFloat("cloudRadius", planetRadius * ((atmosphereThickness - 1f) * 0.50f + 1f));
-        cloudMat.SetFloat("cloudThicknessRatio", 0.99f);
-        cloudMat.SetFloat("numCloudPoints", 50);
+        cloudMat.SetFloat("cloudThicknessRatio", 0.97f);
+        cloudMat.SetFloat("numCloudPoints", 25);
         cloudMat.SetVector("_SunPos", sunPos);
     }
 

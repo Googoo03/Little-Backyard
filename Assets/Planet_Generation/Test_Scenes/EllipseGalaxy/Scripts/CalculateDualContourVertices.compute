@@ -9,14 +9,26 @@ struct SVONode{
     float min, max;
     int edge;
     float3 vertex;
+    int materialIndex;
 };
 
-Texture3D<float4> NoiseTexture;
-SamplerState samplerNoiseTexture;
+
+Texture3D<float4> ContinentTexture;
+SamplerState samplerContinentTexture;
+
+Texture3D<float4> MountainTexture;
+SamplerState samplerMountainTexture;
+
+Texture3D<float4> OctaveTexture;
+SamplerState samplerOctaveTexture;
+
 uint width, height, depth;
 
 RWStructuredBuffer<SVONode> nodes;
-int nodeLimit;
+uint nodeLimit;
+
+RWStructuredBuffer<SDF> sdfs; //these should be hashed, someway, somehow
+uint sdfLimit;
 
 
 // axis bit constants used throughout the method
@@ -32,7 +44,7 @@ const float MIN = 1.175494351e-38;
 float radius;
 
 
-float DetermineSDFValue(float3 pos){
+float2 DetermineSDFValue(float3 pos, float size){ //returns the value and material index
     float3 sphereCenter = float3(1,1,1) * radius;
     float3 spherePos = pos - sphereCenter;
 
@@ -42,19 +54,36 @@ float DetermineSDFValue(float3 pos){
     spherePos /= width; //even dimensions
 
     //In the future, this continent value will be baked into the actual texture
-    float3 uvwContinent = frac(spherePos * .01);
-    float contVal = (NoiseTexture.SampleLevel(samplerNoiseTexture, uvwContinent, 0)).r;
-    contVal = (1.0 - (contVal < 0 ? -contVal : contVal))*100;
+    float3 uvwContinent = (pos * (0.5/radius));
+    float contVal = (ContinentTexture.SampleLevel(samplerContinentTexture, uvwContinent, 0)).r;
+
+    float mountainVal = (MountainTexture.SampleLevel(samplerMountainTexture, uvwContinent, 0)).r;
+    mountainVal = (1.0 - (mountainVal < 0 ? -mountainVal : mountainVal));
+
+    float octaveVal = (OctaveTexture.SampleLevel(samplerMountainTexture, uvwContinent, 0)).r;
     //-------------------------------------------------------------------------
 
-    float3 uvw = frac(spherePos * frequency);
-    float value = (NoiseTexture.SampleLevel(samplerNoiseTexture, uvw, 0)).r;
-    value = (1.0 - (value < 0 ? -value : value))*amplitude;
+    float value = sphereSDF - (contVal*50 + max(0,contVal) * mountainVal*100 + octaveVal*50);
 
-    return value - sphereSDF + contVal;
+    int materialIndex = (contVal+octaveVal) > 0 && value > -2 ? 0 : 1; // just for simplicity
+    materialIndex = mountainVal > 0.5 && contVal > 0 ? 2 : materialIndex;
+    
+    for(uint i = 1; i < sdfLimit; ++i){
+        if(sdfs[i].invert == 0){
+            value = max(value, -EvaluateSDF(pos,sdfs[i]));
+        }else{
+            value = min(value, EvaluateSDF(pos,sdfs[i]));
+        }
+        
+    }
+
+    return float2(value,materialIndex);
 }
 
-float Adapt(float x0, float x1) { return (-x0) / (x1 - x0);}
+float Adapt(float x0, float x1) { 
+    float denominator = x1-x0;
+    return abs(denominator) < 1e-8 ? 0.5 : (-x0) / (x1 - x0);
+}
 
 void SVOVertex(SVONode node, int index)
 {
@@ -62,10 +91,12 @@ void SVOVertex(SVONode node, int index)
     const float eps = 1e-9f;
 
     float xPos, yPos, zPos;
-    float min = MIN, max = MAX;
+    float minSDF = MAX, maxSDF = -MAX;
+    float2 sdfmaterial;
 
     float3 vertPos[8];
     float vertValues[8];
+    float avgValue = 0;
 
     int i = 0;
     for (; i < 8; ++i)
@@ -77,16 +108,17 @@ void SVOVertex(SVONode node, int index)
 
         //evaluate the position and value of each vertex in the unit cube
         vertPos[i] = float3(xPos, yPos, zPos);
+        sdfmaterial = DetermineSDFValue(vertPos[i], node.size);
 
-        vertValues[i] = DetermineSDFValue(vertPos[i]); //base SDF
-        max = vertValues[i] > max ? vertValues[i] : max;
-        min = vertValues[i] < min ? vertValues[i] : min;
+        vertValues[i] = sdfmaterial.x; //base SDF
+        if(i==0)node.materialIndex = sdfmaterial.y;
+        maxSDF = vertValues[i] > maxSDF ? vertValues[i] : maxSDF;
+        minSDF = vertValues[i] < minSDF ? vertValues[i] : minSDF;
     }
     //calculate the adapt of only the edges that cross, rather than the whole thing
     //calculate the positions of the edges itself
-
-    node.min = min;
-    node.max = max;
+    node.min = minSDF;
+    node.max = maxSDF;
     node.edge = -1;
     node.vertex = float3(0,0,0);
 
@@ -150,7 +182,7 @@ void SVOVertex(SVONode node, int index)
         }
         float a = vertValues[j];
         float b = vertValues[j | 0x02];
-        if (a > 0 != b > 0)
+        if (a > eps != b > eps)
         {
             avg += vertPos[j] + Adapt(a, b) * (vertPos[j | 0x02] - vertPos[j]);
             count++;
@@ -162,14 +194,18 @@ void SVOVertex(SVONode node, int index)
     {
         float a = vertValues[(i << 1)];
         float b = vertValues[(i << 1) | 0x01];
-        if (a > 0 != b > 0)
+        if (a > eps != b > eps)
         {
             avg += vertPos[i << 1] + Adapt(a, b) * (vertPos[(i << 1) | 0x01] - vertPos[i << 1]);
             count++;
         }
     }
+    if (count == 0) {
+        nodes[index] = node;
+        return;
+    }
 
-    avg /= count > 1 ? count : 1;
+    avg /= max(count,1);
     //convert the average position to a sphere
 
     //figure out what edge was crossed (axis)
@@ -184,21 +220,22 @@ void SVOVertex(SVONode node, int index)
     if (xCross)
     {
         newedge |= 1 << 5;
-        newedge |= (((vertValues[3] > 0) && !(vertValues[7] > 0)) ? 1 : 0) << 2;
+        newedge |= (((vertValues[3] > eps) && !(vertValues[7] > eps)) ? 1 : 0) << 2;
     }
     if (yCross)
     {
         newedge |= 1 << 4;
-        newedge |= ((!(vertValues[5] > 0) && (vertValues[7] > 0)) ? 1 : 0) << 1;
+        newedge |= ((!(vertValues[5] > eps) && (vertValues[7] > eps)) ? 1 : 0) << 1;
     }
     if (zCross)
     {
         newedge |= 1 << 3;
-        newedge |= ((vertValues[6] > 0) && !(vertValues[7] > 0)) ? 1 : 0;
+        newedge |= ((vertValues[6] > eps) && !(vertValues[7] > eps)) ? 1 : 0;
     }
 
     bool block_voxel = false;
     float3 vertex = block_voxel ? vertPos[0] : avg;
+
 
     node.vertex = vertex;
     node.edge = newedge;
@@ -221,7 +258,7 @@ void CalculateVertex(int id){
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     
-    NoiseTexture.GetDimensions(width, height, depth);
+    ContinentTexture.GetDimensions(width, height, depth);
     // TODO: insert actual code here!
     CalculateVertex(id.x);
 }

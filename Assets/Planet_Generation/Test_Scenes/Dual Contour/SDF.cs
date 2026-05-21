@@ -9,18 +9,25 @@ namespace SignedDistanceFields
         public float Evaluate(Vector3 p);
     }
 
-    public class SphereSDF : ISDF
+    public class BISDF : ISDF
     {
+        public float Evaluate(Vector3 p) { return 0; }
         public Vector3 center;
+        public Vector3 args;
+        public int invert;
+        public int id;
+    }
+
+    public class SphereSDF : BISDF
+    {
         private float radius;
-        private bool invert;
-        public float Evaluate(Vector3 p)
+        public new float Evaluate(Vector3 p)
         {
-            float factor = invert ? -1 : 1;
+            float factor = invert == 1 ? -1 : 1;
             return SDF.Sphere(p, center, radius) * factor;
         }
 
-        public SphereSDF(Vector3 center_, float radius_ = 50, bool invert_ = false) { center = center_; radius = radius_; invert = invert_; }
+        public SphereSDF(Vector3 center_, float radius_ = 50, int invert_ = 0) { center = center_; args = new Vector3(radius_, 0, 0); invert = invert_; }
     }
 
 

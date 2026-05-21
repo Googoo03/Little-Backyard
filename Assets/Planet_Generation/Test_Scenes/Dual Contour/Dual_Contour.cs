@@ -44,7 +44,7 @@ namespace DualContour
         Func<Vector3, float, Vector3> coordTransformFunction;
 
         public List<Quad> quads = new();
-        public List<ISDF> sdfs;
+        public List<BISDF> sdfs;
 
 
         public Dual_Contour(Vector3 _global, Vector3Int scale, Vector3 ioffset, int ilodLevel, int length, bool mode, float iradius, int idir)
@@ -86,7 +86,7 @@ namespace DualContour
 
         public void SetVertexList(List<Vector3> v) { vertices = v; }
 
-        public void SetSDFEditList(List<ISDF> sdfs_) { sdfs = sdfs_; }
+        public void SetSDFEditList(List<BISDF> sdfs_) { sdfs = sdfs_; }
 
         public void SetRadius(float r) { radius = r; }
         public Vector3 FindTransformedCoord(Vector3 pos, int elevation) { return coordTransformFunction(pos, elevation); }
@@ -264,8 +264,8 @@ namespace DualContour
         private void CellProc(SVONode node)
         {
             if (node.isLeaf) return;
-            foreach (SVONode child in node.children)
-                CellProc(child);
+            for (int n = 0; n < 8; ++n)
+                CellProc(node.children[n]);
 
             FaceProcedure(node.children[0], node.children[1], Z_AXIS);
             FaceProcedure(node.children[0], node.children[4], X_AXIS);
@@ -292,83 +292,66 @@ namespace DualContour
 
 
         }
+        private static readonly byte[,,] indices =
+        {
+            {{0,0,0,0},{0,0,0,0}},
+            { { 1, 0, 2, 3 }, { 1, 0, 4, 5 }}, //z dir
+            { { 2, 3, 1, 0 }, { 2, 0, 4, 6 }}, //y dir
+            {{0,0,0,0},{0,0,0,0}},
+            { { 4, 5, 1, 0 }, { 4, 6, 2, 0 }}, //x dir
+        };
 
-        private int[] xIndicesNormal = { 2, 3, 1, 0 };
-        private int[] xIndicesFlip = { 1, 0, 2, 3 };
-        private int[] yIndicesNormal = { 4, 5, 1, 0 };
-        private int[] yIndicesFlip = { 1, 0, 4, 5 };
-        private int[] zIndicesNormal = { 4, 6, 2, 0 };
-        private int[] zIndicesFlip = { 2, 0, 4, 6 };
-        private int[] XAlternateDimension = { Y_AXIS, Z_AXIS };
-        private int[] yAlternateDimension = { X_AXIS, Z_AXIS };
-        private int[] zAlternateDimension = { X_AXIS, Y_AXIS };
+        private static readonly byte[,] AlternateDimensions = {
+            { 0, 0 },
+            { X_AXIS, Y_AXIS }, //z
+            { X_AXIS, Z_AXIS }, //y
+            { 0, 0 },
+            { Y_AXIS, Z_AXIS } //x
+        };
 
         private void FaceProcedure(SVONode node1, SVONode node2, int direction)
         {
             if (node1.isLeaf && node2.isLeaf) return;
 
-            int[] xIndices = null;
-            int[] yIndices = null;
-            int[] zIndices = null;
-            int[] alternateDimension;
+            SVONode flip = node1, flip1 = node2;
 
-
-            switch (direction)
+            if (direction == Z_AXIS)
             {
-                case X_AXIS:
-                    alternateDimension = XAlternateDimension;
-                    yIndices = yIndicesNormal;
-                    zIndices = zIndicesNormal;
-                    break;
-                case Y_AXIS:
-                    alternateDimension = yAlternateDimension;
-                    xIndices = xIndicesNormal;
-                    zIndices = zIndicesFlip;
-                    break;
-                case Z_AXIS:
-                    alternateDimension = zAlternateDimension;
-                    xIndices = xIndicesFlip;
-                    yIndices = yIndicesFlip;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
+                flip = node2;
+                flip1 = node1;
             }
 
-            for (int i = 0; i < 4; ++i)
+            for (byte i = 0; i < 4; ++i)
             {
-                int axis = alternateDimension[i < 2 ? 0 : 1];
+                int axisIndex = (i & 2) >> 1;
+                byte axis = AlternateDimensions[direction, axisIndex];
 
-                int top = (i % 2 == 0) ? 0 : axis;
-                int[] indices = axis switch
+                byte top = (byte)((i & 1) * axis);
+
+                byte i0 = (byte)(indices[direction, axisIndex, 0] | top);
+                byte i1 = (byte)(indices[direction, axisIndex, 1] | top);
+                byte i2 = (byte)(indices[direction, axisIndex, 2] | top);
+                byte i3 = (byte)(indices[direction, axisIndex, 3] | top);
+
+                if (direction == Y_AXIS)
                 {
-                    X_AXIS => xIndices,
-                    Y_AXIS => yIndices,
-                    Z_AXIS => zIndices,
-                    _ => throw new ArgumentOutOfRangeException()
-                };
+                    if (axis == X_AXIS)
+                    {
+                        flip = node1;
+                        flip1 = node2;
+                    }
+                    else
+                    {
+                        flip = node2;
+                        flip1 = node1;
+                    }
+                }
 
-                int i0 = indices[0] | top;
-                int i1 = indices[1] | top;
-                int i2 = indices[2] | top;
-                int i3 = indices[3] | top;
+                SVONode term1 = GetChild(node1, i0);
+                SVONode term2 = GetChild(flip, i1);
 
-                SVONode term1 = node1.isLeaf ? node1 : node1.children[i0];
-                SVONode term2 = direction switch
-                {
-                    X_AXIS => node1.isLeaf ? node1 : node1.children[i1],
-                    Y_AXIS => axis == X_AXIS ? (node1.isLeaf ? node1 : node1.children[i1]) : (node2.isLeaf ? node2 : node2.children[i1]),
-                    Z_AXIS => node2.isLeaf ? node2 : node2.children[i1],
-                    _ => throw new ArgumentOutOfRangeException()
-                };
-                SVONode term3 = node2.isLeaf ? node2 : node2.children[i2];
-                SVONode term4 = direction switch
-                {
-                    X_AXIS => node2.isLeaf ? node2 : node2.children[i3],
-                    Y_AXIS => axis == X_AXIS ? (node2.isLeaf ? node2 : node2.children[i3]) : (node1.isLeaf ? node1 : node1.children[i3]),
-                    Z_AXIS => node1.isLeaf ? node1 : node1.children[i3],
-                    _ => throw new ArgumentOutOfRangeException()
-                };
-
+                SVONode term3 = GetChild(node2, i2);
+                SVONode term4 = GetChild(flip1, i3);
 
                 EdgeProc(term1, term2, term3, term4, axis);
             }
@@ -378,26 +361,34 @@ namespace DualContour
             {
                 for (int b = 0; b < 2; b++)
                 {
-                    offset = direction switch
-                    {
-                        X_AXIS => (a << 1) | (b << 0),
-                        Y_AXIS => (a << 2) | (b << 0),
-                        Z_AXIS => (a << 2) | (b << 1),
-                        _ => throw new ArgumentOutOfRangeException()
-                    };
+                    offset = offsets[direction, (a << 1) | b];
 
-                    FaceProcedure(node1.isLeaf ? node1 : node1.children[(offset | direction)],
-                            node2.isLeaf ? node2 : node2.children[(offset)], direction);
+                    FaceProcedure(GetChild(node1, offset | direction), GetChild(node2, offset), direction);
                 }
             }
         }
-        //Assume node1 is on the lower end, therefore its nodes are higher axis
 
-        private static readonly int[][] edgeNewDirs =
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static SVONode GetChild(SVONode node, int index)
         {
-            new int[4] { Y_AXIS | Z_AXIS, Y_AXIS, 0, Z_AXIS },
-            new int[4] { X_AXIS | Z_AXIS, X_AXIS, 0, Z_AXIS },
-            new int[4] { X_AXIS | Y_AXIS, X_AXIS, 0, Y_AXIS }
+            return node.isLeaf ? node : node.children[index];
+        }
+
+        private static readonly byte[,] offsets = {
+            {0,0,0,0},
+            {0,2,4,6}, //z
+            {0,1,4,5}, //y
+            {0,0,0,0},
+            {0,1,2,3}, //x,
+        };
+
+        private static readonly byte[,] edgeNewDirs =
+        {
+            {0,0,0,0},
+             { X_AXIS | Y_AXIS, X_AXIS, 0, Y_AXIS }, //z
+             { X_AXIS | Z_AXIS, X_AXIS, 0, Z_AXIS }, //y
+            {0,0,0,0},
+             { Y_AXIS | Z_AXIS, Y_AXIS, 0, Z_AXIS }, //x
         };
 
         private void EdgeProc(SVONode node1, SVONode node2, SVONode node3, SVONode node4, int direction)
@@ -409,11 +400,8 @@ namespace DualContour
             //two edgeproc groups, one for top half, one for bottom half
             if (node1.isLeaf && node2.isLeaf && node3.isLeaf && node4.isLeaf)
             {
-                if (node1.localIndex < 0 || node2.localIndex < 0 || node3.localIndex < 0 || node4.localIndex < 0)
-                {
-                    //UnityEngine.Debug.Log("Error: Leaf node missing vertex");
-                    return;
-                }
+                if (node1.localIndex < 0 || node2.localIndex < 0 || node3.localIndex < 0 || node4.localIndex < 0) return;
+
                 //base case, return, make quad, do what we need to do
 
                 quads.Add(new Quad
@@ -429,24 +417,17 @@ namespace DualContour
             else
             {
                 //only works iff the space orientations are obeyed when passed in as nodes, otherwise this falls apart
-                int[] newdirs = direction switch
-                {
-                    X_AXIS => edgeNewDirs[0],
-                    Y_AXIS => edgeNewDirs[1],
-                    Z_AXIS => edgeNewDirs[2],
-                    _ => throw new ArgumentOutOfRangeException(nameof(direction), "Direction must be X_AXIS, Y_AXIS, or Z_AXIS")
-                };
 
-                EdgeProc(node1.isLeaf ? node1 : node1.children[newdirs[0] | direction],
-                            node2.isLeaf ? node2 : node2.children[newdirs[1] | direction],
-                            node3.isLeaf ? node3 : node3.children[newdirs[2] | direction],
-                            node4.isLeaf ? node4 : node4.children[newdirs[3] | direction], direction
+                EdgeProc(GetChild(node1, edgeNewDirs[direction, 0] | direction),
+                            GetChild(node2, edgeNewDirs[direction, 1] | direction),
+                            GetChild(node3, edgeNewDirs[direction, 2] | direction),
+                            GetChild(node4, edgeNewDirs[direction, 3] | direction), direction
                              );
 
-                EdgeProc(node1.isLeaf ? node1 : node1.children[newdirs[0]],
-                            node2.isLeaf ? node2 : node2.children[newdirs[1]],
-                            node3.isLeaf ? node3 : node3.children[newdirs[2]],
-                            node4.isLeaf ? node4 : node4.children[newdirs[3]], direction
+                EdgeProc(GetChild(node1, edgeNewDirs[direction, 0]),
+                            GetChild(node2, edgeNewDirs[direction, 1]),
+                            GetChild(node3, edgeNewDirs[direction, 2]),
+                            GetChild(node4, edgeNewDirs[direction, 3]), direction
                              );
 
             }
